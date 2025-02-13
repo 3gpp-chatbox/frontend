@@ -1,3 +1,19 @@
+# Dependencies
+node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+/cypress/videos/
+/cypress/screenshots/
+
+# Production
+/build
+/dist
+/dist-ssr
+*.local
+
 # Logs
 logs
 *.log
@@ -7,14 +23,19 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 .idea
 .DS_Store
 *.suo
@@ -22,3 +43,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# TypeScript
+*.tsbuildinfo
+.tscache/
+
+# Cache
+.eslintcache
+.stylelintcache
+.cache
+.parcel-cache
+
+# Misc
+.DS_Store
+Thumbs.db
+*.pem
+.vercel
+.netlify

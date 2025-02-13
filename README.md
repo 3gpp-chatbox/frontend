@@ -1,59 +1,108 @@
-# 3GPP Knowledge Graph Chat Frontend
+# AI-Powered RAG-KG Assistant for 3GPP Procedural Insights
 
-A modern React-based frontend for querying the 3GPP knowledge graph using natural language. Built with React, Vite, and Mantine UI.
+A React-based web application that provides an intelligent assistant for analyzing and visualizing 3GPP specifications using Retrieval-Augmented Generation (RAG) and Knowledge Graphs.
 
 ## Features
 
-- Clean and intuitive chat interface
-- Real-time query processing
-- Responsive design
-- Error handling and loading states
-- Modern UI components with Mantine
+- 📑 Extract procedural models from 3GPP specifications
+- 🔍 Visualize procedures as Flow Property Graphs
+- 🤖 RAG-based intelligent querying
+- 🔄 Real-world data validation
+- ✏️ Expert-driven knowledge graph updates
+
+## Tech Stack
+
+- **Frontend Framework:** React with TypeScript
+- **Build Tool:** Vite
+- **UI Components:** Material-UI (MUI)
+- **State Management:** Zustand
+- **Graph Visualization:** D3.js & React Force Graph
+- **Styling:** TailwindCSS
+- **Testing:** Vitest & React Testing Library
+- **API Client:** Axios
+- **Data Fetching:** React Query
+- **Routing:** React Router DOM
 
 ## Prerequisites
 
-- Node.js 16.x or higher
-- npm 7.x or higher
-- Backend API running on port 5000
+- Node.js (v18 or higher)
+- npm or yarn
 
 ## Getting Started
 
-1. Install dependencies:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-repo/3gpp-rag-kg-assistant.git
+   cd 3gpp-rag-kg-assistant
+   ```
+
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Start the development server:
+3. Start the development server:
    ```bash
    npm run dev
    ```
 
-3. Open your browser and navigate to `http://localhost:3000`
+4. Open [http://localhost:5173](http://localhost:5173) in your browser
 
-## Development
+## Project Structure
 
-The application is built with:
-- React 18
-- Vite
-- Mantine UI Components
-- Axios for API calls
-
-The main components are:
-- `src/App.jsx` - Main application component with chat interface
-- `src/main.jsx` - Application entry point with provider setup
-
-## API Integration
-
-The frontend expects the following API endpoint:
-- POST `/api/query` - Accepts natural language queries about 3GPP specifications
-  - Request body: `{ query: string }`
-  - Response: `{ answer: string }`
-
-## Building for Production
-
-To create a production build:
-```bash
-npm run build
+```
+frontend-repo/
+│── src/               # Source code folder
+│   ├── components/    # Reusable UI components
+│   ├── pages/        # Page-level components
+│   ├── assets/       # Static files (images, icons, etc.)
+│   ├── styles/       # Global and component styles
+│   ├── utils/        # Helper functions
+│   ├── hooks/        # Custom React hooks
+│   ├── context/      # Global state management
+│── public/           # Static public assets
+│── .gitignore        # Git ignore rules
+│── package.json      # Dependencies and scripts
+│── vite.config.ts    # Vite configuration
+│── tsconfig.json     # TypeScript configuration
+│── index.html        # Entry point
 ```
 
-The build output will be in the `dist` directory.
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run test` - Run tests
+- `npm run format` - Format code with Prettier
+
+## Key Dependencies
+
+### Core Dependencies
+- `react` & `react-dom` - UI framework
+- `@mui/material` & `@mui/icons-material` - Material UI components
+- `react-router-dom` - Routing
+- `zustand` - State management
+- `react-force-graph` & `d3` - Graph visualization
+- `react-query` - Data fetching
+- `axios` - HTTP client
+
+### Development Dependencies
+- `typescript` - Type checking
+- `vite` - Build tool
+- `eslint` & `prettier` - Code quality
+- `tailwindcss` - Utility-first CSS
+- `vitest` & `@testing-library/react` - Testing
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
