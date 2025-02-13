@@ -1,0 +1,9 @@
+
+react	#Core UI framework
+axios	#Fetch data from backend API
+tailwindcss	#Styling framework
+recharts	#Display knowledge graphs/charts
+d3	#Create custom knowledge graphs
+react-router-dom	#Handle page navigation
+
+pyvis	 #Interactive graph visualization
