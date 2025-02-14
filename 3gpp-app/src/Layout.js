@@ -1,11 +1,24 @@
 import React from 'react';
 import { Box, Grid, Paper } from '@mui/material';
 import styled from '@emotion/styled';
+import NASProcedureFlow from './flow_diagram';
 
 const StyledPaper = styled(Paper)`
   padding: 20px;
   height: calc(100vh - 40px);
   overflow: auto;
+`;
+
+// Style for the flow diagram container
+const FlowContainer = styled(StyledPaper)`
+  display: flex;
+  flex-direction: column;
+  
+  .flow-wrapper {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
 `;
 
 const Layout = () => {
@@ -22,10 +35,12 @@ const Layout = () => {
 
         {/* Graph Visualization */}
         <Grid item xs={6}>
-          <StyledPaper elevation={3}>
-            <h2>State Transition Graph</h2>
-            {/* Add graph visualization component here */}
-          </StyledPaper>
+          <FlowContainer elevation={3}>
+            <h2>Flow Diagram</h2>
+            <div className="flow-wrapper">
+              <NASProcedureFlow />
+            </div>
+          </FlowContainer>
         </Grid>
 
         {/* Summary Section */}
