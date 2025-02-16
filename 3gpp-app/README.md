@@ -1,6 +1,49 @@
-# Getting Started with Create React App
+# 3GPP Procedures Visualization App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This React application provides a visual interface for exploring and understanding 3GPP (Third Generation Partnership Project) procedures and state transitions. The application was bootstrapped with Create React App and includes features for visualizing network state transitions and procedures.
+
+## Features
+
+- **Interactive Flow Diagrams**: Visualizes NAS (Non-Access Stratum) procedures and state transitions using Mermaid.js
+- **Material-UI Integration**: Modern and responsive UI components using MUI (Material-UI)
+- **Responsive Layout**: Three-panel design featuring:
+  - Procedures List
+  - Flow Diagram Visualization
+  - Procedure Summary
+
+## Project Structure
+
+```
+frontend/3gpp-app/
+├── src/
+│   ├── flow_diagram.js    # NAS procedure flow visualization component
+│   ├── Layout.js          # Main application layout component
+│   ├── App.js             # Root application component
+│   └── ...                # Other React app files
+├── public/                # Static files
+└── package.json          # Project dependencies and scripts
+```
+
+## Dependencies
+
+- React 18.2.0
+- Material-UI (@mui/material, @mui/icons-material)
+- Mermaid.js for flow diagrams
+- React Flow for interactive diagrams
+- Emotion for styled components
+
+## Getting Started
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Start the development server:
+   ```bash
+   npm start
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
 ## Available Scripts
 
