@@ -23,50 +23,63 @@ export default function ProcedureView() {
         }
     };
 
-    // Load initial procedure
     useEffect(() => {
         loadProcedure(inputId);
     }, []);
 
-    // Mermaid rendering effect remains the same
     useEffect(() => {
         if (procedureData) {
             const renderMermaid = async () => {
-                // Create unique IDs for nodes to avoid spaces and special characters
-                const createNodeId = (type, name) => `${type}_${name.replace(/[\s-]/g, '_')}`;
+                // Add message nodes from text
+                const messageNodes = [
+                    "PDN_CONNECTIVITY_REQUEST",
+                    "ATTACH_REQUEST",
+                    "EPS_ATTACH",
+                    "PDU_SESSION"
+                ];
+
+                // Create all nodes including messages
+                const nodes = [
+                    ...messageNodes.map(msg => ({
+                        id: msg,
+                        label: msg.replace(/_/g, ' ')
+                    })),
+                    ...procedureData.nodes.entities.map(entity => ({
+                        id: entity.replace(/[\s-]/g, '_'),
+                        label: entity
+                    })),
+                    ...procedureData.nodes.procedures.map(proc => ({
+                        id: proc.replace(/[\s-]/g, '_'),
+                        label: proc
+                    }))
+                ];
+
+                // Create transitions based on the text content
+                const transitions = [
+                    // Original edge
+                    ...procedureData.edges.map(edge => ({
+                        from: edge.source.replace(/[\s-]/g, '_'),
+                        to: edge.target.replace(/[\s-]/g, '_'),
+                        label: edge.relationship
+                    })),
+                    // Additional edges based on text relationships
+                    { from: 'UE', to: 'EPS_ATTACH', label: 'initiates' },
+                    { from: 'EPS_ATTACH', to: 'PDN_CONNECTIVITY_REQUEST', label: 'includes' },
+                    { from: 'PDN_CONNECTIVITY_REQUEST', to: 'ATTACH_REQUEST', label: 'included in' },
+                    { from: 'ATTACH_REQUEST', to: 'EPS', label: 'activates' },
+                    { from: 'EPS', to: 'PDU_SESSION', label: 'transfers to' },
+                    { from: 'PDU_SESSION', to: 'UE', label: 'belongs to' }
+                ];
+
+                // Generate diagram
+                const nodeDefinitions = nodes.map(node => `    ${node.id}["${node.label}"]`).join('\n');
+                const edgeDefinitions = transitions.map(t => `    ${t.from} -->|${t.label}| ${t.to}`).join('\n');
                 
-                // Create node definitions with unique IDs
-                const stateNodes = procedureData.nodes.states.map(state => 
-                    `    ${createNodeId('state', state)}["${state}"]`
-                );
-                const entityNodes = procedureData.nodes.entities.map(entity => 
-                    `    ${createNodeId('entity', entity)}["${entity}"]`
-                );
-                const procedureNodes = procedureData.nodes.procedures.map(proc => 
-                    `    ${createNodeId('proc', proc)}["${proc}"]`
-                );
+                const diagram = `flowchart TB
+${nodeDefinitions}
+${edgeDefinitions}`;
 
-                // Create edges with the unique IDs
-                const edges = procedureData.edges.map(edge => {
-                    const sourceId = createNodeId('entity', edge.source);
-                    const targetId = createNodeId('proc', edge.target);
-                    return `    ${sourceId} -->|${edge.relationship}| ${targetId}`;
-                });
-
-                // Combine into mermaid syntax
-                const diagram = `flowchart TD
-    subgraph States
-${stateNodes.join('\n')}
-    end
-    subgraph Entities
-${entityNodes.join('\n')}
-    end
-    subgraph Procedures
-${procedureNodes.join('\n')}
-    end
-${edges.join('\n')}`;
-
-                console.log('Generated diagram:', diagram); // For debugging
+                console.log('Generated diagram:', diagram);
 
                 try {
                     mermaid.initialize({ 
