@@ -1,23 +1,40 @@
 import React from 'react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import Layout from './Layout';
 import './App.css';
 // Keep the import but comment out for now
 // import NASProcedureFlow from './flow_diagram';
 import ProcedureView from './components/ProcedureView';
 
+// Create a theme instance
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+    background: {
+      default: '#f5f5f5',
+    },
+  },
+  typography: {
+    fontFamily: [
+      'Roboto',
+      'Arial',
+      'sans-serif'
+    ].join(','),
+  },
+});
+
 function App() {
   return (
-    <div className="App">
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-        <h2>3GPP Procedure Visualization</h2>
-        <ProcedureView />
-        {/* Teammate's component - temporarily hidden
-        <div>
-          <h2>Original Flow Diagram</h2>
-          <NASProcedureFlow />
-        </div>
-        */}
-      </div>
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Layout />
+    </ThemeProvider>
   );
 }
 

@@ -1,275 +1,274 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { 
+    Box, 
+    Paper, 
+    Typography, 
+    FormControl, 
+    InputLabel, 
+    Select, 
+    MenuItem,
+    Grid,
+    Chip,
+    CircularProgress
+} from '@mui/material';
 import mermaid from 'mermaid';
-import { fetchProcedureById } from '../services/api';
+import { fetchProcedureTypes, fetchProcedureFlow } from '../services/api';
 
 export default function ProcedureView() {
     const mermaidRef = useRef(null);
     const [procedureData, setProcedureData] = useState(null);
     const [error, setError] = useState(null);
-    const [inputId, setInputId] = useState('5410');
     const [loading, setLoading] = useState(false);
+    const [selectedProcedure, setSelectedProcedure] = useState('');
+    const [selectedSubProcedure, setSelectedSubProcedure] = useState('');
+    const [availableProcedures, setAvailableProcedures] = useState([]);
+    const [subProcedures, setSubProcedures] = useState([]);
 
-    const loadProcedure = async (id) => {
-        setLoading(true);
-        try {
-            const data = await fetchProcedureById(Number(id));
-            setProcedureData(data);
-            setError(null);
-        } catch (err) {
-            setError(err.message);
-            console.error('Error loading procedure:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // Load available procedure types
     useEffect(() => {
-        loadProcedure(inputId);
+        const loadProcedureTypes = async () => {
+            try {
+                const types = await fetchProcedureTypes();
+                console.log('Raw types from API:', types);
+                
+                if (types && types.length > 0) {
+                    setAvailableProcedures(types);
+                    setSelectedProcedure(types[0]);
+                }
+            } catch (err) {
+                console.error('Error loading procedure types:', err);
+                setError('Failed to load procedure types');
+            }
+        };
+        loadProcedureTypes();
     }, []);
 
+    // Update sub-procedures based on selected procedure
+    useEffect(() => {
+        if (selectedProcedure) {
+            const getSubProcedures = async () => {
+                try {
+                    const data = await fetchProcedureFlow(selectedProcedure);
+                    if (data && data.nodes && data.nodes.procedures) {
+                        const subProcs = data.nodes.procedures.filter(proc => 
+                            proc.toLowerCase().includes(selectedProcedure.toLowerCase()) &&
+                            proc !== selectedProcedure
+                        );
+                        setSubProcedures(subProcs);
+                        if (subProcs.length > 0) {
+                            setSelectedSubProcedure(subProcs[0]);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error loading sub-procedures:', err);
+                }
+            };
+            getSubProcedures();
+        }
+    }, [selectedProcedure]);
+
+    // Load procedure flow when type is selected
+    useEffect(() => {
+        const loadProcedureFlow = async () => {
+            if (!selectedProcedure) return;
+            
+            setLoading(true);
+            try {
+                const data = await fetchProcedureFlow(selectedProcedure, selectedSubProcedure);
+                console.log('Loaded procedure flow:', data);
+                setProcedureData(data);
+                setError(null);
+            } catch (err) {
+                console.error('Error loading procedure flow:', err);
+                setError(err.message || 'Failed to load procedure flow');
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadProcedureFlow();
+    }, [selectedProcedure, selectedSubProcedure]);
+
+    // Render mermaid diagram
     useEffect(() => {
         if (procedureData) {
             const renderMermaid = async () => {
-                // Add message nodes from text
-                const messageNodes = [
-                    "PDN_CONNECTIVITY_REQUEST",
-                    "ATTACH_REQUEST",
-                    "EPS_ATTACH",
-                    "PDU_SESSION"
-                ];
-
-                // Create all nodes including messages
-                const nodes = [
-                    ...messageNodes.map(msg => ({
-                        id: msg,
-                        label: msg.replace(/_/g, ' ')
-                    })),
-                    ...procedureData.nodes.entities.map(entity => ({
-                        id: entity.replace(/[\s-]/g, '_'),
-                        label: entity
-                    })),
-                    ...procedureData.nodes.procedures.map(proc => ({
-                        id: proc.replace(/[\s-]/g, '_'),
-                        label: proc
-                    }))
-                ];
-
-                // Create transitions based on the text content
-                const transitions = [
-                    // Original edge
-                    ...procedureData.edges.map(edge => ({
-                        from: edge.source.replace(/[\s-]/g, '_'),
-                        to: edge.target.replace(/[\s-]/g, '_'),
-                        label: edge.relationship
-                    })),
-                    // Additional edges based on text relationships
-                    { from: 'UE', to: 'EPS_ATTACH', label: 'initiates' },
-                    { from: 'EPS_ATTACH', to: 'PDN_CONNECTIVITY_REQUEST', label: 'includes' },
-                    { from: 'PDN_CONNECTIVITY_REQUEST', to: 'ATTACH_REQUEST', label: 'included in' },
-                    { from: 'ATTACH_REQUEST', to: 'EPS', label: 'activates' },
-                    { from: 'EPS', to: 'PDU_SESSION', label: 'transfers to' },
-                    { from: 'PDU_SESSION', to: 'UE', label: 'belongs to' }
-                ];
-
-                // Generate diagram
-                const nodeDefinitions = nodes.map(node => `    ${node.id}["${node.label}"]`).join('\n');
-                const edgeDefinitions = transitions.map(t => `    ${t.from} -->|${t.label}| ${t.to}`).join('\n');
-                
-                const diagram = `flowchart TB
-${nodeDefinitions}
-${edgeDefinitions}`;
-
-                console.log('Generated diagram:', diagram);
-
+                console.log('Rendering data:', procedureData);
                 try {
-                    mermaid.initialize({ 
+                    // Initialize mermaid
+                    mermaid.initialize({
                         startOnLoad: true,
                         theme: 'default',
-                        securityLevel: 'loose'
+                        securityLevel: 'loose',
+                        flowchart: {
+                            curve: 'basis',
+                            nodeSpacing: 50,
+                            rankSpacing: 80,
+                            padding: 20,
+                            defaultRenderer: 'dagre'
+                        }
                     });
-                    const { svg } = await mermaid.render('procedure-diagram', diagram);
+
+                    // Generate diagram
+                    const diagram = generateMermaidDiagram(procedureData, selectedProcedure, selectedSubProcedure);
+                    
+                    // Render diagram
                     if (mermaidRef.current) {
+                        mermaidRef.current.innerHTML = '';
+                        const { svg } = await mermaid.render('procedure-diagram', diagram);
                         mermaidRef.current.innerHTML = svg;
                     }
                 } catch (err) {
                     console.error('Error rendering diagram:', err);
-                    setError('Error rendering diagram: ' + err.message);
+                    setError('Failed to render diagram');
                 }
             };
             renderMermaid();
         }
-    }, [procedureData]);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        loadProcedure(inputId);
-    };
-
-    if (error) {
-        return (
-            <div style={{ color: 'red', padding: '20px' }}>
-                Error: {error}
-                <div style={{ marginTop: '10px' }}>
-                    <button 
-                        onClick={() => loadProcedure(inputId)}
-                        style={{ padding: '5px 10px' }}
-                    >
-                        Try Again
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    }, [procedureData, selectedProcedure, selectedSubProcedure]);
 
     return (
-        <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-            {/* ID Selector */}
-            <div style={{ 
-                marginBottom: '30px',
-                padding: '15px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '5px',
-                width: '100%'
-            }}>
-                <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <label>Enter Procedure ID:</label>
-                    <input
-                        type="number"
-                        value={inputId}
-                        onChange={(e) => setInputId(e.target.value)}
-                        style={{
-                            padding: '5px',
-                            borderRadius: '4px',
-                            border: '1px solid #ddd',
-                            width: '100px'
-                        }}
-                        min="1"
-                    />
-                    <button 
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            padding: '5px 15px',
-                            borderRadius: '4px',
-                            border: '1px solid #ddd',
-                            backgroundColor: loading ? '#f0f0f0' : 'white',
-                            cursor: loading ? 'not-allowed' : 'pointer'
-                        }}
-                    >
-                        {loading ? 'Loading...' : 'Load'}
-                    </button>
-                </form>
-            </div>
-
-            {procedureData ? (
-                <>
-                    {/* Description Section */}
-                    <div style={{ marginBottom: '30px' }}>
-                        <h3>Procedure ID: {procedureData.id}</h3>
-                        <div style={{ 
-                            padding: '20px',
-                            backgroundColor: '#f5f5f5',
-                            borderRadius: '5px',
-                            marginTop: '15px'
-                        }}>
-                            <h4>Description:</h4>
-                            <p style={{ marginTop: '10px' }}>{procedureData.chunk_text}</p>
-                        </div>
-                    </div>
-
-                    {/* Flow Diagram Section */}
-                    <div style={{ 
-                        marginBottom: '30px',
-                        padding: '20px',
-                        backgroundColor: 'white',
-                        borderRadius: '5px',
-                        border: '1px solid #ddd',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }}>
-                        <h4>Flow Diagram:</h4>
-                        {loading ? (
-                            <div style={{ textAlign: 'center', padding: '20px' }}>Loading diagram...</div>
-                        ) : (
-                            <div ref={mermaidRef} style={{ marginTop: '15px' }}></div>
-                        )}
-                    </div>
-
-                    {/* Extracted Information Section */}
-                    <div style={{ 
-                        padding: '20px',
-                        backgroundColor: '#f5f5f5',
-                        borderRadius: '5px'
-                    }}>
-                        <h4>Extracted Information:</h4>
-                        <ul style={{ 
-                            listStyle: 'none', 
-                            padding: 0,
-                            marginTop: '15px'
-                        }}>
-                            <li style={{ marginBottom: '20px' }}>
-                                <strong>States: </strong>
-                                <div style={{ marginTop: '10px' }}>
-                                    {procedureData.nodes.states.map(state => (
-                                        <span key={state} style={{
-                                            display: 'inline-block',
-                                            background: '#e3f2fd',
-                                            padding: '4px 8px',
-                                            borderRadius: '4px',
-                                            margin: '2px',
-                                            fontSize: '0.9em'
-                                        }}>
-                                            {state}
-                                        </span>
+        <Box>
+            {/* Procedure Selection Controls */}
+            <Paper sx={{ p: 2, mb: 3 }} elevation={2}>
+                <Grid container spacing={3} alignItems="center">
+                    <Grid item xs={12} md={6}>
+                        <FormControl fullWidth>
+                            <InputLabel>Procedure Type</InputLabel>
+                            <Select
+                                value={selectedProcedure}
+                                onChange={(e) => setSelectedProcedure(e.target.value)}
+                                label="Procedure Type"
+                            >
+                                {availableProcedures.map(type => (
+                                    <MenuItem key={type} value={type}>{type}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    {subProcedures.length > 0 && (
+                        <Grid item xs={12} md={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Sub-Procedure</InputLabel>
+                                <Select
+                                    value={selectedSubProcedure}
+                                    onChange={(e) => setSelectedSubProcedure(e.target.value)}
+                                    label="Sub-Procedure"
+                                >
+                                    {subProcedures.map(proc => (
+                                        <MenuItem key={proc} value={proc}>{proc}</MenuItem>
                                     ))}
-                                </div>
-                            </li>
-                            <li style={{ marginBottom: '20px' }}>
-                                <strong>Entities: </strong>
-                                <div style={{ marginTop: '10px' }}>
-                                    {procedureData.nodes.entities.map(entity => (
-                                        <span key={entity} style={{
-                                            display: 'inline-block',
-                                            background: '#e8f5e9',
-                                            padding: '4px 8px',
-                                            borderRadius: '4px',
-                                            margin: '2px',
-                                            fontSize: '0.9em'
-                                        }}>
-                                            {entity}
-                                        </span>
-                                    ))}
-                                </div>
-                            </li>
-                            <li style={{ marginBottom: '20px' }}>
-                                <strong>Procedures: </strong>
-                                <div style={{ marginTop: '10px' }}>
-                                    {procedureData.nodes.procedures.map(proc => (
-                                        <span key={proc} style={{
-                                            display: 'inline-block',
-                                            background: '#fce4ec',
-                                            padding: '4px 8px',
-                                            borderRadius: '4px',
-                                            margin: '2px',
-                                            fontSize: '0.9em'
-                                        }}>
-                                            {proc}
-                                        </span>
-                                    ))}
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </>
-            ) : (
-                <div style={{ 
-                    padding: '30px', 
-                    textAlign: 'center',
-                    backgroundColor: '#f5f5f5',
-                    borderRadius: '5px'
-                }}>
-                    {loading ? 'Loading procedure...' : 'Enter a procedure ID to view details'}
-                </div>
-            )}
-        </div>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    )}
+                </Grid>
+            </Paper>
+
+            {/* Main Content */}
+            {loading ? (
+                <Box display="flex" justifyContent="center" p={4}>
+                    <CircularProgress />
+                </Box>
+            ) : error ? (
+                <Paper sx={{ p: 2, bgcolor: '#ffebee' }}>
+                    <Typography color="error">{error}</Typography>
+                </Paper>
+            ) : procedureData ? (
+                <Grid container spacing={3}>
+                    {/* Flow Diagram */}
+                    <Grid item xs={12}>
+                        <Paper sx={{ p: 2 }} elevation={2}>
+                            <Typography variant="h6" gutterBottom>Flow Diagram</Typography>
+                            <Box ref={mermaidRef} sx={{ minHeight: '400px' }} />
+                        </Paper>
+                    </Grid>
+
+                    {/* Procedure Information */}
+                    <Grid item xs={12}>
+                        <Paper sx={{ p: 2 }} elevation={2}>
+                            <Typography variant="h6" gutterBottom>Procedure Information</Typography>
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} md={4}>
+                                    <Typography variant="subtitle1" gutterBottom>States</Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                        {procedureData.nodes.states.map(state => (
+                                            <Chip 
+                                                key={state} 
+                                                label={state} 
+                                                color="primary" 
+                                                variant="outlined"
+                                            />
+                                        ))}
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <Typography variant="subtitle1" gutterBottom>Entities</Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                        {procedureData.nodes.entities.map(entity => (
+                                            <Chip 
+                                                key={entity} 
+                                                label={entity} 
+                                                color="secondary" 
+                                                variant="outlined"
+                                            />
+                                        ))}
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} md={4}>
+                                    <Typography variant="subtitle1" gutterBottom>Procedures</Typography>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                        {procedureData.nodes.procedures.map(proc => (
+                                            <Chip 
+                                                key={proc} 
+                                                label={proc} 
+                                                color="info" 
+                                                variant="outlined"
+                                            />
+                                        ))}
+                                    </Box>
+                                </Grid>
+                            </Grid>
+                        </Paper>
+                    </Grid>
+                </Grid>
+            ) : null}
+        </Box>
     );
+}
+
+// Helper function to generate Mermaid diagram
+function generateMermaidDiagram(data, selectedProcedure, selectedSubProcedure) {
+    const nodes = data.nodes || { states: [], messages: [], procedures: [], entities: [] };
+    const edges = data.edges || [];
+
+    // Create node definitions
+    const nodeDefinitions = [...nodes.states, ...nodes.entities, ...nodes.procedures]
+        .map(node => {
+            const id = node.replace(/[^a-zA-Z0-9]/g, '_');
+            const isState = node.includes('REGISTERED') || node.includes('DEREGISTERED');
+            const style = isState ? ':::stateNode' : ':::defaultNode';
+            return `    ${id}["${node}"]${style}`;
+        })
+        .join('\n');
+
+    // Create edge definitions
+    const edgeDefinitions = edges
+        .map(edge => {
+            const from = edge.source.replace(/[^a-zA-Z0-9]/g, '_');
+            const to = edge.target.replace(/[^a-zA-Z0-9]/g, '_');
+            return `    ${from} --> ${to}`;
+        })
+        .join('\n');
+
+    // Generate complete diagram
+    return `graph TD
+    %% Style definitions
+    classDef stateNode fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    classDef defaultNode fill:white,stroke:#666,stroke-width:1px
+
+    %% Node definitions
+${nodeDefinitions}
+
+    %% Edge definitions
+${edgeDefinitions}`;
 } 
