@@ -100,11 +100,13 @@ export default function ProcedureView() {
                         theme: 'default',
                         securityLevel: 'loose',
                         flowchart: {
-                            curve: 'basis',
-                            nodeSpacing: 50,
-                            rankSpacing: 80,
-                            padding: 20,
-                            defaultRenderer: 'dagre'
+                            curve: 'linear',
+                            nodeSpacing: 80,
+                            rankSpacing: 100,
+                            padding: 40,
+                            defaultRenderer: 'dagre',
+                            htmlLabels: true,
+                            useMaxWidth: true
                         }
                     });
 
@@ -179,7 +181,18 @@ export default function ProcedureView() {
                     <Grid item xs={12}>
                         <Paper sx={{ p: 2 }} elevation={2}>
                             <Typography variant="h6" gutterBottom>Flow Diagram</Typography>
-                            <Box ref={mermaidRef} sx={{ minHeight: '400px' }} />
+                            <Box 
+                                ref={mermaidRef} 
+                                sx={{ 
+                                    minHeight: '600px',
+                                    '& svg': {
+                                        maxWidth: '100%',
+                                        height: 'auto',
+                                        display: 'block',
+                                        margin: '0 auto'
+                                    }
+                                }} 
+                            />
                         </Paper>
                     </Grid>
 
@@ -241,34 +254,50 @@ function generateMermaidDiagram(data, selectedProcedure, selectedSubProcedure) {
     const nodes = data.nodes || { states: [], messages: [], procedures: [], entities: [] };
     const edges = data.edges || [];
 
-    // Create node definitions
-    const nodeDefinitions = [...nodes.states, ...nodes.entities, ...nodes.procedures]
-        .map(node => {
-            const id = node.replace(/[^a-zA-Z0-9]/g, '_');
-            const isState = node.includes('REGISTERED') || node.includes('DEREGISTERED');
-            const style = isState ? ':::stateNode' : ':::defaultNode';
-            return `    ${id}["${node}"]${style}`;
-        })
-        .join('\n');
+    // Create style definitions
+    const styles = `
+    %% Style definitions
+    classDef stateNode fill:#f4f4f4,stroke:#666,stroke-width:2px;
+    classDef messageNode fill:none,stroke:none,color:#ff0000;
+    classDef entityNode fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    `;
 
-    // Create edge definitions
-    const edgeDefinitions = edges
-        .map(edge => {
-            const from = edge.source.replace(/[^a-zA-Z0-9]/g, '_');
-            const to = edge.target.replace(/[^a-zA-Z0-9]/g, '_');
-            return `    ${from} --> ${to}`;
-        })
-        .join('\n');
+    // Process nodes and edges
+    const processedNodes = new Set();
+    const nodeDefinitions = [];
+    const edgeDefinitions = [];
+
+    // Add edges and ensure all connected nodes are included
+    edges.forEach(edge => {
+        const sourceId = edge.source.replace(/[^a-zA-Z0-9]/g, '_');
+        const targetId = edge.target.replace(/[^a-zA-Z0-9]/g, '_');
+        
+        // Add source node if not already added
+        if (!processedNodes.has(sourceId)) {
+            const isState = edge.source.includes('_');
+            const style = isState ? ':::stateNode' : ':::messageNode';
+            nodeDefinitions.push(`    ${sourceId}["${edge.source}"]${style}`);
+            processedNodes.add(sourceId);
+        }
+        
+        // Add target node if not already added
+        if (!processedNodes.has(targetId)) {
+            const isState = edge.target.includes('_');
+            const style = isState ? ':::stateNode' : ':::messageNode';
+            nodeDefinitions.push(`    ${targetId}["${edge.target}"]${style}`);
+            processedNodes.add(targetId);
+        }
+        
+        // Add edge with relationship as label
+        edgeDefinitions.push(`    ${sourceId} -->|${edge.relationship}| ${targetId}`);
+    });
 
     // Generate complete diagram
-    return `graph TD
-    %% Style definitions
-    classDef stateNode fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
-    classDef defaultNode fill:white,stroke:#666,stroke-width:1px
-
+    return `graph TB
+${styles}
     %% Node definitions
-${nodeDefinitions}
+${nodeDefinitions.join('\n')}
 
     %% Edge definitions
-${edgeDefinitions}`;
+${edgeDefinitions.join('\n')}`;
 } 
