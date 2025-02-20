@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.h1-style {
+    @apply text-lg font-semibold mb-4;
+}
+
+.h2-style {
+    @apply text-sm font-medium;
+}
+
+.p-style {
+    @apply text-xs;
+}
+
+.hover-style {
+    @apply cursor-pointer hover:bg-neutral-400 transition-colors;
+}
+
+.selected-style {
+    @apply bg-neutral-500;
+}
+
+.background1-style{
+    @apply bg-zinc-800;
+} 
+
+.background2-style{
+    @apply bg-gray-700;
+}
+
+.background3-style{
+    @apply bg-neutral-100;
+} 
+
+.border1-style{
+    @apply border-1 border-zinc-200 border-opacity-50
+}
+
