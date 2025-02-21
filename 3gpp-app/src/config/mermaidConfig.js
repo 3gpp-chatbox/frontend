@@ -12,13 +12,13 @@ const mermaidConfig = {
   },
   theme: 'base',
   themeVariables: {
-    'primaryColor': '#16537e',
-    'primaryTextColor': '#fff',
-    'primaryBorderColor': '#16537e',
-    'lineColor': '#F8B229',
-    'secondaryColor': '#3d85c6',
-    'tertiaryColor': '#fff'
+    primaryColor: '#ebebeb',
+    primaryTextColor: '#262626',
+    primaryBorderColor: '#262626',
+    lineColor: '#262626',
+    secondaryColor: '#ebebeb',
+    tertiaryColor: '#fff'
   }
-};
+}
 
-export default mermaidConfig; 
+export default mermaidConfig

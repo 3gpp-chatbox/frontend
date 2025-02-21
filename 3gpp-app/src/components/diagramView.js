@@ -11,9 +11,9 @@ const DiagramView = ({ diagramDefinition }) => {
   const [retryCount, setRetryCount] = useState(0)
   const [scale, setScale] = useState(1)
 
-   // Add zoom control functions
-   const zoomIn = () => {
-    setScale(prevScale => Math.min(prevScale + 0.2, 3)) // Max zoom: 3x
+  // Add zoom control functions
+  const zoomIn = () => {
+    setScale(prevScale => Math.min(prevScale + 0.2, 4)) // Max zoom: 3x
   }
 
   const zoomOut = () => {
@@ -68,36 +68,35 @@ const DiagramView = ({ diagramDefinition }) => {
   }, [diagramDefinition])
 
   return (
-    <div className='relative w-full h-full min-h-[400px] p-2'>
+    <div className='relative w-full h-full min-h-[100vx] p-2'>
       {/* Zoom controls */}
-      <div className='absolute top-2 right-2 flex gap-2 z-10'>
+      <div className='absolute top-2 right-2 flex gap-1 z-10'>
         <button
           onClick={zoomIn}
-          className='bg-gray-200 hover:bg-gray-300 p-2 rounded'
-          aria-label="Zoom in"
+          className='bg-gray-200 hover:bg-gray-300 p-1 rounded'
+          aria-label='Zoom in'
         >
-          <span className="text-xl">+</span>
+          <span className='text-base'>+</span>
         </button>
         <button
           onClick={zoomOut}
-          className='bg-gray-200 hover:bg-gray-300 p-2 rounded'
-          aria-label="Zoom out"
+          className='bg-gray-200 hover:bg-gray-300 p-1 rounded'
+          aria-label='Zoom out'
         >
-          <span className="text-xl">−</span>
+          <span className='text-base'>−</span>
         </button>
         <button
           onClick={resetZoom}
-          className='bg-gray-200 hover:bg-gray-300 p-2 rounded text-sm'
-          aria-label="Reset zoom"
+          className='bg-gray-200 hover:bg-gray-300 p-1 rounded text-xs'
+          aria-label='Reset zoom'
         >
           Reset
         </button>
       </div>
-
       {/* Diagram container with zoom transform */}
       <div className='w-full h-full flex items-center justify-center overflow-auto'>
-        <div 
-          style={{ 
+        <div
+          style={{
             transform: `scale(${scale})`,
             transformOrigin: 'center center',
             transition: 'transform 0.2s ease-out'
