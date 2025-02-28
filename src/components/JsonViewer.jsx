@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import procedureData from '../assets/mock.json';
 
 // Function to convert JSON to Mermaid format
 function convertJsonToMermaid(json) {
@@ -23,9 +22,9 @@ function convertJsonToMermaid(json) {
   return mermaidStr;
 }
 
-function JsonViewer({ onMermaidCodeChange }) {
+function JsonViewer({ data, onMermaidCodeChange }) {
   const [showMermaid, setShowMermaid] = useState(false);
-  const mermaidGraph = convertJsonToMermaid(procedureData); // Convert JSON to Mermaid graph
+  const mermaidGraph = convertJsonToMermaid(data); // Convert JSON to Mermaid graph
 
   useEffect(() => {
     // When showMermaid changes, pass the mermaid code to parent
@@ -41,14 +40,14 @@ function JsonViewer({ onMermaidCodeChange }) {
         </button>
       </div>
       <div className="content-area">
-        {procedureData ? (
+        {data ? (
           <pre className="json-content">
             {showMermaid ? (
               // Show the Mermaid graph code as text when "Show Mermaid" is clicked
               <code>{mermaidGraph}</code>
             ) : (
               // Show the raw JSON
-              JSON.stringify(procedureData, null, 2)
+              JSON.stringify(data, null, 2)
             )}
           </pre>
         ) : (

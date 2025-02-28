@@ -3,6 +3,7 @@ import ProcedureList from './components/ProcedureList'
 import FlowDiagram from './components/FlowDiagram'
 import JsonViewer from './components/JsonViewer'
 import Description from './components/Descriptions'
+import procedureData from './assets/mock.json'
 
 function App() {
   const [selectedProcedure, setSelectedProcedure] = useState(null)
@@ -29,7 +30,7 @@ function App() {
 
         <div className="panel col-3"> 
           <JsonViewer 
-            procedure={selectedProcedure} 
+            data={procedureData}
             onMermaidCodeChange={setMermaidCode}
           />
         </div>
