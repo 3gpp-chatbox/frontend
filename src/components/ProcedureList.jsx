@@ -1,44 +1,96 @@
 import { useState } from 'react';
 
+// Define the procedure data structure
+const procedures = [
+  {
+    id: 'registration',
+    label: 'Registration Flow',
+    type: 'registration',
+    subProcedures: [
+      {
+        id: 'initial-registration',
+        label: 'Initial Registration Flow',
+        type: 'initial-registration',
+        description: 'Initial UE registration procedure'
+      },
+      {
+        id: 'periodic-registration',
+        label: 'Periodic Registration Flow',
+        type: 'periodic-registration',
+        description: 'Periodic UE registration update procedure'
+      }
+    ]
+  }
+  // Add more main procedures here as needed
+];
+
 function ProcedureList({ selectedProcedure, onProcedureSelect }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedProcedures, setExpandedProcedures] = useState(new Set());
 
-  const registrationProcedures = [
-    { id: 'reg-1', name: "Initial Registration" },
-    { id: 'reg-2', name: "Deregistration" },
-    { id: 'reg-3', name: "Mobility Registration Update" },
-    { id: 'reg-4', name: "Periodic Registration Update" },
-  ];
+  const toggleProcedure = (procedureId) => {
+    const newExpanded = new Set(expandedProcedures);
+    if (newExpanded.has(procedureId)) {
+      newExpanded.delete(procedureId);
+    } else {
+      newExpanded.add(procedureId);
+    }
+    setExpandedProcedures(newExpanded);
+  };
 
-  return (
-    <div className="section-container">
-      <div className="section-header">Procedures</div>
-      <div className="content-area">
+  const renderProcedure = (procedure) => {
+    const isExpanded = expandedProcedures.has(procedure.id);
+    const isSelected = selectedProcedure?.id === procedure.id;
+    const hasSubProcedures = procedure.subProcedures?.length > 0;
+
+    return (
+      <div key={procedure.id}>
         <div 
-          className={`procedure-item main-procedure ${isExpanded ? 'expanded' : ''}`}
-          onClick={() => setIsExpanded(!isExpanded)}
+          className={`procedure-item main-procedure ${isExpanded ? 'expanded' : ''} ${isSelected ? 'active' : ''}`}
+          onClick={() => {
+            if (hasSubProcedures) {
+              toggleProcedure(procedure.id);
+            } else {
+              onProcedureSelect(procedure);
+            }
+          }}
         >
           <div className="procedure-header">
-            <span>Registration Procedure</span>
-            <span className="expand-icon">{isExpanded ? '−' : '+'}</span>
+            <span>{procedure.label}</span>
+            {hasSubProcedures && (
+              <span className="expand-icon">
+                {isExpanded ? '−' : '+'}
+              </span>
+            )}
           </div>
         </div>
         
-        {isExpanded && (
+        {isExpanded && hasSubProcedures && (
           <div className="sub-procedures">
-            {registrationProcedures.map((procedure) => (
+            {procedure.subProcedures.map(subProc => (
               <div
-                key={procedure.id}
-                className={`procedure-item sub-procedure ${
-                  selectedProcedure?.id === procedure.id ? 'active' : ''
-                }`}
-                onClick={() => onProcedureSelect(procedure)}
+                key={subProc.id}
+                className={`procedure-item sub-procedure ${selectedProcedure?.id === subProc.id ? 'active' : ''}`}
+                onClick={() => {
+                  console.log('Selected sub-procedure:', subProc);
+                  onProcedureSelect(subProc);
+                }}
               >
-                {procedure.name}
+                {subProc.label}
               </div>
             ))}
           </div>
         )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="section-container">
+      <div className="section-header">
+        <span>Procedures</span>
+      </div>
+      <div className="content-area">
+        {procedures.map(renderProcedure)}
       </div>
     </div>
   );

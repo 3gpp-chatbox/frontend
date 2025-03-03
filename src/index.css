@@ -149,21 +149,29 @@ button {
   border-radius: 8px;
   border: 1px solid var(--black-500);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  height: 600px; /* Add fixed height */
   display: flex;
   flex-direction: column;
 }
 
+/* Panel heights */
 .col-3 {
   grid-column: span 3;
+  height: 600px; /* Fixed height for procedures panel */
 }
 
-.col-6 {
-  grid-column: span 6;
+.col-9 {
+  grid-column: span 9;
+  height: 600px; /* Same height as procedures panel */
 }
 
 .col-12 {
   grid-column: span 12;
+}
+
+/* Special styling for flow diagram panel */
+.flow-diagram-panel {
+  height: 800px; /* Taller height for the flow diagram */
+  margin-top: -12px; /* Reduce gap above flow diagram */
 }
 
 .section-container {
@@ -295,22 +303,87 @@ button {
   cursor: grabbing;
 }
 
-.flow-diagram {
-  position: absolute;
-  transform-origin: center center;
-  transition: transform 0.1s ease-out;
-  will-change: transform;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.flow-diagram svg {
+.diagram-container svg {
   background: var(--black-800) !important;
   max-width: 100%;
   max-height: 100%;
+}
+
+/* Error handling styles */
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.error-content {
+  background: var(--black-700);
+  border: 2px solid var(--blue-700);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 80%;
+  color: #ef4444;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.error-message {
+  color: #ef4444;
+  padding: 20px;
+  text-align: center;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+/* Mermaid specific styles */
+.stateNode rect {
+  fill: var(--black-700) !important;
+  stroke: var(--blue-700) !important;
+  stroke-width: 2px !important;
+}
+
+.elementNode rect {
+  fill: var(--black-800) !important;
+  stroke: var(--blue-500) !important;
+  stroke-width: 2px !important;
+}
+
+.node text {
+  fill: var(--silver-100) !important;
+  font-size: 14px !important;
+}
+
+.edge path {
+  stroke-width: 3px !important;
+}
+
+.edge.transition path {
+  stroke: var(--blue-400) !important;
+  stroke-dasharray: 5 !important;
+}
+
+.edge.message path {
+  stroke: var(--blue-500) !important;
+}
+
+.edgeLabel {
+  background-color: var(--black-800) !important;
+  color: var(--silver-200) !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+}
+
+.edgeLabel foreignObject {
+  background-color: var(--black-800) !important;
+  color: var(--silver-200) !important;
 }
 
 .diagram-controls {
@@ -332,39 +405,6 @@ button {
 
 .diagram-controls button:hover {
   background-color: var(--blue-600);
-}
-
-/* Node styles */
-.node rect {
-  fill: var(--black-700) !important;
-  stroke: var(--blue-700) !important;
-  stroke-width: 2px !important;
-}
-
-.node text {
-  fill: var(--silver-100) !important;
-  font-size: 14px !important;
-}
-
-/* Edge styles */
-.edge path {
-  stroke-width: 3px !important;
-  stroke: var(--blue-400) !important;
-}
-
-.edge marker path {
-  fill: var(--blue-400) !important;
-  stroke: none !important;
-}
-
-.edgeLabel {
-  background-color: var(--black-800) !important;
-  color: var(--silver-200) !important;
-}
-
-.edgeLabel foreignObject {
-  background-color: var(--black-800) !important;
-  color: var(--silver-200) !important;
 }
 
 /* Scrollbar styling */
@@ -442,4 +482,28 @@ button {
 
 .main-procedure.expanded {
   background-color: var(--black-500);
+}
+
+/* Loading and Error States */
+.loading-state,
+.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 20px;
+  text-align: center;
+  color: var(--silver-200);
+  background: var(--black-800);
+  border-radius: 8px;
+}
+
+.loading-state {
+  color: var(--blue-400);
+}
+
+.error-state {
+  color: #ef4444;
+  flex-direction: column;
+  gap: 10px;
 }

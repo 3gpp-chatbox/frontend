@@ -1,26 +1,35 @@
+import React from 'react';
+
 function Description({ procedure }) {
+  if (!procedure) {
     return (
       <div className="section-container">
-        <div className="section-header">Description</div>
+        <div className="section-header">
+          <span>Description</span>
+        </div>
         <div className="content-area">
-          {procedure ? (
-            <>
-              <h3 className="description-title">{procedure.name}</h3>
-              <p className="description-text">
-                This procedure describes the interaction between network elements
-                during the {procedure.name.toLowerCase()}. The flow demonstrates
-                the message sequence and timing of events that occur during this
-                process.
-              </p>
-            </>
-          ) : (
-            <div className="placeholder-text">
-              Select a procedure to view its description
-            </div>
-          )}
+          <div className="placeholder-text">
+            Select a procedure to view its description
+          </div>
         </div>
       </div>
     );
   }
-  
-  export default Description;
+
+  const title = procedure.label || procedure.type || 'Unknown Procedure';
+  const description = procedure.description || 'No description available.';
+
+  return (
+    <div className="section-container">
+      <div className="section-header">
+        <span>Description</span>
+      </div>
+      <div className="content-area">
+        <h2 className="description-title">{title}</h2>
+        <p className="description-text">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+export default Description;
