@@ -5,6 +5,20 @@ import JsonViewer from './components/JsonViewer'
 import Description from './components/Descriptions'
 import procedureData from './assets/mock.json'
 
+// Function to convert JSON to Mermaid format
+function convertJsonToMermaid(json) {
+  if (!json || !json.nodes || !json.edges) return "";
+  
+  let mermaidStr = "graph TD\n";
+  json.nodes.forEach(node => {
+    mermaidStr += `  ${node.id}["${node.label || node.id}"]\n`;
+  });
+  json.edges.forEach(edge => {
+    mermaidStr += `  ${edge.source} -->|${edge.label}| ${edge.target}\n`;
+  });
+  return mermaidStr;
+}
+
 function App() {
   const [selectedProcedure, setSelectedProcedure] = useState(null)
   const [mermaidCode, setMermaidCode] = useState(null)

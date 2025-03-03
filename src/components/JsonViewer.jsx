@@ -24,12 +24,12 @@ function convertJsonToMermaid(json) {
 
 function JsonViewer({ data, onMermaidCodeChange }) {
   const [showMermaid, setShowMermaid] = useState(false);
-  const mermaidGraph = convertJsonToMermaid(data); // Convert JSON to Mermaid graph
+  const mermaidGraph = convertJsonToMermaid(data);
 
+  // Always pass the mermaid code to parent when component mounts or data changes
   useEffect(() => {
-    // When showMermaid changes, pass the mermaid code to parent
-    onMermaidCodeChange(showMermaid ? mermaidGraph : null);
-  }, [showMermaid, mermaidGraph, onMermaidCodeChange]);
+    onMermaidCodeChange(mermaidGraph);
+  }, [mermaidGraph, onMermaidCodeChange]);
 
   return (
     <div className="section-container">
