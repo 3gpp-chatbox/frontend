@@ -16,34 +16,13 @@ function escapeLabel(text) {
 function createNodeLabel(node) {
   const label = escapeLabel(node.label || node.id);
   const type = node.type || 'NetworkElement';
-  
-  // Include key properties in the label
-  const properties = node.properties || {};
-  const propsStr = Object.entries(properties)
-    .filter(([key]) => !['name', 'id'].includes(key))
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('<br/>');
-    
-  return propsStr ? 
-    `${label}<br/>[${type}]<br/>${propsStr}` : 
-    `${label}<br/>[${type}]`;
+  return `${label}<br/>[${type}]`;
 }
 
-// Function to create an edge label with properties
+// Function to create an edge label (simplified)
 function createEdgeLabel(edge) {
-  const label = escapeLabel(edge.label);
-  const type = edge.type || '';
-  
-  // Include key properties in the label
-  const properties = edge.properties || {};
-  const propsStr = Object.entries(properties)
-    .filter(([key]) => !['message'].includes(key))
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('<br/>');
-    
-  return propsStr ? 
-    `${label}<br/>${type}<br/>${propsStr}` : 
-    `${label}<br/>${type}`;
+  // Show the message property or label as the edge label
+  return edge.properties?.message || edge.label || edge.type || 'UNKNOWN';
 }
 
 // Function to convert JSON to Mermaid format
@@ -56,7 +35,7 @@ function convertJsonToMermaid(json) {
   
   let mermaidStr = "graph TD;\n";
   
-  // Add nodes with styling and all properties in the label
+  // Add nodes with styling
   json.nodes.forEach(node => {
     const nodeId = node.id;
     const nodeLabel = createNodeLabel(node);
@@ -67,8 +46,8 @@ function convertJsonToMermaid(json) {
     mermaidStr += `  ${nodeId}${nodeStyle}\n`;
   });
 
-  // Add edges with styling and all properties in the label
-  json.edges.forEach(edge => {
+  // Add edges with styling (simplified labels)
+  json.edges.forEach((edge, index) => {
     const edgeLabel = createEdgeLabel(edge);
     
     // Use different styles for different relationship types
@@ -81,10 +60,22 @@ function convertJsonToMermaid(json) {
       edgeStyle = '-.->'; // default style for other relationships
     }
 
+    // Add edge with click event
     mermaidStr += `  ${edge.source} ${edgeStyle}|"${edgeLabel}"| ${edge.target}\n`;
+    
+    // Store edge properties for click handling
+    const edgeData = {
+      type: edge.type,
+      label: edge.label,
+      properties: edge.properties || {},
+      source: edge.source,
+      target: edge.target
+    };
+    const edgeProps = JSON.stringify(edgeData).replace(/"/g, "'");
+    mermaidStr += `  click ${edge.source}${edge.target} callback "${edgeProps}"\n`;
   });
 
-  // Add class definitions with hover effects
+  // Add class definitions
   mermaidStr += `
   classDef stateNode fill:#2d2d2d,stroke:#1d4ed8,stroke-width:2px;
   classDef elementNode fill:#1a1a1a,stroke:#3b82f6,stroke-width:2px;

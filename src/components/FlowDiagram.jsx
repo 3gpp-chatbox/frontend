@@ -13,7 +13,7 @@ mermaid.initialize({
     edgeLengthFactor: 1,
     useMaxWidth: true,
     htmlLabels: true,
-    defaultRenderer: 'dagre',
+    defaultRenderer: 'dagre'
   },
   themeVariables: {
     primaryColor: '#3b82f6',
@@ -26,6 +26,84 @@ mermaid.initialize({
   }
 });
 
+// Add global click handler for Mermaid
+window.callback = function(edgeData) {
+  try {
+    console.log('Edge clicked:', edgeData);
+    const properties = JSON.parse(edgeData.replace(/'/g, '"'));
+    const event = window.event;
+    if (!event) {
+      console.error('No event object found');
+      return;
+    }
+    
+    const containerRect = document.querySelector('.diagram-container').getBoundingClientRect();
+    if (!containerRect) {
+      console.error('Could not find diagram container');
+      return;
+    }
+    
+    // Calculate position relative to the container
+    const x = event.clientX - containerRect.left;
+    const y = event.clientY - containerRect.top;
+    
+    console.log('Showing tooltip at:', { x, y }, 'with properties:', properties);
+    
+    // Dispatch a custom event that the React component can listen to
+    const customEvent = new CustomEvent('showTooltip', {
+      detail: {
+        properties,
+        position: { x, y }
+      }
+    });
+    document.dispatchEvent(customEvent);
+  } catch (error) {
+    console.error('Error handling edge click:', error);
+  }
+};
+
+// Tooltip component
+function Tooltip({ properties, position, onClose }) {
+  if (!properties) return null;
+
+  return (
+    <div 
+      className="edge-tooltip"
+      style={{
+        position: 'absolute',
+        left: position.x,
+        top: position.y,
+      }}
+    >
+      <div className="tooltip-header">
+        <span>Edge Details</span>
+        <button onClick={onClose}>&times;</button>
+      </div>
+      <div className="tooltip-content">
+        <div className="tooltip-row">
+          <span className="tooltip-key">Type:</span>
+          <span className="tooltip-value">{properties.type}</span>
+        </div>
+        {properties.label && (
+          <div className="tooltip-row">
+            <span className="tooltip-key">Label:</span>
+            <span className="tooltip-value">{properties.label}</span>
+          </div>
+        )}
+        <div className="tooltip-section">
+          <div className="tooltip-section-header">Properties:</div>
+          {Object.entries(properties.properties || {}).map(([key, value]) => (
+            <div key={key} className="tooltip-row tooltip-property">
+              <span className="tooltip-key">{key}:</span>
+              <span className="tooltip-value">{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FlowDiagram({ mermaidCode }) {
   const mermaidRef = useRef(null);
   const containerRef = useRef(null);
@@ -35,6 +113,7 @@ function FlowDiagram({ mermaidCode }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
+  const [tooltip, setTooltip] = useState({ show: false, properties: null, position: { x: 0, y: 0 } });
 
   const renderDiagram = async () => {
     if (!mermaidRef.current || !mermaidCode) {
@@ -186,6 +265,21 @@ function FlowDiagram({ mermaidCode }) {
     setIsDragging(false);
   };
 
+  useEffect(() => {
+    // Add event listener for tooltip
+    const handleTooltip = (event) => {
+      const { properties, position } = event.detail;
+      setTooltip({
+        show: true,
+        properties,
+        position
+      });
+    };
+
+    document.addEventListener('showTooltip', handleTooltip);
+    return () => document.removeEventListener('showTooltip', handleTooltip);
+  }, []);
+
   return (
     <div className="section-container">
       <div className="section-header">
@@ -202,6 +296,12 @@ function FlowDiagram({ mermaidCode }) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onClick={(e) => {
+          // Close tooltip when clicking outside
+          if (e.target === containerRef.current) {
+            setTooltip({ show: false, properties: null, position: { x: 0, y: 0 } });
+          }
+        }}
       >
         <div 
           ref={mermaidRef}
@@ -214,6 +314,13 @@ function FlowDiagram({ mermaidCode }) {
             cursor: isDragging ? 'grabbing' : 'grab'
           }}
         />
+        {tooltip.show && (
+          <Tooltip 
+            properties={tooltip.properties}
+            position={tooltip.position}
+            onClose={() => setTooltip({ show: false, properties: null, position: { x: 0, y: 0 } })}
+          />
+        )}
         {error && (
           <div className="error-overlay">
             <div className="error-content">
