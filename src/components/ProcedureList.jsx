@@ -8,13 +8,13 @@ const procedures = [
     type: 'registration',
     subProcedures: [
       {
-        id: 'initial-registration',
+        id: 'Initial_Registration',
         label: 'Initial Registration Flow',
         type: 'initial-registration',
         description: 'Initial UE registration procedure'
       },
       {
-        id: 'periodic-registration',
+        id: 'Periodic_Registration',
         label: 'Periodic Registration Flow',
         type: 'periodic-registration',
         description: 'Periodic UE registration update procedure'
@@ -71,7 +71,7 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
                 key={subProc.id}
                 className={`procedure-item sub-procedure ${selectedProcedure?.id === subProc.id ? 'active' : ''}`}
                 onClick={() => {
-                  console.log('Selected sub-procedure:', subProc);
+                  console.log('Selected sub-procedure:', subProc.id);
                   onProcedureSelect(subProc);
                 }}
               >

@@ -92,7 +92,7 @@ function JsonViewer({ data, onMermaidCodeChange }) {
   return (
     <div className="section-container">
       <div className="section-header">
-        <span>JSON View</span>
+        <span>Code View</span>
         <button className="toggle-button" onClick={() => setShowMermaid(!showMermaid)}>
           {showMermaid ? 'Show JSON' : 'Show Mermaid'}
         </button>

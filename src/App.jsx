@@ -24,8 +24,9 @@ function App() {
       setError(null);
 
       try {
-        console.log('Fetching data for procedure:', selectedProcedure);
-        const url = `http://localhost:5000/fetch-jsondata/all`;
+        console.log('Selected procedure:', selectedProcedure);
+        console.log('Procedure ID being sent:', selectedProcedure.id);
+        const url = `http://localhost:5000/fetch-jsondata/${selectedProcedure.id}`;
         console.log('Fetching from URL:', url);
 
         const response = await fetch(url);
