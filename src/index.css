@@ -515,12 +515,11 @@ button {
   border: 2px solid var(--blue-700);
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  min-width: 250px;
-  max-width: 350px;
-  z-index: 1000;
+  min-width: 300px;
+  max-width: 400px;
   pointer-events: auto;
-  transform: translate(-50%, -120%);
   margin-top: -10px;
+  z-index: 1000;
 }
 
 .tooltip-header {
@@ -555,7 +554,7 @@ button {
 
 .tooltip-content {
   padding: 16px;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -597,7 +596,21 @@ button {
   font-size: 13px;
 }
 
-.tooltip-property {
-  padding-left: 8px;
-  margin-bottom: 8px;
+.tooltip-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tooltip-list-item {
+  color: var(--silver-200);
+  padding: 4px 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.tooltip-list-item:before {
+  content: "•";
+  color: var(--blue-400);
+  margin-right: 8px;
 }

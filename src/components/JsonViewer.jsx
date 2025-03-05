@@ -4,11 +4,10 @@ import { useState, useEffect } from 'react';
 function escapeLabel(text) {
   if (!text) return '';
   return text
-    .replace(/[#]/g, '')
-    .replace(/[()]/g, '')
-    .replace(/[,]/g, '')
-    .replace(/["]/g, "'")  // Replace double quotes with single quotes
-    .replace(/\s+/g, ' ')
+    .replace(/[[\](){}|]/g, '') // Remove brackets, parentheses, and pipes
+    .replace(/["]/g, '')       // Remove quotes
+    .replace(/[,]/g, '')       // Remove commas
+    .replace(/\s+/g, ' ')      // Normalize whitespace
     .trim();
 }
 
@@ -16,13 +15,22 @@ function escapeLabel(text) {
 function createNodeLabel(node) {
   const label = escapeLabel(node.label || node.id);
   const type = node.type || 'NetworkElement';
-  return `${label}<br/>[${type}]`;
+  const description = node.description 
+    ? `\n${escapeLabel(node.description)}` 
+    : '';
+  return `${label}\n(${type})${description}`;
 }
 
-// Function to create an edge label (simplified)
+// Function to create an edge label with details
 function createEdgeLabel(edge) {
-  // Show the message property or label as the edge label
-  return edge.properties?.message || edge.label || edge.type || 'UNKNOWN';
+  const seqNum = edge.properties?.sequence_number?.low || '';
+  const message = escapeLabel(edge.properties?.message || edge.label || edge.type || 'UNKNOWN');
+  const description = edge.properties?.description ? `\n${escapeLabel(edge.properties.description)}` : '';
+  const trigger = edge.properties?.trigger ? `\nTrigger: ${edge.properties.trigger}` : '';
+  const timing = edge.properties?.timing ? `\nTiming: ${edge.properties.timing}` : '';
+  const conditions = edge.properties?.conditions ? `\nConditions: ${edge.properties.conditions}` : '';
+  
+  return `[${seqNum}] ${message}${description}${trigger}${timing}${conditions}`;
 }
 
 // Function to convert JSON to Mermaid format
@@ -33,54 +41,37 @@ function convertJsonToMermaid(json) {
     return "";
   }
   
-  let mermaidStr = "graph TD;\n";
+  // Start with style definitions and direction
+  let mermaidStr = `graph TB
+%% Style definitions
+classDef default fill:#1a1a1a,stroke:#3b82f6,stroke-width:2px
+linkStyle default stroke:#3b82f6,stroke-width:2px\n\n`;
   
-  // Add nodes with styling
-  json.nodes.forEach(node => {
+  // Sort edges by sequence number
+  const sortedEdges = [...json.edges].sort((a, b) => {
+    const seqA = a.properties?.sequence_number?.low || 0;
+    const seqB = b.properties?.sequence_number?.low || 0;
+    return seqA - seqB;
+  });
+
+  // Remove duplicate nodes
+  const uniqueNodes = Array.from(new Map(json.nodes.map(node => [node.id, node])).values());
+  
+  // Add nodes
+  uniqueNodes.forEach(node => {
     const nodeId = node.id;
     const nodeLabel = createNodeLabel(node);
-    const nodeStyle = node.type === 'State' ? 
-      `["${nodeLabel}"]:::stateNode` : 
-      `["${nodeLabel}"]:::elementNode`;
-    
-    mermaidStr += `  ${nodeId}${nodeStyle}\n`;
+    mermaidStr += `  ${nodeId}["${nodeLabel}"]\n`;
   });
 
-  // Add edges with styling (simplified labels)
-  json.edges.forEach((edge, index) => {
+  // Add a blank line between nodes and edges
+  mermaidStr += '\n';
+
+  // Add edges with sequence numbers and labels
+  sortedEdges.forEach(edge => {
     const edgeLabel = createEdgeLabel(edge);
-    
-    // Use different styles for different relationship types
-    let edgeStyle;
-    if (edge.type === 'TRANSITIONS_TO') {
-      edgeStyle = '-->';
-    } else if (edge.type === 'SENDS_MESSAGE') {
-      edgeStyle = '==>';
-    } else {
-      edgeStyle = '-.->'; // default style for other relationships
-    }
-
-    // Add edge with click event
-    mermaidStr += `  ${edge.source} ${edgeStyle}|"${edgeLabel}"| ${edge.target}\n`;
-    
-    // Store edge properties for click handling
-    const edgeData = {
-      type: edge.type,
-      label: edge.label,
-      properties: edge.properties || {},
-      source: edge.source,
-      target: edge.target
-    };
-    const edgeProps = JSON.stringify(edgeData).replace(/"/g, "'");
-    mermaidStr += `  click ${edge.source}${edge.target} callback "${edgeProps}"\n`;
+    mermaidStr += `  ${edge.source} -- "${edgeLabel}" --> ${edge.target}\n`;
   });
-
-  // Add class definitions
-  mermaidStr += `
-  classDef stateNode fill:#2d2d2d,stroke:#1d4ed8,stroke-width:2px;
-  classDef elementNode fill:#1a1a1a,stroke:#3b82f6,stroke-width:2px;
-  linkStyle default stroke:#3b82f6,stroke-width:2px;
-  `;
 
   console.log('JsonViewer: Generated Mermaid string:', mermaidStr);
   return mermaidStr;
