@@ -1,9 +1,9 @@
-// Converter 1: Basic flowchart
+// Converter 1: 
 export const converter1 = (jsonData) => {
   
 };
 
-// Converter 2: Advanced flowchart with details (Shehara)
+// Converter 2: (Shehara)
 export const converter2 = (jsonData) => {
   if (!jsonData || !jsonData.nodes || !jsonData.edges) {
     console.error('Invalid graph data structure');
@@ -41,7 +41,7 @@ export const converter2 = (jsonData) => {
   return mermaidCode;
 };
 
-// Converter 3: Sequence diagram style
+// Converter 3: 
 export const converter3 = (jsonData) => {
  
 };
