@@ -91,17 +91,17 @@ button {
 
 .container {
   min-height: 100vh;
-  padding: 24px;
+  /* padding: 24px; */
   position: relative;
 }
 
 .header {
-  position: fixed;
+  /* position: fixed; */
   top: 24px;
   left: 24px;
   right: 24px;
   z-index: 100;
-  margin-bottom: 24px;
+  /* margin-bottom: 24px; */
   background-color: var(--black-600);
   padding: 24px;
   border-radius: 8px;
@@ -112,7 +112,7 @@ button {
 
 /* Add a background overlay to prevent content showing through */
 .header::before {
-  content: '';
+  /* content: '';
   position: fixed;
   top: 0;
   left: 24px;
@@ -120,7 +120,7 @@ button {
   height: calc(24px + 72px); /* top padding + header height */
   background-color: var(--black-600);
   z-index: -1;
-  border-radius: 8px;
+  border-radius: 8px; */
 }
 
 .header h1 {
@@ -141,7 +141,7 @@ button {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 24px;
-  padding-top: 160px; /* Increased padding to ensure content is below header */
+  padding-top: 64px; Increased padding to ensure content is below header
 }
 
 .panel {
