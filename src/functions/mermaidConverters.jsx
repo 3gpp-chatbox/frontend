@@ -1,0 +1,59 @@
+// Converter 1: Basic flowchart
+export const converter1 = (jsonData) => {
+  
+};
+
+// Converter 2: Advanced flowchart with details (Shehara)
+export const converter2 = (jsonData) => {
+  if (!jsonData || !jsonData.nodes || !jsonData.edges) {
+    console.error('Invalid graph data structure');
+    return '';
+  }
+
+  let mermaidCode = 'graph TD\n';
+
+  // Style definitions
+  mermaidCode += '    %% Method 2 styles\n';
+  mermaidCode += '    classDef state fill:#e1f5fe,stroke:#01579b,stroke-width:2px\n';
+  mermaidCode += '    classDef trigger fill:#fff3e0,stroke:#ff6f00,stroke-width:2px\n';
+  mermaidCode += '    classDef action fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px\n';
+  mermaidCode += '    classDef message fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px\n';
+
+  // Process nodes with detailed labels
+  jsonData.nodes.forEach(node => {
+    const nodeId = node.id.replace(/\s+/g, '_');
+    const nodeLabel = node.label.replace(/"/g, "'");
+    const properties = node.properties ? `<br>${Object.entries(node.properties).map(([k, v]) => `${k}: ${v}`).join('<br>')}` : '';
+    
+    mermaidCode += `    ${nodeId}["${nodeLabel}${properties}"]\n`;
+    mermaidCode += `    class ${nodeId} ${node.type.toLowerCase()}\n`;
+  });
+
+  // Process edges with labels
+  jsonData.edges.forEach(edge => {
+    const sourceId = edge.source.replace(/\s+/g, '_');
+    const targetId = edge.target.replace(/\s+/g, '_');
+    const label = edge.label ? `|${edge.label}|` : '';
+    
+    mermaidCode += `    ${sourceId} -->${label} ${targetId}\n`;
+  });
+
+  return mermaidCode;
+};
+
+// Converter 3: Sequence diagram style
+export const converter3 = (jsonData) => {
+ 
+};
+
+// Mapper function to select converter
+export const getMermaidConverter = (resultSet) => {
+  const converterMap = {
+    'method_1': converter1,
+    'method_2': converter2,
+    'method_3': converter3
+  };
+
+  console.log(`Using converter for result set: ${resultSet}`);
+  return converterMap[resultSet] || converter1;
+}; 

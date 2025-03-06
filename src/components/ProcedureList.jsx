@@ -26,6 +26,21 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
     setExpandedResults(newExpanded);
   };
 
+  const handleProcedureClick = (resultSet, procedure) => {
+    // Map the result set name to match the converter naming
+    const methodMap = {
+      'Result Set 1': 'method_1',
+      'Result Set 2': 'method_2',
+      'Result Set 3': 'method_3',
+    };
+
+    onProcedureSelect({
+      resultSet: methodMap[resultSet] || resultSet, // Use mapped name or original if no mapping
+      procedureName: procedure,
+      id: procedure
+    });
+  };
+
   return (
     <div className="section-container">
       <div className="section-header">
@@ -56,7 +71,7 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
                       className={`procedure-item sub-procedure ${
                         selectedProcedure?.id === procedure ? "active" : ""
                       }`}
-                      onClick={() => onProcedureSelect({ id: procedure, label: procedure, resultSet })}
+                      onClick={() => handleProcedureClick(resultSet, procedure)}
                     >
                       {procedure}
                     </div>
