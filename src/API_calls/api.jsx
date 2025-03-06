@@ -16,7 +16,7 @@ export const fetchResultSets = async () => {
 // Fetch all available graphs for a specific result set (results for method_2: periodic_registration, initial_registration)
 export const fetchGraphs = async (resultSet) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/graphs/${resultSet}`);
+    const response = await axios.get(`${API_BASE_URL}/graphs/result-sets/${resultSet}`);
     return response.data.data;
   } catch (error) {
     console.error(`Error fetching graphs for ${resultSet}:`, error);
@@ -28,7 +28,7 @@ export const fetchGraphs = async (resultSet) => {
 export const fetchGraphData = async (resultSet, procedureName) => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/graphs/${resultSet}/${procedureName}`
+      `${API_BASE_URL}/graphs/result-sets/${resultSet}/${procedureName}`
     );
     return response.data.data;
   } catch (error) {
