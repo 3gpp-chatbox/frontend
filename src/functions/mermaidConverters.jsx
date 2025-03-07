@@ -8,8 +8,10 @@ export const converter1 = jsonData => {
 
   // Style definitions
   mermaidCode += "    %% Method 1 styles\n"
-  mermaidCode += "    classDef state fill:#f9f,stroke:#333,stroke-width:2px\n"
-  mermaidCode += "    classDef event fill:#bbf,stroke:#333,stroke-width:2px\n"
+  mermaidCode +=
+    "    classDef state fill:#f9f,stroke:#333,stroke-width:2px,color:#000\n"
+  mermaidCode +=
+    "    classDef event fill:#bbf,stroke:#333,stroke-width:2px,color:#000\n\n"
 
   // Process nodes with detailed labels
   jsonData.nodes.forEach(node => {
@@ -27,8 +29,22 @@ export const converter1 = jsonData => {
           .join("<br>")}`
       : ""
 
-    mermaidCode += `    ${nodeId}["${nodeLabel}${properties}"]\n`
-    mermaidCode += `    class ${nodeId} ${node.type.toLowerCase()}\n`
+    // Use circular shape for state nodes, regular shape for others
+    const shape = node.type.toLowerCase() === "event" ? "((" : "["
+    const closeShape = node.type.toLowerCase() === "event" ? "))" : "]"
+
+    const body = `**${node.type.toUpperCase()}**<br>${node.entity}: ${
+      node.properties.eventType
+    }<br>${nodeLabel}`
+
+    const body_2 = `**${node.type.toUpperCase()}**<br>${node.entity}: ${
+      node.properties.state
+    }<br>`
+
+    node.type.toLowerCase() === "event"
+      ? (mermaidCode += `    ${nodeId}${shape}"${body}"${closeShape}:::${node.type.toLowerCase()}\n`)
+      : (mermaidCode += `    ${nodeId}${shape}"${body_2}"${closeShape}:::${node.type.toLowerCase()}\n`)
+
   })
 
   // Process edges with labels
