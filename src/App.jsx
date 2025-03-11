@@ -26,7 +26,7 @@ function App() {
       try {
         console.log('Selected procedure:', selectedProcedure);
         console.log('Procedure ID being sent:', selectedProcedure.id);
-        const url = `http://localhost:5000/fetch-jsondata/${selectedProcedure.id}`;
+        const url = `http://localhost:8000/periodic-registration/${selectedProcedure.id}`;
         console.log('Fetching from URL:', url);
 
         const response = await fetch(url);
@@ -52,16 +52,27 @@ function App() {
         const data = await response.json();
         console.log('Received data:', data);
         
-        if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) {
-          console.error('Invalid data structure:', data);
-          throw new Error('Invalid data structure received from server. Expected {nodes: [], edges: []}');
+        // Check if data exists and has the expected structure
+        if (!data) {
+          throw new Error('No data received from server');
+        }
+
+        // If data is wrapped in a response object, extract it
+        const flowData = data.response || data;
+        console.log('Flow data:', flowData);
+
+        // Validate the flow data structure
+        if (!flowData.nodes || !flowData.edges || 
+            !Array.isArray(flowData.nodes) || !Array.isArray(flowData.edges)) {
+          console.error('Invalid data structure:', flowData);
+          throw new Error('Invalid data structure received from server');
         }
         
-        if (data.nodes.length === 0 || data.edges.length === 0) {
-          throw new Error('No flow data available');
+        if (flowData.nodes.length === 0 && flowData.edges.length === 0) {
+          throw new Error('No flow data available for this trigger');
         }
         
-        setProcedureData(data);
+        setProcedureData(flowData);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError(error.message);
@@ -78,7 +89,7 @@ function App() {
   // Function to convert JSON to Mermaid format
   function convertJsonToMermaid(json) {
     if (!json || !json.nodes || !json.edges) return "";
-    
+    //diagram direction is left to right
     let mermaidStr = "graph TD\n";
     json.nodes.forEach(node => {
       mermaidStr += `  ${node.id}["${node.label || node.id}"]\n`;
@@ -123,7 +134,7 @@ function App() {
         </div>
 
         {/* Bottom row: Flow Diagram */}
-        <div className="panel col-12 flow-diagram-panel">
+        <div className="panel col-12 flow-diagram-panel" style={{ height: '600px', minWidth: '1200px', overflowX: 'auto' }}>
           {isLoading ? (
             <div className="loading-state">Loading diagram...</div>
           ) : error ? (

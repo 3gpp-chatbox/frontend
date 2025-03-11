@@ -6,24 +6,61 @@ mermaid.initialize({
   startOnLoad: true,
   theme: 'dark',
   securityLevel: 'loose',
-  flowchart: {
-    curve: 'basis',
-    nodeSpacing: 150,    // Increased spacing for better readability
-    rankSpacing: 150,    // Increased spacing for better readability
-    padding: 50,
-    useMaxWidth: true,
-    htmlLabels: true,
-    defaultRenderer: 'dagre',
-    wrap: true
+  logLevel: 1,
+  sequence: {
+    diagramMarginX: 150,
+    diagramMarginY: 10,
+    actorMargin: 200,
+    width: 200,
+    height: 100,
+    boxMargin: 20,
+    boxTextMargin: 10,
+    noteMargin: 15,
+    messageMargin: 60,
+    mirrorActors: false,
+    bottomMarginAdj: 20,
+    useMaxWidth: false,
+    rightAngles: true,
+    showSequenceNumbers: true,
+    actorFontSize: 32,
+    actorFontFamily: '"Segoe UI", "Roboto", sans-serif',
+    actorFontWeight: 'bold',
+    noteFontSize: 28,
+    noteFontFamily: '"Segoe UI", "Roboto", sans-serif',
+    messageFontSize: 28,
+    messageFontFamily: '"Segoe UI", "Roboto", sans-serif',
+    messageFontWeight: 'bold',
+    wrap: true,
+    maxMessageWidth: 400,
+    noteAlign: 'left',
+    layoutDirection: 'LR',
+    actorPosition: 'left',
+    displayMode: 'compact',
+    messageAlign: 'left'
   },
   themeVariables: {
     primaryColor: '#3b82f6',
-    primaryTextColor: '#f4f4f5',
-    primaryBorderColor: '#1d4ed8',
-    lineColor: '#60a5fa',
-    secondaryColor: '#1d4ed8',
-    tertiaryColor: '#27272a',
-    fontSize: '14px'
+    primaryTextColor: '#ffffff',
+    primaryBorderColor: '#3b82f6',
+    lineColor: '#3b82f6',
+    secondaryColor: '#1e3a8a',
+    tertiaryColor: '#ffffff',
+    actorBorder: '#3b82f6',
+    actorBackground: '#1e3a8a',
+    actorTextColor: '#ffffff',
+    actorLineColor: '#3b82f6',
+    signalColor: '#3b82f6',
+    signalTextColor: '#ffffff',
+    labelBoxBkgColor: '#1e3a8a',
+    labelBoxBorderColor: '#3b82f6',
+    labelTextColor: '#ffffff',
+    loopTextColor: '#ffffff',
+    noteBorderColor: '#3b82f6',
+    noteBkgColor: '#1e3a8a',
+    noteTextColor: '#ffffff',
+    activationBorderColor: '#3b82f6',
+    activationBkgColor: '#1e3a8a',
+    sequenceNumberColor: '#ffffff'
   }
 });
 
@@ -105,7 +142,7 @@ function FlowDiagram({ mermaidCode }) {
 
     const scaleX = (containerRect.width * 0.9) / svgRect.width;
     const scaleY = (containerRect.height * 0.9) / svgRect.height;
-    const newScale = Math.min(scaleX, scaleY, 1);
+    const newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.5), 2);
 
     const centerX = (containerRect.width - (svgRect.width * newScale)) / 2;
     const centerY = (containerRect.height - (svgRect.height * newScale)) / 2;
@@ -122,7 +159,7 @@ function FlowDiagram({ mermaidCode }) {
     const handleWheel = (e) => {
       e.preventDefault();
       const delta = e.deltaY * -0.01;
-      const newScale = Math.min(Math.max(scale + delta, 0.5), 3);
+      const newScale = Math.min(Math.max(scale + delta, 0.5), 10);
       setScale(newScale);
     };
 

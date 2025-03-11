@@ -54,67 +54,43 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
   const [error, setError] = useState(null);
 
   // Function to fetch trigger data
-  const fetchTriggerData = async (triggerName) => {
+  const fetchTriggerData = async (trigger) => {
     try {
       setLoading(true);
       setError(null);
-      setTriggerData(null); // Reset trigger data before new fetch
+      setTriggerData(null);
       
-      console.log("Fetching data for trigger:", triggerName);
+      const triggerId = trigger.id.replace(/ /g, '_');
+      console.log("Fetching data for trigger:", triggerId);
       
-      // Use specific endpoint for Change in RAT
-      let endpoint;
-      if (triggerName === 'Change_in_RAT') {
-        endpoint = 'http://localhost:3000/periodic-registration/change-in-rat-path';
-      } else {
-        endpoint = `http://localhost:3000/periodic-registration/${encodeURIComponent(triggerName)}`;
-      }
-      
+      const endpoint = `http://localhost:8000/periodic-registration/${triggerId}`;
       console.log("Making request to:", endpoint);
-      const response = await fetch(endpoint, {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
       
-      console.log("Response status:", response.status);
-      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      
+      console.log("Raw API response:", data);  // Debug log
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.log("Error response text:", errorText);
-        
-        let errorMessage;
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error || `HTTP error! status: ${response.status}`;
-        } catch (e) {
-          errorMessage = `Server error: ${errorText}`;
-        }
-        throw new Error(errorMessage);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log("Received data:", JSON.stringify(data, null, 2));
-      
       if (data.status === 'success' && data.data) {
-        console.log("Setting trigger data...");
+        console.log("Setting trigger data:", data.data);  // Debug log
         setTriggerData(data.data);
         
-        // Pass the data to parent component if needed
         if (onProcedureSelect) {
-          console.log("Calling onProcedureSelect with data");
-          onProcedureSelect({
+          const processedData = {
             ...data.data,
-            id: triggerName,
+            id: trigger.id,
             type: 'periodic-registration-trigger',
-            label: triggerName,
-            data: data.data // Include the full data for JsonViewer
-          });
+            label: trigger.label,
+          };
+          console.log("Passing to parent:", processedData);  // Debug log
+          onProcedureSelect(processedData);
         }
       } else {
-        console.log("Invalid data structure received:", data);
-        throw new Error(data.error || 'Invalid data received');
+        throw new Error('Invalid data received');
       }
       
     } catch (err) {
@@ -136,9 +112,32 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
     setExpandedProcedures(newExpanded);
   };
 
-  const handleTriggerClick = (trigger) => {
+  const handleTriggerClick = async (trigger) => {
     console.log("Trigger clicked:", trigger);
-    fetchTriggerData(trigger.id);
+    try {
+      setLoading(true);
+      setError(null);
+      setTriggerData(null);
+
+      // Format trigger ID for the API call
+      const triggerId = trigger.id.replace(/ /g, '_');
+      console.log("Formatted trigger ID:", triggerId);
+
+      // Call onProcedureSelect with the trigger data
+      if (onProcedureSelect) {
+        const processedData = {
+          ...trigger,
+          type: 'periodic-registration-trigger'
+        };
+        console.log("Passing to parent:", processedData);
+        onProcedureSelect(processedData);
+      }
+    } catch (err) {
+      console.error('Error handling trigger click:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderProcedure = (procedure) => {

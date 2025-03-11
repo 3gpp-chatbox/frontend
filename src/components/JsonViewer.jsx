@@ -36,57 +36,110 @@ function createEdgeLabel(edge) {
 // Function to convert JSON to Mermaid format
 function convertJsonToMermaid(json) {
   console.log('JsonViewer: Starting JSON to Mermaid conversion with:', json);
-  if (!json || !json.nodes || !json.edges) {
+  if (!json || !json.edges || !Array.isArray(json.edges)) {
     console.log('JsonViewer: Invalid JSON structure');
     return "";
   }
   
-  // Start with style definitions and direction
-  let mermaidStr = `graph TB
-%% Style definitions
-classDef default fill:#1a1a1a,stroke:#3b82f6,stroke-width:2px
-linkStyle default stroke:#3b82f6,stroke-width:2px\n\n`;
+  // Debug log for edges count
+  console.log('JsonViewer: Number of edges in input:', json.edges.length);
   
-  // Sort edges by sequence number
-  const sortedEdges = [...json.edges].sort((a, b) => {
-    const seqA = a.properties?.sequence_number?.low || 0;
-    const seqB = b.properties?.sequence_number?.low || 0;
+  // Store initialization settings separately
+  const initSettings = `%%{init: { 
+    'theme': 'dark',
+    'themeVariables': {
+      'actorBorder': '#3b82f6',
+      'actorBackground': '#1e3a8a',
+      'actorTextColor': '#ffffff',
+      'signalColor': '#3b82f6',
+      'signalTextColor': '#ffffff',
+      'labelTextColor': '#ffffff',
+      'noteBkgColor': '#1e3a8a',
+      'noteTextColor': '#ffffff',
+      'activationBorderColor': '#3b82f6',
+      'activationBkgColor': '#1e3a8a',
+      'sequenceNumberColor': '#ffffff'
+    },
+    'sequence': { 
+      'actorMargin': 150,
+      'bottomMarginAdj': 20,
+      'boxMargin': 20,
+      'boxTextMargin': 10,
+      'noteMargin': 15,
+      'messageMargin': 60,
+      'mirrorActors': false,
+      'actorFontSize': 48,
+      'actorFontWeight': 'bold',
+      'messageFontSize': 40,
+      'messageFontWeight': 'bold',
+      'noteFontSize': 40,
+      'noteAlign': 'left',
+      'wrap': true,
+      'useMaxWidth': false,
+      'rightAngles': true,
+      'showSequenceNumbers': true,
+      'actorFontFamily': '"Segoe UI", "Roboto", sans-serif',
+      'noteFontFamily': '"Segoe UI", "Roboto", sans-serif',
+      'messageFontFamily': '"Segoe UI", "Roboto", sans-serif',
+      'width': 150,
+      'maxMessageWidth': 600,
+      'diagramMarginX': 150,
+      'diagramMarginY': 10,
+      'layoutDirection': 'LR',
+      'actorPosition': 'left',
+      'displayMode': 'compact',
+      'messageAlign': 'left'
+    }
+  }}%%\n%%{config: { "sequence": { "wrap": true, "width": 600, "rightAngles": true } } }%%\n`;
+  
+  // Start with just the sequence diagram content
+  let mermaidStr = `sequenceDiagram
+    participant UE as User Equipment
+    participant AMF as Access and Mobility Management Function
+    
+    autonumber\n`;
+  
+  // Sort edges by sequence number if available and remove duplicates
+  const uniqueEdges = [...new Map(json.edges.map(edge => 
+    [edge.label, edge]
+  )).values()];
+  
+  console.log('JsonViewer: Number of unique edges after deduplication:', uniqueEdges.length);
+  
+  const sortedEdges = uniqueEdges.sort((a, b) => {
+    const seqA = a.step_number || 0;
+    const seqB = b.step_number || 0;
     return seqA - seqB;
   });
 
-  // Remove duplicate nodes
-  const uniqueNodes = Array.from(new Map(json.nodes.map(node => [node.id, node])).values());
-  
-  // Add nodes
-  uniqueNodes.forEach(node => {
-    const nodeId = node.id;
-    const nodeLabel = createNodeLabel(node);
-    mermaidStr += `  ${nodeId}["${nodeLabel}"]\n`;
-  });
-
-  // Add a blank line between nodes and edges
-  mermaidStr += '\n';
-
-  // Add edges with sequence numbers and labels
+  // Add edges as sequence diagram arrows
   sortedEdges.forEach(edge => {
-    const edgeLabel = createEdgeLabel(edge);
-    mermaidStr += `  ${edge.source} -- "${edgeLabel}" --> ${edge.target}\n`;
+    const message = edge.label || 'Message';
+    mermaidStr += `    ${edge.source}->>${edge.target}: ${message}\n`;
   });
 
-  console.log('JsonViewer: Generated Mermaid string:', mermaidStr);
-  return mermaidStr;
+  console.log('JsonViewer: Final Mermaid string line count:', mermaidStr.split('\n').length - 4); // Subtract header lines
+  return { initSettings, mermaidStr };
 }
 
 function JsonViewer({ data, onMermaidCodeChange }) {
   const [showMermaid, setShowMermaid] = useState(false);
-  const [mermaidGraph, setMermaidGraph] = useState('');
+  const [mermaidGraph, setMermaidGraph] = useState({ initSettings: '', mermaidStr: '' });
   
   useEffect(() => {
-    console.log('JsonViewer: Data changed:', data);
-    const mermaidGraph = convertJsonToMermaid(data);
-    setMermaidGraph(mermaidGraph);
-    console.log('JsonViewer: Calling onMermaidCodeChange with:', mermaidGraph);
-    onMermaidCodeChange(mermaidGraph);
+    console.log('JsonViewer: Data received:', data);
+    if (data) {
+      // Log the structure of incoming data
+      console.log('JsonViewer: Number of edges in data:', data.edges?.length);
+      console.log('JsonViewer: Edge labels:', data.edges?.map(e => e.label));
+      
+      const graph = convertJsonToMermaid(data);
+      setMermaidGraph(graph);
+      
+      if (onMermaidCodeChange) {
+        onMermaidCodeChange(graph.initSettings + graph.mermaidStr);
+      }
+    }
   }, [data, onMermaidCodeChange]);
 
   return (
@@ -101,13 +154,15 @@ function JsonViewer({ data, onMermaidCodeChange }) {
         {data ? (
           <pre className="json-content">
             {showMermaid ? (
-              <code>{mermaidGraph}</code>
+              <code>{mermaidGraph.mermaidStr || 'No diagram data available'}</code>
             ) : (
-              JSON.stringify(data, null, 2)
+              <code>{JSON.stringify(data, null, 2)}</code>
             )}
           </pre>
         ) : (
-          <div className="placeholder-text">Select a procedure to view its data</div>
+          <div className="placeholder-text">
+            Select a procedure to view its data
+          </div>
         )}
       </div>
     </div>
