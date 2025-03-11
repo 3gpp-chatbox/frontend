@@ -9,13 +9,60 @@ const procedures = [
     subProcedures: [
       {
         id: 'Initial_Registration',
-        label: 'Initial Registration Flow',
+        label: 'Initial Registration',
         type: 'initial-registration',
-        description: 'Initial UE registration procedure'
+        description: 'Initial UE registration procedure',
+        triggers: [
+          {
+            id: 'Power_On',
+            label: 'Power On / UE Startup',
+            description: 'The UE is powered on and needs to register with the network for the first time'
+          },
+          {
+            id: 'Enter_5G_Coverage',
+            label: 'Enter 5G Coverage',
+            description: 'The UE moves from a non-5G area into a 5G coverage area'
+          },
+          {
+            id: 'Change_of_PLMN',
+            label: 'Change of PLMN',
+            description: 'The UE detects a new PLMN and must register to establish a connection'
+          },
+          {
+            id: 'Change_in_Subscription',
+            label: 'Change in Subscription',
+            description: 'UE\'s subscription information has changed (e.g., USIM updates)'
+          },
+          {
+            id: 'Registration_Area_Change',
+            label: 'Registration Area Change',
+            description: 'Tracking area update failure requiring new registration'
+          },
+          {
+            id: 'Loss_of_Connection',
+            label: 'Loss of Connection',
+            description: 'UE was deregistered by AMF due to inactivity or timer expiry'
+          },
+          {
+            id: 'Explicit_Deregistration',
+            label: 'Explicit Deregistration',
+            description: 'UE previously performed 5GMM De-registration'
+          },
+          {
+            id: 'Security_Context_Change',
+            label: 'Security Context Change',
+            description: 'Security context is lost or reset, requiring fresh registration'
+          },
+          {
+            id: 'Emergency_Registration',
+            label: 'Emergency Registration',
+            description: 'UE needs to register for emergency services'
+          }
+        ]
       },
       {
         id: 'Periodic_Registration',
-        label: 'Periodic Registration Flow',
+        label: 'Periodic Registration',
         type: 'periodic-registration',
         description: 'Periodic UE registration update procedure',
         triggers: [
@@ -48,7 +95,7 @@ const procedures = [
 
 function ProcedureList({ selectedProcedure, onProcedureSelect }) {
   const [expandedProcedures, setExpandedProcedures] = useState(new Set());
-  const [expandedTriggers, setExpandedTriggers] = useState(false);
+  const [expandedTriggerSections, setExpandedTriggerSections] = useState(new Set());
   const [triggerData, setTriggerData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -110,6 +157,16 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
       newExpanded.add(procedureId);
     }
     setExpandedProcedures(newExpanded);
+  };
+
+  const toggleTriggerSection = (procedureId) => {
+    const newExpanded = new Set(expandedTriggerSections);
+    if (newExpanded.has(procedureId)) {
+      newExpanded.delete(procedureId);
+    } else {
+      newExpanded.add(procedureId);
+    }
+    setExpandedTriggerSections(newExpanded);
   };
 
   const handleTriggerClick = async (trigger) => {
@@ -177,8 +234,8 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
                   <div 
                     className="procedure-header" 
                     onClick={() => {
-                      if (subProc.id === 'Periodic_Registration') {
-                        setExpandedTriggers(!expandedTriggers);
+                      if (subProc.triggers) {
+                        toggleTriggerSection(subProc.id);
                       }
                       onProcedureSelect(subProc);
                     }}
@@ -189,23 +246,28 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
                         className="expand-icon"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setExpandedTriggers(!expandedTriggers);
+                          toggleTriggerSection(subProc.id);
                         }}
                       >
-                        {expandedTriggers ? '−' : '+'}
+                        {expandedTriggerSections.has(subProc.id) ? '−' : '+'}
                       </span>
                     )}
                   </div>
                 </div>
-                {subProc.id === 'Periodic_Registration' && expandedTriggers && (
+                {subProc.triggers && expandedTriggerSections.has(subProc.id) && (
                   <div className="sub-procedures">
+                    <div className="trigger-section-header">
+                      <span className="trigger-icon">⚡</span>
+                      <span>Triggers for {subProc.label}</span>
+                    </div>
                     {subProc.triggers.map(trigger => (
                       <div
                         key={trigger.id}
-                        className={`procedure-item sub-procedure ${selectedProcedure?.id === trigger.id ? 'active' : ''}`}
+                        className={`procedure-item trigger-item ${selectedProcedure?.id === trigger.id ? 'active' : ''}`}
                         onClick={() => handleTriggerClick(trigger)}
                         title={trigger.description}
                       >
+                        <span className="trigger-bullet">•</span>
                         {trigger.label}
                       </div>
                     ))}
@@ -233,5 +295,51 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
     </div>
   );
 }
+
+// Add these styles at the end of the file or in your CSS
+const styles = `
+  .trigger-section-header {
+    padding: 8px 16px;
+    font-size: 0.9em;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #334155;
+    margin-bottom: 8px;
+  }
+
+  .trigger-icon {
+    font-size: 1.1em;
+  }
+
+  .trigger-item {
+    padding-left: 32px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: #e2e8f0;
+  }
+
+  .trigger-bullet {
+    color: #60a5fa;
+    font-size: 1.2em;
+  }
+
+  .trigger-item:hover {
+    background-color: #1e293b;
+  }
+
+  .trigger-item.active {
+    background-color: #2563eb;
+    color: white;
+  }
+`;
+
+// Add the styles to the document
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 export default ProcedureList;
