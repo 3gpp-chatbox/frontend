@@ -67,44 +67,46 @@ export const converter1 = jsonData => {
   return mermaidCode
 }
 
-// Converter 2: (Shehara)
+// Converter for Method 2: Property Graph Format
 export const converter2 = jsonData => {
-  if (!jsonData || !jsonData.nodes || !jsonData.edges) {
+  // Handle array of procedures
+  const procedure = Array.isArray(jsonData) ? jsonData[0] : jsonData;
+  
+  if (!procedure || !procedure.nodes || !procedure.edges) {
     console.error("Invalid graph data structure")
     return ""
   }
 
   let mermaidCode = "graph TD\n"
 
-  // Style definitions
-  mermaidCode += "    %% Method 2 styles\n"
-  mermaidCode +=
-    "    classDef state fill:#e1f5fe,stroke:#01579b,stroke-width:2px\n"
-  mermaidCode +=
-    "    classDef trigger fill:#fff3e0,stroke:#ff6f00,stroke-width:2px\n"
-  mermaidCode +=
-    "    classDef action fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px\n"
-  mermaidCode +=
-    "    classDef message fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px\n"
+  // Style definitions with dark text colors
+  mermaidCode += "    %% Node type styles\n"
+  mermaidCode += "    classDef state fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000\n"
+  mermaidCode += "    classDef event fill:#fff3e0,stroke:#ff6f00,stroke-width:2px,color:#000\n"
+  mermaidCode += "    classDef message fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#000\n"
 
-  // Process nodes with detailed labels
-  jsonData.nodes.forEach(node => {
-    const nodeId = node.id.replace(/\s+/g, "_")
-    const nodeLabel = node.label.replace(/"/g, "'")
-    const properties = node.properties
-      ? `<br>${Object.entries(node.properties)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join("<br>")}`
-      : ""
-
-    mermaidCode += `    ${nodeId}["${nodeLabel}${properties}"]\n`
-    mermaidCode += `    class ${nodeId} ${node.type.toLowerCase()}\n`
+  // Process nodes - with actor and circle shape for states
+  procedure.nodes.forEach(node => {
+    const nodeId = node.id
+    const nodeLabel = node.properties?.actor ? 
+      `${node.label}<br>(${node.properties.actor})` : 
+      node.label
+    
+    // Use circle shape (()) for states, regular shape ([]) for others
+    const shape = node.type === 'state' ? '((' : '['
+    const closeShape = node.type === 'state' ? '))' : ']'
+    
+    // Create node with label and actor
+    mermaidCode += `    ${nodeId}${shape}"${nodeLabel}"${closeShape}\n`
+    
+    // Apply style based on node type
+    mermaidCode += `    class ${nodeId} ${node.type}\n`
   })
 
-  // Process edges with labels
-  jsonData.edges.forEach(edge => {
-    const sourceId = edge.source.replace(/\s+/g, "_")
-    const targetId = edge.target.replace(/\s+/g, "_")
+  // Process edges
+  procedure.edges.forEach(edge => {
+    const sourceId = edge.source
+    const targetId = edge.target
     const label = edge.label ? `|${edge.label}|` : ""
 
     mermaidCode += `    ${sourceId} -->${label} ${targetId}\n`

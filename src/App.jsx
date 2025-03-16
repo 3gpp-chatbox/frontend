@@ -22,11 +22,6 @@ function App() {
     <div className="container">
       <header className="header">
         <h1>SpecFlow</h1>
-        <p>
-          Interactive 3GPP specification viewer for network procedures and message flows.
-          <br />
-          Select a procedure to view its detailed flow diagram and documentation.
-        </p>
       </header>
       
       <div className="grid-layout">
