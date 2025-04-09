@@ -86,20 +86,6 @@ function App() {
     fetchProcedureData();
   }, [selectedProcedure]);
 
-  // Function to convert JSON to Mermaid format
-  function convertJsonToMermaid(json) {
-    if (!json || !json.nodes || !json.edges) return "";
-    //diagram direction is left to right
-    let mermaidStr = "graph TD\n";
-    json.nodes.forEach(node => {
-      mermaidStr += `  ${node.id}["${node.label || node.id}"]\n`;
-    });
-    json.edges.forEach(edge => {
-      mermaidStr += `  ${edge.source} -->|${edge.label}| ${edge.target}\n`;
-    });
-    return mermaidStr;
-  }
-
   return (
     <div className="container">
       <header className="header">
