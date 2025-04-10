@@ -1,141 +1,123 @@
-import { useState, useEffect } from "react"
-import { fetchGraphData } from "../API_calls/api"
-import { getMermaidConverter } from "../functions/mermaidConverters"
+import { useState, useEffect } from "react";
+import { fetchMockData, saveEditedData } from "../API_calls/mockapi";
+import { getMermaidConverter } from "../functions/mermaidConverters";
 
-function JsonViewer({ selectedProcedure, onMermaidCodeChange }) {
-  const [data, setData] = useState(null)
-  const [mermaidGraph, setMermaidGraph] = useState("")
-  const [showMermaid, setShowMermaid] = useState(true)
-  const [jsonContent, setJsonContent] = useState("")
-  const [notification, setNotification] = useState({ show: false, message: "", type: "" })
+function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
+  const [data, setData] = useState(null);
+  const [mermaidGraph, setMermaidGraph] = useState("");
+  const [showMermaid, setShowMermaid] = useState(true);
+  const [jsonContent, setJsonContent] = useState("");
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+    type: "",
+  });
 
   useEffect(() => {
-    if (!selectedProcedure?.resultSet || !selectedProcedure?.procedureName) {
-      console.log("JsonViewer: No valid procedure selected")
-      setData(null)
-      return
-    }
+    const loadMockData = async () => {
+      if (!selectedProcedure) return;
 
-    const loadGraphData = async () => {
       try {
         console.log(
-          "JsonViewer: Fetching data for:",
-          selectedProcedure.resultSet,
-          selectedProcedure.procedureName
-        )
-
-        const graphData = await fetchGraphData(
-          selectedProcedure.resultSet,
-          selectedProcedure.procedureName
-        )
-
-        console.log("JsonViewer: Received data:", graphData)
-        setData(graphData)
-        setJsonContent(JSON.stringify(graphData, null, 2))
+          "JsonViewer: Fetching mock data for procedure:",
+          selectedProcedure,
+        );
+        const mockData = await fetchMockData(selectedProcedure);
+        console.log("JsonViewer: Received data:", mockData);
+        setData(mockData);
+        setJsonContent(JSON.stringify(mockData, null, 2));
       } catch (error) {
-        console.error("Error fetching graph data:", error)
-        setData(null)
+        console.error("Error fetching mock data:", error);
+        setNotification({
+          show: true,
+          message: "Failed to load mock data",
+          type: "error",
+        });
+        setData(null);
       }
-    }
+    };
 
-    loadGraphData()
-  }, [selectedProcedure])
+    loadMockData();
+  }, [selectedProcedure]);
 
   useEffect(() => {
-    if (!data || !selectedProcedure?.resultSet) return
+    if (!data) return;
 
-    console.log(
-      "JsonViewer: Converting data using method:",
-      selectedProcedure.resultSet
-    )
-    const converter = getMermaidConverter(selectedProcedure.resultSet)
-    const mermaidGraph = converter(data)
-    setMermaidGraph(mermaidGraph)
+    console.log("JsonViewer: Converting data to Mermaid");
+    const converter = getMermaidConverter("method_1");
+    const mermaidGraph = converter(data);
+    setMermaidGraph(mermaidGraph);
 
-    console.log("JsonViewer: Calling onMermaidCodeChange with:", mermaidGraph)
-    onMermaidCodeChange(mermaidGraph)
-  }, [data])
+    console.log("JsonViewer: Calling onMermaidCodeChange with:", mermaidGraph);
+    onMermaidCodeChange(mermaidGraph);
+  }, [data]);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
     if (notification.show) {
       const timer = setTimeout(() => {
-        setNotification({ show: false, message: "", type: "" })
-      }, 3000)
-      return () => clearTimeout(timer)
+        setNotification({ show: false, message: "", type: "" });
+      }, 3000);
+      return () => clearTimeout(timer);
     }
-  }, [notification.show])
+  }, [notification.show]);
 
   const handleJsonChange = (event) => {
-    setJsonContent(event.target.value)
-  }
+    setJsonContent(event.target.value);
+  };
 
   const handleSaveChanges = async () => {
-    // Show saving notification
+    if (!selectedProcedure) {
+      setNotification({
+        show: true,
+        message: "Please select a procedure first",
+        type: "error",
+      });
+      return;
+    }
+
     setNotification({
       show: true,
       message: "Saving changes...",
-      type: "info"
-    })
+      type: "info",
+    });
 
     try {
       // First validate JSON
-      const updatedData = JSON.parse(jsonContent)
-      
-      try {
-        // TODO: Replace this with your actual API call to save to database
-        // Example structure:
-        // await saveGraphData(selectedProcedure.resultSet, selectedProcedure.procedureName, updatedData)
-        await new Promise((resolve) => setTimeout(resolve, 1000)) // Simulation for now
-        
-        try {
-          // After saving, fetch the fresh data from database
-          const freshData = await fetchGraphData(
-            selectedProcedure.resultSet,
-            selectedProcedure.procedureName
-          )
-          
-          // Update local state with fresh data from database
-          setData(freshData)
-          setJsonContent(JSON.stringify(freshData, null, 2))
-          
-          // Show success notification
-          setNotification({
-            show: true,
-            message: "Changes saved successfully",
-            type: "success"
-          })
+      const updatedData = JSON.parse(jsonContent);
 
-          // Switch to Mermaid view after successful save and fetch
-          setTimeout(() => {
-            setShowMermaid(true)
-          }, 500)
-          
-        } catch (error) {
-          setNotification({
-            show: true,
-            message: "Changes saved but failed to refresh data",
-            type: "warning"
-          })
-        }
-        
-      } catch (error) {
-        // Handle database connection error
+      try {
+        // Save to backend
+        await saveEditedData(updatedData);
+
+        // Update local state
+        setData(updatedData);
+
         setNotification({
           show: true,
-          message: "Changes not saved: No database connection",
-          type: "error"
-        })
+          message: "Changes saved successfully",
+          type: "success",
+        });
+
+        // Switch to Mermaid view after successful save
+        setTimeout(() => {
+          setShowMermaid(true);
+        }, 500);
+      } catch (error) {
+        setNotification({
+          show: true,
+          message: "Failed to save changes",
+          type: "error",
+        });
       }
     } catch (error) {
-      // Handle JSON parsing error
       setNotification({
         show: true,
-        message: "Changes not saved: Invalid JSON format",
-        type: "error"
-      })
+        message: "Invalid JSON format",
+        type: "error",
+      });
     }
-  }
+  };
 
   return (
     <div className="section-container">
@@ -179,7 +161,9 @@ function JsonViewer({ selectedProcedure, onMermaidCodeChange }) {
         `}
       </style>
       <div className="section-header">
-        <span>Code View</span>
+        <span>
+          Code View {selectedProcedure ? `- ${selectedProcedure}` : ""}
+        </span>
         <button
           className="toggle-button"
           onClick={() => setShowMermaid(!showMermaid)}
@@ -188,10 +172,7 @@ function JsonViewer({ selectedProcedure, onMermaidCodeChange }) {
           {showMermaid ? "Show JSON" : "Show Mermaid"}
         </button>
         {!showMermaid && (
-          <button
-            className="save-button"
-            onClick={handleSaveChanges}
-          >
+          <button className="save-button" onClick={handleSaveChanges}>
             Save Changes
           </button>
         )}
@@ -202,31 +183,35 @@ function JsonViewer({ selectedProcedure, onMermaidCodeChange }) {
         </div>
       )}
       <div className="content-area">
-        {data ? (
-          <pre className="json-content">
-            {showMermaid ? (
-              <code>{mermaidGraph}</code>
-            ) : (
-              <textarea
-                value={jsonContent}
-                onChange={handleJsonChange}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  fontFamily: "monospace",
-                  resize: "none"
-                }}
-              />
-            )}
-          </pre>
+        {selectedProcedure ? (
+          data ? (
+            <pre className="json-content">
+              {showMermaid ? (
+                <code>{mermaidGraph}</code>
+              ) : (
+                <textarea
+                  value={jsonContent}
+                  onChange={handleJsonChange}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    fontFamily: "monospace",
+                    resize: "none",
+                  }}
+                />
+              )}
+            </pre>
+          ) : (
+            <div className="placeholder-text">Loading mock data...</div>
+          )
         ) : (
           <div className="placeholder-text">
-            Select a procedure to view its data
+            Please select a procedure from the list above
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default JsonViewer
+export default JsonViewer;

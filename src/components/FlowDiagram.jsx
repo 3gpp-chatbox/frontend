@@ -1,30 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
-import mermaid from 'mermaid';
+import { useEffect, useRef, useState } from "react";
+import mermaid from "mermaid";
 
 // Initialize mermaid with enhanced settings
 mermaid.initialize({
   startOnLoad: true,
-  theme: 'dark',
-  securityLevel: 'loose',
+  theme: "default",
+  logLevel: "error",
+  securityLevel: "loose",
   flowchart: {
-    curve: 'basis',
-    nodeSpacing: 150,    // Increased spacing for better readability
-    rankSpacing: 150,    // Increased spacing for better readability
-    padding: 50,
+    curve: "basis",
+    nodeSpacing: 50,
+    rankSpacing: 50,
+    padding: 10,
     useMaxWidth: true,
     htmlLabels: true,
-    defaultRenderer: 'dagre',
-    wrap: true
   },
   themeVariables: {
-    primaryColor: '#3b82f6',
-    primaryTextColor: '#f4f4f5',
-    primaryBorderColor: '#1d4ed8',
-    lineColor: '#60a5fa',
-    secondaryColor: '#1d4ed8',
-    tertiaryColor: '#27272a',
-    fontSize: '14px'
-  }
+    primaryColor: "#3b82f6",
+    primaryTextColor: "#f4f4f5",
+    primaryBorderColor: "#1d4ed8",
+    lineColor: "#60a5fa",
+    secondaryColor: "#1d4ed8",
+    tertiaryColor: "#27272a",
+  },
 });
 
 // Add zoom controls and constants
@@ -44,27 +42,21 @@ function FlowDiagram({ mermaidCode }) {
   const [zoomLevel, setZoomLevel] = useState(100);
 
   const renderDiagram = async () => {
-    if (!mermaidRef.current || !mermaidCode) return;
-    
+    if (!mermaidRef.current || !mermaidCode) {
+      return;
+    }
+
     try {
-      mermaidRef.current.innerHTML = '';
+      console.log("Rendering diagram with code:", mermaidCode);
+      mermaidRef.current.innerHTML = "";
       setError(null);
 
-      const id = `mermaid-${Date.now()}`;
-      const { svg } = await mermaid.render(id, mermaidCode);
-      
+      const { svg } = await mermaid.render("mermaid-diagram", mermaidCode);
       mermaidRef.current.innerHTML = svg;
-      svgRef.current = mermaidRef.current.querySelector('svg');
-      
-      if (svgRef.current) {
-        svgRef.current.setAttribute('width', '100%');
-        svgRef.current.setAttribute('height', '100%');
-        styleDiagram();
-        fitDiagramToContainer();
-      }
-    } catch (error) {
-      console.error('FlowDiagram: Error rendering diagram:', error);
-      setError(error.message);
+    } catch (err) {
+      console.error("Error rendering diagram:", err);
+      setError(err.message);
+      mermaidRef.current.innerHTML = "Error rendering diagram";
     }
   };
 
@@ -72,32 +64,32 @@ function FlowDiagram({ mermaidCode }) {
     if (!svgRef.current) return;
 
     // Style nodes
-    const nodes = svgRef.current.querySelectorAll('.node');
-    nodes.forEach(node => {
-      const rect = node.querySelector('rect');
+    const nodes = svgRef.current.querySelectorAll(".node");
+    nodes.forEach((node) => {
+      const rect = node.querySelector("rect");
       if (rect) {
-        rect.setAttribute('rx', '8');
-        rect.setAttribute('ry', '8');
+        rect.setAttribute("rx", "8");
+        rect.setAttribute("ry", "8");
       }
     });
 
     // Style edges
-    const edges = svgRef.current.querySelectorAll('.edge path');
-    edges.forEach(edge => {
-      edge.style.strokeWidth = '3px';
-      edge.style.stroke = '#60a5fa';
+    const edges = svgRef.current.querySelectorAll(".edge path");
+    edges.forEach((edge) => {
+      edge.style.strokeWidth = "3px";
+      edge.style.stroke = "#60a5fa";
     });
 
     // Style arrowheads
-    const markers = svgRef.current.querySelectorAll('marker');
-    markers.forEach(marker => {
-      marker.setAttribute('markerWidth', '15');
-      marker.setAttribute('markerHeight', '15');
-      marker.setAttribute('refX', '15');
-      const markerPath = marker.querySelector('path');
+    const markers = svgRef.current.querySelectorAll("marker");
+    markers.forEach((marker) => {
+      marker.setAttribute("markerWidth", "15");
+      marker.setAttribute("markerHeight", "15");
+      marker.setAttribute("refX", "15");
+      const markerPath = marker.querySelector("path");
       if (markerPath) {
-        markerPath.setAttribute('fill', '#60a5fa');
-        markerPath.setAttribute('stroke', '#60a5fa');
+        markerPath.setAttribute("fill", "#60a5fa");
+        markerPath.setAttribute("stroke", "#60a5fa");
       }
     });
   };
@@ -112,8 +104,8 @@ function FlowDiagram({ mermaidCode }) {
     const scaleY = (containerRect.height * 0.9) / svgRect.height;
     const newScale = Math.min(scaleX, scaleY, 1);
 
-    const centerX = (containerRect.width - (svgRect.width * newScale)) / 2;
-    const centerY = (containerRect.height - (svgRect.height * newScale)) / 2;
+    const centerX = (containerRect.width - svgRect.width * newScale) / 2;
+    const centerY = (containerRect.height - svgRect.height * newScale) / 2;
 
     setScale(newScale);
     setPosition({ x: centerX, y: centerY });
@@ -123,8 +115,8 @@ function FlowDiagram({ mermaidCode }) {
   const handleZoom = (delta, mousePosition = null) => {
     const oldScale = scale;
     const newScale = Math.min(
-      Math.max(scale + (delta * ZOOM_SPEED), MIN_SCALE),
-      MAX_SCALE
+      Math.max(scale + delta * ZOOM_SPEED, MIN_SCALE),
+      MAX_SCALE,
     );
 
     if (mousePosition && containerRef.current) {
@@ -134,8 +126,12 @@ function FlowDiagram({ mermaidCode }) {
       const mouseY = mousePosition.y - container.top;
 
       const newPosition = {
-        x: position.x - ((mouseX - position.x) * (newScale - oldScale)) / oldScale,
-        y: position.y - ((mouseY - position.y) * (newScale - oldScale)) / oldScale
+        x:
+          position.x -
+          ((mouseX - position.x) * (newScale - oldScale)) / oldScale,
+        y:
+          position.y -
+          ((mouseY - position.y) * (newScale - oldScale)) / oldScale,
       };
 
       setPosition(newPosition);
@@ -156,8 +152,8 @@ function FlowDiagram({ mermaidCode }) {
       handleZoom(delta, { x: e.clientX, y: e.clientY });
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
   }, [scale, position]);
 
   // Add zoom control buttons
@@ -179,7 +175,7 @@ function FlowDiagram({ mermaidCode }) {
     if (isDragging) {
       setPosition({
         x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
+        y: e.clientY - dragStart.y,
       });
     }
   };
@@ -197,14 +193,18 @@ function FlowDiagram({ mermaidCode }) {
       <div className="section-header">
         <span>Flow Diagram</span>
         <div className="diagram-controls">
-          <button onClick={zoomOut} title="Zoom Out">-</button>
+          <button onClick={zoomOut} title="Zoom Out">
+            -
+          </button>
           <span className="zoom-level">{zoomLevel}%</span>
-          <button onClick={zoomIn} title="Zoom In">+</button>
+          <button onClick={zoomIn} title="Zoom In">
+            +
+          </button>
           <button onClick={resetZoom}>Reset View</button>
           <button onClick={renderDiagram}>Refresh</button>
         </div>
       </div>
-      <div 
+      <div
         ref={containerRef}
         className="content-area diagram-container"
         onMouseDown={handleMouseDown}
@@ -212,23 +212,25 @@ function FlowDiagram({ mermaidCode }) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        <div 
-          ref={mermaidRef}
-          style={{
-            position: 'absolute',
-            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-            transformOrigin: 'center center',
-            width: '100%',
-            height: '100%',
-            cursor: isDragging ? 'grabbing' : 'grab'
-          }}
-        />
-        {error && (
+        {error ? (
           <div className="error-overlay">
             <div className="error-content">
-              {error}
+              <h3>Error Rendering Diagram</h3>
+              <p className="error-message">{error}</p>
             </div>
           </div>
+        ) : (
+          <div
+            ref={mermaidRef}
+            style={{
+              position: "absolute",
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transformOrigin: "center center",
+              width: "100%",
+              height: "100%",
+              cursor: isDragging ? "grabbing" : "grab",
+            }}
+          />
         )}
       </div>
     </div>
