@@ -25,6 +25,13 @@
   --blue-600: #2563eb;
   --blue-700: #1d4ed8;
 
+  /* Orange palette (Accent) */
+  --orange-300: #f97316;
+  --orange-400: #fb923c;
+  --orange-500: #f59e0b;
+  --orange-600: #d97706;
+  --orange-700: #b45309;
+
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -120,7 +127,7 @@ button {
   height: calc(24px + 72px); /* top padding + header height */
   background-color: var(--black-600);
   z-index: -1;
-  border-radius: 8px; */
+  border-radius: 8px; 
 }
 
 .header h1 {
@@ -141,7 +148,7 @@ button {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 24px;
-  padding-top: 64px; Increased padding to ensure content is below header
+  padding-top: 64px; /* Increased padding to ensure content is below header */
 }
 
 .panel {
@@ -155,23 +162,29 @@ button {
 
 /* Panel heights */
 .col-3 {
-  grid-column: span 3;
-  height: 600px; /* Fixed height for procedures panel */
+  grid-column: span 12;
+  height: 100px; 
+  margin-right: 20px;
+  margin-left: 20px;
 }
 
 .col-9 {
-  grid-column: span 9;
-  height: 600px; /* Same height as procedures panel */
+  grid-column: span 6;
+  height: 1000px; 
+  margin-bottom: 20px;
+  margin-left: 20px;
 }
 
 .col-12 {
-  grid-column: span 12;
+  grid-column: span 6;
+  height: 1000px;
+  margin-bottom: 20px;
+  margin-right: 20px;
 }
 
 /* Special styling for flow diagram panel */
 .flow-diagram-panel {
-  height: 800px; /* Taller height for the flow diagram */
-  margin-top: -12px; /* Reduce gap above flow diagram */
+  height: 1000px;  
 }
 
 .section-container {
@@ -192,7 +205,7 @@ button {
   background: var(--black-700);
   justify-content: space-between;
 }
-
+ 
 .content-area {
   flex: 1;
   padding: 0;
@@ -247,6 +260,22 @@ button {
 .toggle-button:hover {
   background-color: var(--blue-600);
 }
+
+.save-button {
+  background-color: var(--blue-700);
+  color: var(--silver-100);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  margin-left: 10px;
+}
+
+.save-button:hover {
+  background-color: var(--orange-600);
+} 
 
 .json-content {
   font-family: monospace;

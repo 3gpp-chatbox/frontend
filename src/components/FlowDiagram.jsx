@@ -27,6 +27,10 @@ mermaid.initialize({
   }
 });
 
+// Add zoom controls and constants
+const MIN_SCALE = 0.1;
+const MAX_SCALE = 5;
+const ZOOM_SPEED = 0.1;
 
 function FlowDiagram({ mermaidCode }) {
   const mermaidRef = useRef(null);
@@ -37,6 +41,7 @@ function FlowDiagram({ mermaidCode }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(100);
 
   const renderDiagram = async () => {
     if (!mermaidRef.current || !mermaidCode) return;
@@ -114,21 +119,55 @@ function FlowDiagram({ mermaidCode }) {
     setPosition({ x: centerX, y: centerY });
   };
 
-  // Handle zoom
+  // Update zoom function to be more controlled
+  const handleZoom = (delta, mousePosition = null) => {
+    const oldScale = scale;
+    const newScale = Math.min(
+      Math.max(scale + (delta * ZOOM_SPEED), MIN_SCALE),
+      MAX_SCALE
+    );
+
+    if (mousePosition && containerRef.current) {
+      // Zoom towards mouse position
+      const container = containerRef.current.getBoundingClientRect();
+      const mouseX = mousePosition.x - container.left;
+      const mouseY = mousePosition.y - container.top;
+
+      const newPosition = {
+        x: position.x - ((mouseX - position.x) * (newScale - oldScale)) / oldScale,
+        y: position.y - ((mouseY - position.y) * (newScale - oldScale)) / oldScale
+      };
+
+      setPosition(newPosition);
+    }
+
+    setScale(newScale);
+    setZoomLevel(Math.round(newScale * 100));
+  };
+
+  // Handle wheel zoom
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (e) => {
       e.preventDefault();
-      const delta = e.deltaY * -0.01;
-      const newScale = Math.min(Math.max(scale + delta, 0.5), 3);
-      setScale(newScale);
+      const delta = -Math.sign(e.deltaY);
+      handleZoom(delta, { x: e.clientX, y: e.clientY });
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [scale]);
+  }, [scale, position]);
+
+  // Add zoom control buttons
+  const zoomIn = () => handleZoom(1);
+  const zoomOut = () => handleZoom(-1);
+  const resetZoom = () => {
+    setScale(1);
+    setZoomLevel(100);
+    fitDiagramToContainer();
+  };
 
   // Handle drag
   const handleMouseDown = (e) => {
@@ -158,8 +197,11 @@ function FlowDiagram({ mermaidCode }) {
       <div className="section-header">
         <span>Flow Diagram</span>
         <div className="diagram-controls">
-          <button onClick={() => renderDiagram()}>Refresh</button>
-          <button onClick={() => fitDiagramToContainer()}>Reset View</button>
+          <button onClick={zoomOut} title="Zoom Out">-</button>
+          <span className="zoom-level">{zoomLevel}%</span>
+          <button onClick={zoomIn} title="Zoom In">+</button>
+          <button onClick={resetZoom}>Reset View</button>
+          <button onClick={renderDiagram}>Refresh</button>
         </div>
       </div>
       <div 

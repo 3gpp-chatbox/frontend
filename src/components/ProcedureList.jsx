@@ -1,87 +1,44 @@
-import { useState } from 'react';
-
-// Define the procedure data structure
-const procedures = [
-  {
-    id: 'registration',
-    label: 'Registration Flow',
-    type: 'registration',
-    subProcedures: [
-      {
-        id: 'Initial_Registration',
-        label: 'Initial Registration Flow',
-        type: 'initial-registration',
-        description: 'Initial UE registration procedure'
-      },
-      {
-        id: 'Periodic_Registration',
-        label: 'Periodic Registration Flow',
-        type: 'periodic-registration',
-        description: 'Periodic UE registration update procedure'
-      }
-    ]
-  }
-  // Add more main procedures here as needed
-];
+import { useState, useEffect } from "react";
+import { fetchResultSets, fetchGraphs } from "../API_calls/api"; 
 
 function ProcedureList({ selectedProcedure, onProcedureSelect }) {
-  const [expandedProcedures, setExpandedProcedures] = useState(new Set());
+  const [resultSets, setResultSets] = useState([]); 
+  const [expandedResults, setExpandedResults] = useState(new Set()); 
+  const [procedures, setProcedures] = useState({}); 
 
-  const toggleProcedure = (procedureId) => {
-    const newExpanded = new Set(expandedProcedures);
-    if (newExpanded.has(procedureId)) {
-      newExpanded.delete(procedureId);
+  // Fetch available result sets on mount
+  useEffect(() => {
+    fetchResultSets().then(setResultSets);
+  }, []);
+
+  // Toggle a result set and fetch its procedures
+  const toggleResultSet = async (resultSet) => {
+    const newExpanded = new Set(expandedResults);
+    if (newExpanded.has(resultSet)) {
+      newExpanded.delete(resultSet);
     } else {
-      newExpanded.add(procedureId);
+      newExpanded.add(resultSet);
+      if (!procedures[resultSet]) {
+        const graphs = await fetchGraphs(resultSet);
+        setProcedures((prev) => ({ ...prev, [resultSet]: graphs }));
+      }
     }
-    setExpandedProcedures(newExpanded);
+    setExpandedResults(newExpanded);
   };
 
-  const renderProcedure = (procedure) => {
-    const isExpanded = expandedProcedures.has(procedure.id);
-    const isSelected = selectedProcedure?.id === procedure.id;
-    const hasSubProcedures = procedure.subProcedures?.length > 0;
+  const handleProcedureClick = (resultSet, procedure) => {
+    // Map the result set name to match the converter naming
+    const methodMap = {
+      'Result Set 1': 'method_1',
+      'Result Set 2': 'method_2',
+      'Result Set 3': 'method_3',
+    };
 
-    return (
-      <div key={procedure.id}>
-        <div 
-          className={`procedure-item main-procedure ${isExpanded ? 'expanded' : ''} ${isSelected ? 'active' : ''}`}
-          onClick={() => {
-            if (hasSubProcedures) {
-              toggleProcedure(procedure.id);
-            } else {
-              onProcedureSelect(procedure);
-            }
-          }}
-        >
-          <div className="procedure-header">
-            <span>{procedure.label}</span>
-            {hasSubProcedures && (
-              <span className="expand-icon">
-                {isExpanded ? '−' : '+'}
-              </span>
-            )}
-          </div>
-        </div>
-        
-        {isExpanded && hasSubProcedures && (
-          <div className="sub-procedures">
-            {procedure.subProcedures.map(subProc => (
-              <div
-                key={subProc.id}
-                className={`procedure-item sub-procedure ${selectedProcedure?.id === subProc.id ? 'active' : ''}`}
-                onClick={() => {
-                  console.log('Selected sub-procedure:', subProc.id);
-                  onProcedureSelect(subProc);
-                }}
-              >
-                {subProc.label}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
+    onProcedureSelect({
+      resultSet: methodMap[resultSet] || resultSet, // Use mapped name or original if no mapping
+      procedureName: procedure,
+      id: procedure
+    });
   };
 
   return (
@@ -90,7 +47,40 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
         <span>Procedures</span>
       </div>
       <div className="content-area">
-        {procedures.map(renderProcedure)}
+        {resultSets.map((resultSet) => {
+          const isExpanded = expandedResults.has(resultSet);
+          return (
+            <div key={resultSet}>
+              {/* Main Result Set */}
+              <div
+                className={`procedure-item main-procedure ${isExpanded ? "expanded" : ""}`}
+                onClick={() => toggleResultSet(resultSet)}
+              >
+                <div className="procedure-header">
+                  <span>{resultSet}</span>
+                  <span className="expand-icon">{isExpanded ? "−" : "+"}</span>
+                </div>
+              </div>
+
+              {/* Sub Procedures (Graphs) */}
+              {isExpanded && procedures[resultSet] && (
+                <div className="sub-procedures">
+                  {procedures[resultSet].map((procedure) => (
+                    <div
+                      key={procedure}
+                      className={`procedure-item sub-procedure ${
+                        selectedProcedure?.id === procedure ? "active" : ""
+                      }`}
+                      onClick={() => handleProcedureClick(resultSet, procedure)}
+                    >
+                      {procedure}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
