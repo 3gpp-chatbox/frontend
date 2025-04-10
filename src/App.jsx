@@ -47,9 +47,11 @@ function App() {
         </div>
 
         {/* Procedure Description */}
+        {/* 
         <div className="panel col-12">
           <Description procedure={selectedProcedure} />
         </div>
+        */}
       </div>
     </div>
   );
