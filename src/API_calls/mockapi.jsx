@@ -1,6 +1,38 @@
 const BASE_URL = "http://localhost:8000"; // FastAPI backend URL
 
 /**
+ * Fetches the list of available procedures
+ * @returns {Promise<Array>} List of procedures
+ */
+export const fetchProcedures = async () => {
+  try {
+    // Return mock data with main procedures
+    return [
+      {
+        id: "registration",
+        label: "Registration",
+        type: "group",
+        subProcedures: [
+          {
+            id: "initial_registration",
+            label: "Initial Registration",
+            type: "procedure",
+          },
+          {
+            id: "periodic_registration",
+            label: "Periodic Registration",
+            type: "procedure",
+          },
+        ],
+      },
+    ];
+  } catch (error) {
+    console.error("Error fetching procedures:", error);
+    throw error;
+  }
+};
+
+/**
  * Fetches mock graph data for Initial Registration
  * @param {Object} procedure - The selected procedure object
  * @returns {Promise<Object>} The graph data

@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import PropTypes from "prop-types";
 import mermaid from "mermaid";
 
 // Initialize mermaid with enhanced settings
 mermaid.initialize({
   startOnLoad: true,
-  theme: "default",
+  theme: "dark",
   logLevel: "error",
   securityLevel: "loose",
   flowchart: {
@@ -22,6 +23,12 @@ mermaid.initialize({
     lineColor: "#60a5fa",
     secondaryColor: "#1d4ed8",
     tertiaryColor: "#27272a",
+    mainBkg: "#1a1a1a",
+    nodeBorder: "#3b82f6",
+    clusterBkg: "#1a1a1a",
+    titleColor: "#f4f4f5",
+    edgeLabelBackground: "#1a1a1a",
+    textColor: "#f4f4f5",
   },
 });
 
@@ -41,7 +48,7 @@ function FlowDiagram({ mermaidCode }) {
   const [error, setError] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(100);
 
-  const renderDiagram = async () => {
+  const renderDiagram = useCallback(async () => {
     if (!mermaidRef.current || !mermaidCode) {
       return;
     }
@@ -58,41 +65,7 @@ function FlowDiagram({ mermaidCode }) {
       setError(err.message);
       mermaidRef.current.innerHTML = "Error rendering diagram";
     }
-  };
-
-  const styleDiagram = () => {
-    if (!svgRef.current) return;
-
-    // Style nodes
-    const nodes = svgRef.current.querySelectorAll(".node");
-    nodes.forEach((node) => {
-      const rect = node.querySelector("rect");
-      if (rect) {
-        rect.setAttribute("rx", "8");
-        rect.setAttribute("ry", "8");
-      }
-    });
-
-    // Style edges
-    const edges = svgRef.current.querySelectorAll(".edge path");
-    edges.forEach((edge) => {
-      edge.style.strokeWidth = "3px";
-      edge.style.stroke = "#60a5fa";
-    });
-
-    // Style arrowheads
-    const markers = svgRef.current.querySelectorAll("marker");
-    markers.forEach((marker) => {
-      marker.setAttribute("markerWidth", "15");
-      marker.setAttribute("markerHeight", "15");
-      marker.setAttribute("refX", "15");
-      const markerPath = marker.querySelector("path");
-      if (markerPath) {
-        markerPath.setAttribute("fill", "#60a5fa");
-        markerPath.setAttribute("stroke", "#60a5fa");
-      }
-    });
-  };
+  }, [mermaidCode]);
 
   const fitDiagramToContainer = () => {
     if (!containerRef.current || !svgRef.current) return;
@@ -112,34 +85,37 @@ function FlowDiagram({ mermaidCode }) {
   };
 
   // Update zoom function to be more controlled
-  const handleZoom = (delta, mousePosition = null) => {
-    const oldScale = scale;
-    const newScale = Math.min(
-      Math.max(scale + delta * ZOOM_SPEED, MIN_SCALE),
-      MAX_SCALE,
-    );
+  const handleZoom = useCallback(
+    (delta, mousePosition = null) => {
+      const oldScale = scale;
+      const newScale = Math.min(
+        Math.max(scale + delta * ZOOM_SPEED, MIN_SCALE),
+        MAX_SCALE,
+      );
 
-    if (mousePosition && containerRef.current) {
-      // Zoom towards mouse position
-      const container = containerRef.current.getBoundingClientRect();
-      const mouseX = mousePosition.x - container.left;
-      const mouseY = mousePosition.y - container.top;
+      if (mousePosition && containerRef.current) {
+        // Zoom towards mouse position
+        const container = containerRef.current.getBoundingClientRect();
+        const mouseX = mousePosition.x - container.left;
+        const mouseY = mousePosition.y - container.top;
 
-      const newPosition = {
-        x:
-          position.x -
-          ((mouseX - position.x) * (newScale - oldScale)) / oldScale,
-        y:
-          position.y -
-          ((mouseY - position.y) * (newScale - oldScale)) / oldScale,
-      };
+        const newPosition = {
+          x:
+            position.x -
+            ((mouseX - position.x) * (newScale - oldScale)) / oldScale,
+          y:
+            position.y -
+            ((mouseY - position.y) * (newScale - oldScale)) / oldScale,
+        };
 
-      setPosition(newPosition);
-    }
+        setPosition(newPosition);
+      }
 
-    setScale(newScale);
-    setZoomLevel(Math.round(newScale * 100));
-  };
+      setScale(newScale);
+      setZoomLevel(Math.round(newScale * 100));
+    },
+    [scale, position],
+  );
 
   // Handle wheel zoom
   useEffect(() => {
@@ -154,7 +130,7 @@ function FlowDiagram({ mermaidCode }) {
 
     container.addEventListener("wheel", handleWheel, { passive: false });
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [scale, position]);
+  }, [handleZoom]);
 
   // Add zoom control buttons
   const zoomIn = () => handleZoom(1);
@@ -186,7 +162,7 @@ function FlowDiagram({ mermaidCode }) {
 
   useEffect(() => {
     renderDiagram();
-  }, [mermaidCode]);
+  }, [renderDiagram]);
 
   return (
     <div className="section-container">
@@ -236,5 +212,9 @@ function FlowDiagram({ mermaidCode }) {
     </div>
   );
 }
+
+FlowDiagram.propTypes = {
+  mermaidCode: PropTypes.string,
+};
 
 export default FlowDiagram;

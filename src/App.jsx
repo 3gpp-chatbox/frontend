@@ -27,9 +27,10 @@ function App() {
           />
         </div>
 
-        <div className="col-9">
-          {/* JSON Editor Panel */}
-          <div className="panel">
+        {/* Editor and Diagram Container */}
+        <div className="editor-diagram-container">
+          {/* JSON/Mermaid Editor Panel */}
+          <div className="editor-panel">
             <JsonViewer
               onMermaidCodeChange={setMermaidCode}
               selectedProcedure={selectedProcedure}
@@ -37,7 +38,7 @@ function App() {
           </div>
 
           {/* Flow Diagram Panel */}
-          <div className="col-12">
+          <div className="diagram-panel">
             <FlowDiagram mermaidCode={mermaidCode} />
           </div>
         </div>

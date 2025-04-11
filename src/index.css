@@ -59,8 +59,8 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--black-800); /* Dark background */
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   min-height: 100vh;
   color: var(--silver-100);
 }
@@ -70,7 +70,6 @@ h1 {
   line-height: 1.1;
   color: #1d4ed8;
   font-weight: 600;
-  
 }
 
 button {
@@ -127,7 +126,7 @@ button {
   height: calc(24px + 72px); /* top padding + header height */
   background-color: var(--black-600);
   z-index: -1;
-  border-radius: 8px; 
+  border-radius: 8px;
 }
 
 .header h1 {
@@ -163,14 +162,14 @@ button {
 /* Panel heights */
 .col-3 {
   grid-column: span 12;
-  height: 100px; 
+  height: 100px;
   margin-right: 20px;
   margin-left: 20px;
 }
 
 .col-9 {
   grid-column: span 6;
-  height: 1000px; 
+  height: 1000px;
   margin-bottom: 20px;
   margin-left: 20px;
 }
@@ -184,7 +183,7 @@ button {
 
 /* Special styling for flow diagram panel */
 .flow-diagram-panel {
-  height: 1000px;  
+  height: 1000px;
 }
 
 .section-container {
@@ -205,7 +204,7 @@ button {
   background: var(--black-700);
   justify-content: space-between;
 }
- 
+
 .content-area {
   flex: 1;
   padding: 0;
@@ -275,20 +274,79 @@ button {
 
 .save-button:hover {
   background-color: var(--orange-600);
-} 
+}
+
+.json-viewer-content {
+  height: calc(100% - 48px); /* Subtract header height */
+  background-color: var(--black-800);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
 .json-content {
-  font-family: monospace;
-  font-size: 14px;
-  color: var(--silver-200);
-  background-color: var(--black-800);
-  padding: 12px;
-  overflow: auto;
   height: 100%;
-  width: 100%;
-  box-sizing: border-box;
   margin: 0;
+  background-color: var(--black-800);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+pre.json-content {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  flex: 1;
+}
+
+.code-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.code-content.wrapped {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Ensure proper scrolling for the JSON content wrapper */
+.json-content-wrapper {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--black-800);
+  color: var(--silver-100);
+}
+
+/* Ensure Mermaid editor also scrolls properly */
+.mermaid-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mermaid-editor textarea {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--black-800);
+  color: var(--silver-100);
   border: none;
+  resize: none;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 16px;
+  outline: none;
 }
 
 /* Description styles */
@@ -436,22 +494,31 @@ button {
   background-color: var(--blue-600);
 }
 
-/* Scrollbar styling */
-.content-area::-webkit-scrollbar {
-  width: 8px;
+/* Hide scrollbars but keep scrolling functionality */
+.content-area,
+.json-content-wrapper,
+.code-content,
+.mermaid-editor textarea {
+  /* For Firefox */
+  scrollbar-width: none;
+  /* For IE/Edge */
+  -ms-overflow-style: none;
 }
 
-.content-area::-webkit-scrollbar-track {
-  background: var(--black-700);
+/* For Chrome/Safari/Webkit */
+.content-area::-webkit-scrollbar,
+.json-content-wrapper::-webkit-scrollbar,
+.code-content::-webkit-scrollbar,
+.mermaid-editor textarea::-webkit-scrollbar {
+  display: none;
 }
 
-.content-area::-webkit-scrollbar-thumb {
-  background: var(--blue-700);
-  border-radius: 4px;
-}
-
+/* Remove the old scrollbar styles */
+.content-area::-webkit-scrollbar,
+.content-area::-webkit-scrollbar-track,
+.content-area::-webkit-scrollbar-thumb,
 .content-area::-webkit-scrollbar-thumb:hover {
-  background: var(--blue-600);
+  display: none;
 }
 
 /* Selection color */
@@ -462,7 +529,9 @@ button {
 
 /* Add subtle orange glow on focus */
 .panel:focus-within {
-  box-shadow: 0 0 0 2px var(--black-700), 0 0 0 4px var(--blue-700);
+  box-shadow:
+    0 0 0 2px var(--black-700),
+    0 0 0 4px var(--blue-700);
 }
 
 /* Add these to your existing ProcedureList styles */
@@ -642,4 +711,373 @@ button {
   content: "•";
   color: var(--blue-400);
   margin-right: 8px;
+}
+
+/* Editing indicator */
+.editing-indicator {
+  color: var(--orange-400);
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+/* Save button states */
+.save-button.active {
+  background-color: var(--orange-600);
+  color: white;
+}
+
+.save-button.active:hover {
+  background-color: var(--orange-500);
+}
+
+.save-button:disabled {
+  background-color: var(--black-600);
+  color: var(--silver-500);
+  cursor: not-allowed;
+}
+
+/* Notification types */
+.notification.warning {
+  background-color: #eab308;
+  color: #1a1a1a;
+}
+
+/* JSON Editor textarea */
+.json-content textarea {
+  width: 100%;
+  height: 100%;
+  background-color: var(--black-800);
+  color: var(--silver-100);
+  border: none;
+  resize: none;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 16px;
+  outline: none;
+}
+
+.json-content textarea:focus {
+  border: 1px solid var(--blue-600);
+}
+
+.json-content textarea.wrapped {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.json-content textarea:not(.wrapped) {
+  white-space: pre;
+}
+
+/* JSON syntax highlighting - Enhanced */
+.json-key {
+  color: var(--blue-400);
+  font-weight: 500;
+}
+
+.json-string {
+  color: var(--orange-400);
+}
+
+.json-number {
+  color: var(--blue-300);
+}
+
+.json-boolean {
+  color: var(--orange-600);
+  font-weight: 500;
+}
+
+.json-null {
+  color: var(--orange-600);
+  font-style: italic;
+}
+
+.json-punctuation {
+  color: var(--silver-400);
+}
+
+.json-array {
+  color: var(--silver-300);
+}
+
+/* Add transition for smooth highlighting */
+.json-content *,
+.mermaid-editor * {
+  transition: color 0.2s ease;
+}
+
+/* Hover effects for better interactivity */
+.json-key:hover,
+.mermaid-keyword:hover,
+.mermaid-directive:hover {
+  filter: brightness(1.2);
+}
+
+/* Code block background */
+pre.code-block {
+  background-color: var(--black-900);
+  border: 1px solid var(--black-700);
+  border-radius: 4px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+/* Line numbers */
+.line-number {
+  color: var(--silver-600);
+  opacity: 0.5;
+  user-select: none;
+  margin-right: 16px;
+  min-width: 40px;
+  display: inline-block;
+  text-align: right;
+}
+
+/* Mermaid Editor styles */
+.mermaid-editor {
+  position: relative;
+  height: 100%;
+  background-color: var(--black-800);
+}
+
+.mermaid-editor textarea {
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  color: var(--silver-100);
+  border: none;
+  resize: none;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 16px;
+  outline: none;
+  overflow-y: auto;
+}
+
+.mermaid-editor textarea.wrapped {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.syntax-preview {
+  display: none; /* Hide the syntax preview for now since we're showing the textarea text */
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--black-800);
+}
+
+.code-content {
+  padding: 16px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.code-content.wrapped {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* JSON syntax highlighting */
+.json-key {
+  color: var(--blue-400);
+  font-weight: 500;
+}
+
+.json-string {
+  color: var(--orange-400);
+}
+
+.json-number {
+  color: var(--blue-300);
+}
+
+.json-boolean {
+  color: var(--orange-600);
+  font-weight: 500;
+}
+
+.json-null {
+  color: var(--orange-600);
+  font-style: italic;
+}
+
+.json-punctuation {
+  color: var(--silver-400);
+}
+
+.json-array {
+  color: var(--silver-300);
+}
+
+/* Mermaid syntax highlighting */
+.mermaid-keyword {
+  color: var(--orange-400);
+  font-weight: 500;
+}
+
+.mermaid-arrow {
+  color: var(--blue-400);
+}
+
+.mermaid-node {
+  color: var(--blue-300);
+}
+
+.mermaid-label {
+  color: var(--orange-300);
+}
+
+.mermaid-comment {
+  color: var(--silver-500);
+  font-style: italic;
+}
+
+.mermaid-directive {
+  color: var(--purple-400);
+  font-weight: 500;
+}
+
+.mermaid-shape {
+  color: var(--green-400);
+}
+
+.mermaid-class {
+  color: var(--yellow-400);
+}
+
+.mermaid-style {
+  color: var(--pink-400);
+}
+
+/* Add transition for smooth highlighting */
+.json-content *,
+.mermaid-editor * {
+  transition: color 0.2s ease;
+}
+
+/* Hover effects for better interactivity */
+.json-key:hover,
+.mermaid-keyword:hover,
+.mermaid-directive:hover {
+  filter: brightness(1.2);
+}
+
+/* Code block background */
+pre.code-block {
+  background-color: var(--black-900);
+  border: 1px solid var(--black-700);
+  border-radius: 4px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+/* Line numbers */
+.line-number {
+  color: var(--silver-600);
+  opacity: 0.5;
+  user-select: none;
+  margin-right: 16px;
+  min-width: 40px;
+  display: inline-block;
+  text-align: right;
+}
+
+.editor-diagram-container {
+  grid-column: span 12;
+  display: flex;
+  gap: 20px;
+  margin: 0 20px;
+  height: 1000px;
+}
+
+.editor-panel {
+  flex: 1;
+  min-width: 0;
+  background: var(--black-700);
+  border-radius: 8px;
+  border: 1px solid var(--black-500);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.diagram-panel {
+  flex: 1;
+  min-width: 0;
+  background: var(--black-700);
+  border-radius: 8px;
+  border: 1px solid var(--black-500);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Code line styles */
+.code-line {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  position: relative;
+  padding: 0 8px 0 24px;
+  white-space: pre;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+}
+
+.code-line:hover {
+  background-color: var(--black-700);
+}
+
+/* Fold button styles */
+.fold-button {
+  position: absolute;
+  left: 4px;
+  cursor: pointer;
+  color: var(--blue-400);
+  font-size: 12px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fold-button:hover {
+  color: var(--blue-300);
+  transform: scale(1.2);
+}
+
+/* Folded section styles */
+.code-line.folded {
+  background-color: var(--black-700);
+}
+
+.code-line.folded + .folded-content {
+  display: none;
+}
+
+.folded-content {
+  margin-left: 16px;
+  border-left: 1px dashed var(--blue-700);
+  transition: all 0.3s ease;
+}
+
+/* Fold button rotation */
+.fold-button.expanded {
+  transform: rotate(90deg);
 }
