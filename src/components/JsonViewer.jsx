@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { fetchMockData, saveEditedData } from "../API_calls/mockapi";
 import { getMermaidConverter } from "../functions/mermaidConverters";
+import { saveMermaidAsJson, validateMermaidCode } from "../functions/mermaidtojson";
 import ConfirmationDialog from "./ConfirmationDialog";
 
 // Function to highlight JSON syntax with folding
@@ -93,7 +94,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     message: "",
     type: "",
   });
-  const [foldedRanges, setFoldedRanges] = useState(new Set());
 
   useEffect(() => {
     const loadMockData = async () => {
@@ -179,9 +179,17 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     });
 
     try {
-      // Here you would convert Mermaid back to JSON if needed
-      // For now, we'll just save the Mermaid code
-      await saveEditedData({ mermaidCode: mermaidGraph });
+      // First validate the Mermaid code
+      if (!validateMermaidCode(mermaidGraph)) {
+        throw new Error("Invalid Mermaid syntax");
+      }
+
+      // Convert to JSON and save
+      const result = await saveMermaidAsJson(mermaidGraph);
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
 
       setOriginalMermaidGraph(mermaidGraph);
       setIsEditing(false);
@@ -197,7 +205,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     } catch (error) {
       setNotification({
         show: true,
-        message: "Failed to save changes",
+        message: `Failed to save changes: ${error.message}`,
         type: "error",
       });
     }
