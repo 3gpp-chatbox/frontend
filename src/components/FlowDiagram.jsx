@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import mermaid from "mermaid";
 
-// Initialize mermaid with enhanced settings
+// Initialize mermaid with optimized settings
 mermaid.initialize({
   startOnLoad: true,
   theme: "dark",
@@ -49,21 +49,39 @@ function FlowDiagram({ mermaidCode }) {
   const [zoomLevel, setZoomLevel] = useState(100);
 
   const renderDiagram = useCallback(async () => {
-    if (!mermaidRef.current || !mermaidCode) {
-      return;
-    }
+    if (!mermaidRef.current || !mermaidCode) return;
 
     try {
-      console.log("Rendering diagram with code:", mermaidCode);
-      mermaidRef.current.innerHTML = "";
-      setError(null);
-
       const { svg } = await mermaid.render("mermaid-diagram", mermaidCode);
-      mermaidRef.current.innerHTML = svg;
+
+      if (mermaidRef.current) {
+        // Keep the old SVG until the new one is ready
+        const oldSvg = mermaidRef.current.querySelector("svg");
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = svg;
+        const newSvg = tempDiv.querySelector("svg");
+
+        if (oldSvg) {
+          // Copy the viewBox and dimensions from the old SVG
+          const viewBox = oldSvg.getAttribute("viewBox");
+          if (viewBox) {
+            newSvg.setAttribute("viewBox", viewBox);
+          }
+          newSvg.style.width = oldSvg.style.width;
+          newSvg.style.height = oldSvg.style.height;
+        }
+
+        // Replace the old SVG with the new one
+        mermaidRef.current.innerHTML = "";
+        mermaidRef.current.appendChild(newSvg);
+      }
+
+      setError(null);
     } catch (err) {
-      console.error("Error rendering diagram:", err);
-      setError(err.message);
-      mermaidRef.current.innerHTML = "Error rendering diagram";
+      // Only set error for invalid syntax, ignore rendering errors
+      if (err.str?.includes("syntax")) {
+        setError(err.message);
+      }
     }
   }, [mermaidCode]);
 

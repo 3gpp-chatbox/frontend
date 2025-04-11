@@ -64,7 +64,7 @@ const highlightJson = (json) => {
 
     // Add fold button if line is foldable
     if (foldable.has(i)) {
-      const foldButton = `<button class="fold-button" data-line="${i}">▶</button>`;
+      const foldButton = `<button class="fold-button" data-line="${i}">▼</button>`;
       result.push(
         `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${foldButton}${lineHtml}</div>`,
       );
@@ -240,26 +240,13 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     const level = parseInt(line.dataset.level);
 
     // Toggle fold state
-    const isFolded = button.textContent === "▶";
-    button.textContent = isFolded ? "▼" : "▶";
-    button.classList.toggle("expanded", !isFolded);
-    line.classList.toggle("folded", isFolded);
+    const isFolded = button.textContent === "▼";
+    button.textContent = isFolded ? "▶" : "▼";
 
     // Find the range to fold/unfold
     let current = line.nextElementSibling;
     while (current && parseInt(current.dataset.level) > level) {
-      if (isFolded) {
-        current.style.display = "none";
-        // If this line was expanded, collapse it
-        const foldButton = current.querySelector(".fold-button");
-        if (foldButton && foldButton.textContent === "▼") {
-          foldButton.textContent = "▶";
-          foldButton.classList.remove("expanded");
-          current.classList.remove("folded");
-        }
-      } else {
-        current.style.display = "flex";
-      }
+      current.style.display = isFolded ? "none" : "flex";
       current = current.nextElementSibling;
     }
   };
@@ -424,23 +411,23 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
             justify-content: center;
             transition: all 0.2s ease;
             background-color: transparent;
-            border-radius: 3px;
-            z-index: 2;
+            border: none;
+            padding: 0;
+            margin: 0;
           }
 
           .fold-button:hover {
             color: var(--blue-300);
-            background-color: var(--black-600);
+            transform: scale(1.2);
+          }
+
+          .code-line.folded {
+            background-color: var(--black-700);
           }
 
           /* Add transition for smooth folding */
           .json-content div {
             transition: all 0.2s ease;
-          }
-
-          .json-content pre {
-            margin: 0;
-            background-color: var(--black-800);
           }
         `}
       </style>
