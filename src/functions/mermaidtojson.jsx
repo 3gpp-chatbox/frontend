@@ -1,4 +1,4 @@
-import { validateGraph, validateNode, validateEdge } from './schema_validation';
+import { validateGraph } from './schema_validation';
 
 /**
  * Parses a Mermaid node label to extract type and description
@@ -71,7 +71,6 @@ export function validateMermaidCode(mermaidCode) {
  * Converts Mermaid diagram code to JSON format
  * @param {string} mermaidCode - The Mermaid code to convert
  * @returns {Object} The JSON representation of the diagram
- * @throws {Error} If validation fails
  */
 export function convertMermaidToJson(mermaidCode) {
   const lines = mermaidCode.split('\n');
@@ -87,8 +86,6 @@ export function convertMermaidToJson(mermaidCode) {
   const labelToIdMap = {};
   let lastElementType = null; // "node" or "edge"
   let lastElementRef = null;
-  let currentNode = null;
-  let currentEdge = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -105,14 +102,6 @@ export function convertMermaidToJson(mermaidCode) {
     // Match node: A(UE_Deregistered)
     const nodeMatch = line.match(/^([A-Z]+)\(([^()]+)\);?/);
     if (nodeMatch) {
-      // If we were processing a previous node or edge, validate it before moving on
-      if (currentNode) {
-        const validation = validateNode(currentNode);
-        if (!validation.valid) {
-          throw new Error(`Invalid node: ${validation.errors.join(", ")}`);
-        }
-      }
-      
       const [_, label, id] = nodeMatch;
       // Unescape node text
       const unescapedId = id
@@ -121,47 +110,23 @@ export function convertMermaidToJson(mermaidCode) {
         .replace(/&quot;/g, '"');
       
       labelToIdMap[label] = unescapedId;
-      currentNode = { 
-        id: unescapedId, 
-        type: 'state', // Default type, will be updated by Type comment if present
-        description: '' // Will be updated by Description comment if present
-      };
-      jsonOutput.graph.nodes.push(currentNode);
+      const node = { id: unescapedId, type: '', description: '' };
+      jsonOutput.graph.nodes.push(node);
       lastElementType = 'node';
-      lastElementRef = currentNode;
+      lastElementRef = node;
       continue;
     }
 
     // Match edge: A --> B
     const edgeMatch = line.match(/^([A-Z]+)\s*-->\s*([A-Z]+);?/);
     if (edgeMatch) {
-      // If we were processing a previous node or edge, validate it
-      if (currentNode) {
-        const validation = validateNode(currentNode);
-        if (!validation.valid) {
-          throw new Error(`Invalid node: ${validation.errors.join(", ")}`);
-        }
-        currentNode = null;
-      }
-      if (currentEdge) {
-        const validation = validateEdge(currentEdge);
-        if (!validation.valid) {
-          throw new Error(`Invalid edge: ${validation.errors.join(", ")}`);
-        }
-      }
-
       const [_, fromLabel, toLabel] = edgeMatch;
       const from = labelToIdMap[fromLabel] || fromLabel;
       const to = labelToIdMap[toLabel] || toLabel;
-      currentEdge = { 
-        from, 
-        to, 
-        type: 'trigger', // Default type, will be updated by Type comment if present
-        description: '' // Will be updated by Description comment if present
-      };
-      jsonOutput.graph.edges.push(currentEdge);
+      const edge = { from, to, type: '', description: '' };
+      jsonOutput.graph.edges.push(edge);
       lastElementType = 'edge';
-      lastElementRef = currentEdge;
+      lastElementRef = edge;
       continue;
     }
 
@@ -178,26 +143,6 @@ export function convertMermaidToJson(mermaidCode) {
       lastElementRef.description = descMatch[1].trim();
       continue;
     }
-  }
-
-  // Validate the last node or edge if any
-  if (currentNode) {
-    const validation = validateNode(currentNode);
-    if (!validation.valid) {
-      throw new Error(`Invalid node: ${validation.errors.join(", ")}`);
-    }
-  }
-  if (currentEdge) {
-    const validation = validateEdge(currentEdge);
-    if (!validation.valid) {
-      throw new Error(`Invalid edge: ${validation.errors.join(", ")}`);
-    }
-  }
-
-  // Final validation of the entire graph
-  const finalValidation = validateGraph(jsonOutput);
-  if (!finalValidation.valid) {
-    throw new Error(`Graph validation failed: ${finalValidation.error}`);
   }
 
   return jsonOutput;
