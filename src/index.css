@@ -223,24 +223,98 @@ button {
 }
 
 /* ProcedureList styles */
-.procedure-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--black-500);
-  transition: all 0.2s ease;
-  color: var(--silver-300);
+.procedure-container {
+  position: relative;
 }
 
-.procedure-item:hover {
+.main-procedure {
+  display: inline-flex;
+  align-items: center;
   background-color: var(--black-600);
-  border-left: 4px solid var(--blue-600);
+  border: 1px solid var(--blue-700);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.procedure-item.active {
+.main-procedure:hover {
   background-color: var(--black-500);
-  border-left: 4px solid var(--blue-500);
-  font-weight: 500;
+  border-color: var(--blue-500);
+}
+
+.main-procedure .procedure-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.floating-sub-procedures {
+  position: fixed;
+  background-color: var(--black-800);
+  border: 1px solid var(--blue-500);
+  border-radius: 4px;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.floating-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--blue-700);
+  border-bottom: 1px solid var(--blue-500);
+  color: var(--silver-100);
+}
+
+.close-button {
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--silver-100);
+  transition: color 0.2s;
+}
+
+.close-button:hover {
+  color: var(--silver-200);
+}
+
+.sub-procedure {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--black-500);
+  background-color: var(--black-700);
+  color: var(--silver-100);
+  transition: all 0.2s ease;
+}
+
+.sub-procedure:hover {
+  background-color: var(--blue-700);
+  color: white;
+}
+
+.sub-procedure:last-child {
+  border-bottom: none;
+}
+
+.sub-procedure.active {
+  background-color: var(--blue-600);
+  color: white;
+}
+
+.expand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 8px;
   color: var(--blue-300);
+  font-weight: bold;
 }
 
 /* JsonViewer styles */
@@ -532,54 +606,6 @@ pre.json-content {
   box-shadow:
     0 0 0 2px var(--black-700),
     0 0 0 4px var(--blue-700);
-}
-
-/* Add these to your existing ProcedureList styles */
-.main-procedure {
-  background-color: var(--black-600);
-  border-left: 4px solid var(--blue-700);
-}
-
-.procedure-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.expand-icon {
-  color: var(--blue-300);
-  font-size: 20px;
-  font-weight: bold;
-  padding: 0 4px;
-}
-
-.sub-procedures {
-  background-color: var(--black-800);
-  border-left: 2px solid var(--blue-700);
-  margin-left: 2px;
-}
-
-.sub-procedure {
-  padding-left: 24px;
-  font-size: 14px;
-}
-
-.sub-procedure:hover {
-  background-color: var(--black-600);
-  border-left: 2px solid var(--blue-500);
-}
-
-.sub-procedure.active {
-  background-color: var(--black-500);
-  border-left: 2px solid var(--blue-400);
-}
-
-.main-procedure:hover {
-  background-color: var(--black-500);
-}
-
-.main-procedure.expanded {
-  background-color: var(--black-500);
 }
 
 /* Loading and Error States */
@@ -1080,4 +1106,185 @@ pre.code-block {
 /* Fold button rotation */
 .fold-button.expanded {
   transform: rotate(90deg);
+}
+
+/* JsonViewer Styles */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 24px;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification.info {
+  background-color: #2196F3;
+}
+
+.notification.success {
+  background-color: #4CAF50;
+}
+
+.notification.error {
+  background-color: #f44336;
+}
+
+.json-viewer-content {
+  height: calc(1000px - 48px); /* 1000px minus header height */
+  background-color: var(--black-800);
+  position: relative;
+}
+
+.json-content {
+  height: 100%;
+  margin: 0;
+  overflow-y: auto;
+  background-color: var(--black-800);
+}
+
+.json-content code {
+  display: block;
+  padding: 0;
+  color: var(--silver-100);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--black-800);
+}
+
+.json-content code.wrapped {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.json-content code:not(.wrapped) {
+  white-space: pre;
+}
+
+.json-content textarea {
+  width: 100%;
+  height: 100%;
+  background-color: var(--black-800);
+  color: var(--silver-100);
+  border: none;
+  resize: none;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 16px;
+}
+
+.json-content textarea.wrapped {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.json-content textarea:not(.wrapped) {
+  white-space: pre;
+}
+
+.json-content textarea:focus {
+  outline: none;
+  border: none;
+}
+
+/* Syntax highlighting for JSON */
+.json-string { color:rgb(236, 159, 43); }
+.json-number { color: #ff9d00; }
+.json-boolean { color: #ff628c; }
+.json-null { color: #ff628c; }
+.json-key { color: #5ccfe6; }
+
+/* Syntax highlighting for Mermaid */
+.mermaid-keyword { color: #ff9d00; }
+.mermaid-arrow { color: #ff628c; }
+.mermaid-node { color: #5ccfe6; }
+.mermaid-label { color: #a8ff60; }
+.mermaid-comment { color: #727272; }
+
+/* Button styles */
+.viewer-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.viewer-controls.bottom-controls {
+  padding: 8px 16px;
+  border-top: 1px solid var(--black-700);
+}
+
+.wrap-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 12px;
+  color: var(--silver-300);
+  font-size: 14px;
+}
+
+.wrap-toggle input[type="checkbox"] {
+  margin: 0;
+}
+
+.code-line {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  position: relative;
+  background-color: var(--black-800);
+  padding: 0 8px 0 24px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.code-line:hover {
+  background-color: var(--black-700);
+}
+
+.fold-button {
+  position: absolute;
+  left: 4px;
+  cursor: pointer;
+  color: var(--blue-400);
+  font-size: 12px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fold-button:hover {
+  color: var(--blue-300);
+  transform: scale(1.2);
+}
+
+.code-line.folded {
+  background-color: var(--black-700);
+}
+
+/* Add transition for smooth folding */
+.json-content div {
+  transition: all 0.2s ease;
 }

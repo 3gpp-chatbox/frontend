@@ -12,13 +12,7 @@ const procedures = [
         label: "Initial Registration",
         type: "initial-registration",
         description: "Initial UE registration procedure",
-      },
-      {
-        id: "Periodic_Registration",
-        label: "Periodic Registration",
-        type: "periodic-registration",
-        description: "Periodic UE registration update procedure",
-      },
+      }
     ],
   },
   // Add more main procedures here as needed
@@ -127,107 +121,5 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
     </div>
   );
 }
-
-// Updated styles
-const styles = `
-  .procedure-container {
-    position: relative;
-  }
-
-  .main-procedure {
-    display: inline-flex;
-    align-items: center;
-    background-color: var(--black-600);
-    border: 1px solid var(--blue-700);
-    border-radius: 4px;
-    padding: 8px 12px;
-    margin: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .main-procedure:hover {
-    background-color: var(--black-500);
-    border-color: var(--blue-500);
-  }
-
-  .main-procedure .procedure-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .floating-sub-procedures {
-    position: fixed;
-    background-color: var(--black-800);
-    border: 1px solid var(--blue-500);
-    border-radius: 4px;
-    min-width: 200px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    z-index: 1000;
-  }
-
-  .floating-panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background-color: var(--blue-700);
-    border-bottom: 1px solid var(--blue-500);
-    color: var(--silver-100);
-  }
-
-  .close-button {
-    cursor: pointer;
-    font-size: 20px;
-    color: var(--silver-100);
-    transition: color 0.2s;
-  }
-
-  .close-button:hover {
-    color: var(--silver-200);
-  }
-
-  .sub-procedure {
-    padding: 12px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--black-500);
-    background-color: var(--black-700);
-    color: var(--silver-100);
-    transition: all 0.2s ease;
-  }
-
-  .sub-procedure:hover {
-    background-color: var(--blue-700);
-    color: white;
-  }
-
-  .sub-procedure:last-child {
-    border-bottom: none;
-  }
-
-  .sub-procedure.active {
-    background-color: var(--blue-600);
-    color: white;
-  }
-
-  .expand-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    margin-left: 8px;
-    color: var(--blue-300);
-    font-weight: bold;
-  }
-`;
-
-// Add the styles to the document
-const styleSheet = document.createElement("style");
-styleSheet.innerText = styles;
-document.head.appendChild(styleSheet);
 
 export default ProcedureList;

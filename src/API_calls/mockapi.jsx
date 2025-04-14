@@ -18,11 +18,6 @@ export const fetchProcedures = async () => {
             label: "Initial Registration",
             type: "procedure",
           },
-          {
-            id: "periodic_registration",
-            label: "Periodic Registration",
-            type: "procedure",
-          },
         ],
       },
     ];
@@ -39,7 +34,7 @@ export const fetchProcedures = async () => {
  */
 export const fetchMockData = async (procedure) => {
   try {
-    console.log("Fetching Initial Registration data");
+    console.log(`Fetching mock data for: ${procedure.label}`);
     const response = await fetch(`${BASE_URL}/api/mock-data`);
     if (!response.ok) {
       throw new Error("Failed to fetch mock data");

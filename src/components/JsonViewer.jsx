@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { fetchMockData, saveEditedData } from "../API_calls/mockapi";
-import { getMermaidConverter } from "../functions/mermaidConverters";
+import { getMermaidConverter } from "../functions/jsontomermaid";
 import { saveMermaidAsJson, validateMermaidCode, convertMermaidToJson } from "../functions/mermaidtojson";
 import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
@@ -215,7 +215,11 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
         throw new Error(result.message);
       }
 
+      // Update both Mermaid and JSON representations
       setOriginalMermaidGraph(mermaidGraph);
+      setData(result.data);
+      setOriginalData(result.data);
+      setJsonContent(JSON.stringify(result.data, null, 2));
       setIsEditing(false);
 
       setNotification({
@@ -241,6 +245,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
 
   const handleRevertChanges = () => {
     setMermaidGraph(originalMermaidGraph);
+    setData(originalData);
+    setJsonContent(JSON.stringify(originalData, null, 2));
     setIsEditing(false);
     setShowConfirmation(false);
     setNotification({
@@ -285,187 +291,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
 
   return (
     <div className="section-container">
-      <style>
-        {`
-          .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            border-radius: 4px;
-            color: white;
-            font-size: 14px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-          }
-
-          @keyframes slideIn {
-            from {
-              transform: translateX(100%);
-              opacity: 0;
-            }
-            to {
-              transform: translateX(0);
-              opacity: 1;
-            }
-          }
-
-          .notification.info {
-            background-color: #2196F3;
-          }
-
-          .notification.success {
-            background-color: #4CAF50;
-          }
-
-          .notification.error {
-            background-color: #f44336;
-          }
-
-          .json-viewer-content {
-            height: calc(1000px - 48px); /* 1000px minus header height */
-            background-color: var(--black-800);
-            position: relative;
-          }
-
-          .json-content {
-            height: 100%;
-            margin: 0;
-            overflow-y: auto;
-            background-color: var(--black-800);
-          }
-
-          .json-content code {
-            display: block;
-            padding: 0;
-            color: var(--silver-100);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            background-color: var(--black-800);
-          }
-
-          .json-content code.wrapped {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-          }
-
-          .json-content code:not(.wrapped) {
-            white-space: pre;
-          }
-
-          .json-content textarea {
-            width: 100%;
-            height: 100%;
-            background-color: var(--black-800);
-            color: var(--silver-100);
-            border: none;
-            resize: none;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            padding: 16px;
-          }
-
-          .json-content textarea.wrapped {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-          }
-
-          .json-content textarea:not(.wrapped) {
-            white-space: pre;
-          }
-
-          .json-content textarea:focus {
-            outline: none;
-            border: none;
-          }
-
-          /* Syntax highlighting for JSON */
-          .json-string { color:rgb(236, 159, 43); }
-          .json-number { color: #ff9d00; }
-          .json-boolean { color: #ff628c; }
-          .json-null { color: #ff628c; }
-          .json-key { color: #5ccfe6; }
-
-          /* Syntax highlighting for Mermaid */
-          .mermaid-keyword { color: #ff9d00; }
-          .mermaid-arrow { color: #ff628c; }
-          .mermaid-node { color: #5ccfe6; }
-          .mermaid-label { color: #a8ff60; }
-          .mermaid-comment { color: #727272; }
-
-          /* Button styles */
-          .viewer-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-          }
-
-          .wrap-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-right: 12px;
-            color: var(--silver-300);
-            font-size: 14px;
-          }
-
-          .wrap-toggle input[type="checkbox"] {
-            margin: 0;
-          }
-
-          .code-line {
-            display: flex;
-            align-items: center;
-            min-height: 24px;
-            position: relative;
-            background-color: var(--black-800);
-            padding: 0 8px 0 24px;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-          }
-
-          .code-line:hover {
-            background-color: var(--black-700);
-          }
-
-          .fold-button {
-            position: absolute;
-            left: 4px;
-            cursor: pointer;
-            color: var(--blue-400);
-            font-size: 12px;
-            width: 16px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            background-color: transparent;
-            border: none;
-            padding: 0;
-            margin: 0;
-          }
-
-          .fold-button:hover {
-            color: var(--blue-300);
-            transform: scale(1.2);
-          }
-
-          .code-line.folded {
-            background-color: var(--black-700);
-          }
-
-          /* Add transition for smooth folding */
-          .json-content div {
-            transition: all 0.2s ease;
-          }
-        `}
-      </style>
       <div className="section-header">
         <span>
-          Code View {selectedProcedure ? `- ${selectedProcedure}` : ""}
+          Code View {selectedProcedure ? `- ${selectedProcedure.label}` : ""}
           {isEditing && <span className="editing-indicator"> (Editing)</span>}
         </span>
         <div className="viewer-controls">
@@ -534,10 +362,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
           </div>
         )}
       </div>
-      <div
-        className="viewer-controls"
-        style={{ padding: "8px 16px", borderTop: "1px solid var(--black-700)" }}
-      >
+      <div className="viewer-controls bottom-controls">
         <label className="wrap-toggle">
           <input
             type="checkbox"
