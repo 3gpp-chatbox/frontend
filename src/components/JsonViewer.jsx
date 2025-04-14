@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { fetchMockData, saveEditedData } from "../API_calls/mockapi";
 import { getMermaidConverter } from "../functions/mermaidConverters";
-import { saveMermaidAsJson, validateMermaidCode } from "../functions/mermaidtojson";
+import { saveMermaidAsJson, validateMermaidCode, convertMermaidToJson } from "../functions/mermaidtojson";
+import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 
 // Function to highlight JSON syntax with folding
@@ -160,7 +161,30 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       if (!mermaidGraph.includes("flowchart TD")) {
         throw new Error('Invalid Mermaid syntax: Must include "flowchart TD"');
       }
-      setShowConfirmation(true);
+
+      setNotification({
+        show: true,
+        message: "Validating structure...",
+        type: "info",
+      });
+
+      // Convert to JSON and validate structure
+      const jsonData = convertMermaidToJson(mermaidGraph);
+      const validationResult = validateGraph(jsonData);
+
+      if (validationResult.valid) {
+        setNotification({
+          show: true,
+          message: "Structure validation successful",
+          type: "success",
+        });
+        // Show save confirmation after a brief delay
+        setTimeout(() => {
+          setShowConfirmation(true);
+        }, 1000);
+      } else {
+        throw new Error(`Structural validation failed: ${validationResult.error}`);
+      }
     } catch (error) {
       setNotification({
         show: true,
@@ -523,13 +547,17 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
           Wrap Text
         </label>
       </div>
-      {showConfirmation && (
-        <ConfirmationDialog
-          onConfirm={handleConfirmSave}
-          onContinueEditing={handleContinueEditing}
-          onRevert={handleRevertChanges}
-        />
-      )}
+      {/* Save Confirmation Dialog */}
+      <ConfirmationDialog
+        show={showConfirmation}
+        title="Save Changes?"
+        message="Are you sure you want to save the changes you made to the JSON code?"
+        onConfirm={handleConfirmSave}
+        onContinueEditing={handleContinueEditing}
+        onRevert={handleRevertChanges}
+        showContinueEditing={true}
+        showRevert={true}
+      />
     </div>
   );
 }

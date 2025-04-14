@@ -1,11 +1,14 @@
 import React from "react";
+import PropTypes from "prop-types";
 
 function ConfirmationDialog({
+  show = false,
   onConfirm,
   onContinueEditing,
   onRevert,
-  onClose,
 }) {
+  if (!show) return null;
+
   return (
     <div className="confirmation-overlay">
       <style>
@@ -111,5 +114,12 @@ function ConfirmationDialog({
     </div>
   );
 }
+
+ConfirmationDialog.propTypes = {
+  show: PropTypes.bool,
+  onConfirm: PropTypes.func.isRequired,
+  onContinueEditing: PropTypes.func,
+  onRevert: PropTypes.func,
+};
 
 export default ConfirmationDialog;

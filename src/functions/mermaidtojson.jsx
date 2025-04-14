@@ -34,7 +34,7 @@ const parseNodeLabel = (label) => {
  * @returns {Object} The converted JSON object
  * @throws {Error} If the Mermaid code is invalid
  */
-const convertMermaidToJson = (mermaidCode) => {
+export const convertMermaidToJson = (mermaidCode) => {
   if (!mermaidCode || typeof mermaidCode !== 'string') {
     throw new Error('Invalid Mermaid code: empty or not a string');
   }
