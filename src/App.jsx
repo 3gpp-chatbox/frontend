@@ -2,22 +2,26 @@ import { useState } from 'react';
 import ProcedureList from './components/ProcedureList';
 import JsonViewer from './components/JsonViewer';
 import FlowDiagram from './components/FlowDiagram';
-import Description from './components/Descriptions';
+import Description from './components/Description';
 
 function App() {
   const [selectedProcedure, setSelectedProcedure] = useState(null);
   const [mermaidCode, setMermaidCode] = useState(null);
 
   // Handler for procedure selection
-  const handleProcedureSelect = (procedure) => {
-    console.log("App: Selected procedure:", procedure);
+  const handleProcedureSelect = (procedureData) => {
+    console.log("App: Selected procedure data:", procedureData);
+    
+    if (!procedureData) {
+      setSelectedProcedure(null);
+      return;
+    }
+  
     setSelectedProcedure({
-      resultSet: procedure.resultSet,
-      procedureName: procedure.procedureName,
-      id: procedure
+      ...procedureData,  // This includes all procedure data 
+      procedureName: procedureData.name // For backward compatibility
     });
   };
-
   return (
     <div className="container">
       <header className="header">
@@ -47,11 +51,13 @@ function App() {
         </div>
 
         {/* Procedure Description */}
-        {/* 
-        <div className="panel col-12">
-          <Description procedure={selectedProcedure} />
+        
+        <div className="panel description-panel">
+          <Description 
+            procedure={selectedProcedure}
+          />
         </div>
-        */}
+       
       </div>
     </div>
   );
