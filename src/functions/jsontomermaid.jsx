@@ -28,6 +28,10 @@ export function convertJsonToMermaid(graphData) {
     mermaidCode += `  %% Procedure: ${graphData.procedure_name}\n`;
   }
 
+  // Add class definitions
+  mermaidCode += "  classDef stateNode fill:#60a5fa,stroke:#2563eb,stroke-width:2px\n";
+  mermaidCode += "  classDef elementNode fill:#fb923c,stroke:#d97706,stroke-width:2px\n\n";
+
   const nodeIdMap = {};
   const labelLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let labelIndex = 0;
@@ -50,6 +54,8 @@ export function convertJsonToMermaid(graphData) {
     nodeIdMap[node.id] = label;
     const labelText = escapeNodeText(node.id);
     mermaidCode += `  ${label}(${labelText})\n`;
+    // Apply class based on node type
+    mermaidCode += `  class ${label} ${node.type === 'state' ? 'stateNode' : 'elementNode'}\n`;
     mermaidCode += `  %% Type: ${node.type}\n`;
     if (node.description) {
       mermaidCode += `  %% Description: ${node.description}\n`;
