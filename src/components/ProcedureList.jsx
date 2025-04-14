@@ -1,45 +1,77 @@
+// ProcedureList.jsx
 import { useState, useEffect } from "react";
-import { fetchResultSets, fetchGraphs } from "../API_calls/api"; 
+import { fetchProcedures, fetchProcedure } from "../API/api_calls";
+import { JsonToMermaid, defaultMermaidConfig } from "../functions/jsonToMermaid";
 
 function ProcedureList({ selectedProcedure, onProcedureSelect }) {
-  const [resultSets, setResultSets] = useState([]); 
-  const [expandedResults, setExpandedResults] = useState(new Set()); 
-  const [procedures, setProcedures] = useState({}); 
+  const [procedureList, setProcedureList] = useState([]);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch available result sets on mount
+  // Fetch available procedures on mount
   useEffect(() => {
-    fetchResultSets().then(setResultSets);
-  }, []);
-
-  // Toggle a result set and fetch its procedures
-  const toggleResultSet = async (resultSet) => {
-    const newExpanded = new Set(expandedResults);
-    if (newExpanded.has(resultSet)) {
-      newExpanded.delete(resultSet);
-    } else {
-      newExpanded.add(resultSet);
-      if (!procedures[resultSet]) {
-        const graphs = await fetchGraphs(resultSet);
-        setProcedures((prev) => ({ ...prev, [resultSet]: graphs }));
+    const loadProcedures = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const data = await fetchProcedures();
+        console.log("Received procedures data:", data); // Debug log
+        
+        if (Array.isArray(data)) {
+          setProcedureList(data);
+        } else {
+          console.error("Expected array of procedures, got:", data);
+          setError("Invalid data format received from server");
+        }
+      } catch (err) {
+        console.error("Error fetching procedures:", err);
+        setError("Failed to load procedures: " + (err.message || "Unknown error"));
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setExpandedResults(newExpanded);
-  };
-
-  const handleProcedureClick = (resultSet, procedure) => {
-    // Map the result set name to match the converter naming
-    const methodMap = {
-      'Result Set 1': 'method_1',
-      'Result Set 2': 'method_2',
-      'Result Set 3': 'method_3',
     };
 
-    onProcedureSelect({
-      resultSet: methodMap[resultSet] || resultSet, // Use mapped name or original if no mapping
-      procedureName: procedure,
-      id: procedure
-    });
+    loadProcedures();
+  }, []);
+
+  const handleProcedureClick = async (procedure) => {
+    try {
+      // Fetch the procedure data
+      const graphData = await fetchProcedure(procedure.id);
+      
+      if (graphData) {
+        // Convert graph data to Mermaid diagram
+        const mermaidDiagram = JsonToMermaid(graphData, defaultMermaidConfig);
+        
+        // Pass both the JSON data and Mermaid diagram to the parent component
+        onProcedureSelect({
+          procedureName: procedure.name,
+          id: procedure.id,
+          jsonData: graphData,
+          mermaidDiagram: mermaidDiagram
+        });
+      } else {
+        setError(`No data available for ${procedure.name}`);
+      }
+    } catch (err) {
+      console.error("Error fetching procedure data:", err);
+      setError(`Failed to load data for ${procedure.name}: ${err.message || "Unknown error"}`);
+    }
   };
+
+  if (error) {
+    return (
+      <div className="section-container">
+        <div className="section-header">
+          <span>Procedures</span>
+        </div>
+        <div className="content-area error-message">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="section-container">
@@ -47,40 +79,27 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
         <span>Procedures</span>
       </div>
       <div className="content-area">
-        {resultSets.map((resultSet) => {
-          const isExpanded = expandedResults.has(resultSet);
-          return (
-            <div key={resultSet}>
-              {/* Main Result Set */}
-              <div
-                className={`procedure-item main-procedure ${isExpanded ? "expanded" : ""}`}
-                onClick={() => toggleResultSet(resultSet)}
+        {isLoading ? (
+          <div className="placeholder-text">Loading procedures...</div>
+        ) : procedureList.length === 0 ? (
+          <div className="placeholder-text">No procedures available</div>
+        ) : (
+          <div className="procedure-list">
+            {procedureList.map((procedure) => (
+              <div 
+                key={procedure.id}
+                className={`procedure-item ${
+                  selectedProcedure?.id === procedure.id ? "active" : ""
+                }`}
+                onClick={() => handleProcedureClick(procedure)}
               >
                 <div className="procedure-header">
-                  <span>{resultSet}</span>
-                  <span className="expand-icon">{isExpanded ? "−" : "+"}</span>
+                  <span>{procedure.name}</span>
                 </div>
               </div>
-
-              {/* Sub Procedures (Graphs) */}
-              {isExpanded && procedures[resultSet] && (
-                <div className="sub-procedures">
-                  {procedures[resultSet].map((procedure) => (
-                    <div
-                      key={procedure}
-                      className={`procedure-item sub-procedure ${
-                        selectedProcedure?.id === procedure ? "active" : ""
-                      }`}
-                      onClick={() => handleProcedureClick(resultSet, procedure)}
-                    >
-                      {procedure}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
