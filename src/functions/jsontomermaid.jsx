@@ -4,27 +4,11 @@
  * @param {Object} options - Configuration options for the conversion
  * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right)
  * @param {Object} options.styles - Custom style definitions
- * @param {boolean} options.useEditedGraph - Whether to use edited_graph instead of original_graph
  * @returns {string} Mermaid diagram syntax
  */
 export const JsonToMermaid = (jsonData, options = {}) => {
-  if (!jsonData) {
-    console.error("Invalid graph data: No data provided");
-    return "";
-  }
-
-  // Handle both direct graph data and API response format
-  let graphData;
-  if (jsonData.original_graph || jsonData.edited_graph) {
-    // API response format
-    graphData = options.useEditedGraph ? jsonData.edited_graph : jsonData.original_graph;
-  } else {
-    // Direct graph data format
-    graphData = jsonData;
-  }
-
-  if (!graphData || !graphData.nodes || !graphData.edges) {
-    console.error("Invalid graph data structure:", graphData);
+  if (!jsonData || !jsonData.nodes || !jsonData.edges) {
+    console.error("Invalid graph data structure");
     return "";
   }
 
@@ -36,7 +20,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     }
   } = options;
 
-  let mermaidCode = `flowchart ${direction}\n`;
+  let mermaidCode = `graph ${direction}\n`;
 
   // Style definitions
   Object.entries(styles).forEach(([className, style]) => {
@@ -48,7 +32,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   mermaidCode += "\n";
 
   // Process nodes
-  graphData.nodes.forEach(node => {
+  jsonData.nodes.forEach(node => {
     // Sanitize node ID
     const nodeId = node.id
       .replace(/[^\w\s]/g, "")
@@ -63,8 +47,19 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     // Build node content
     let nodeContent = `**${node.type.toUpperCase()}**<br>`;
     
-    if (node.description) {
-      nodeContent += `${node.description}<br>`;
+    if (node.properties) {
+      if (nodeType === "event" && node.properties.eventType) {
+        nodeContent += `${node.entity}: ${node.properties.eventType}<br>`;
+      } else if (nodeType === "state" && node.properties.state) {
+        nodeContent += `${node.entity}: ${node.properties.state}<br>`;
+      }
+      
+      // Add any additional properties
+      Object.entries(node.properties)
+        .filter(([key]) => !["eventType", "state"].includes(key))
+        .forEach(([key, value]) => {
+          nodeContent += `${key}: ${value}<br>`;
+        });
     }
 
     // Escape quotes and add node
@@ -73,7 +68,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   });
 
   // Process edges
-  graphData.edges.forEach(edge => {
+  jsonData.edges.forEach(edge => {
     const sourceId = edge.from
       .replace(/[^\w\s]/g, "")
       .replace(/\s+/g, "_")
@@ -83,8 +78,10 @@ export const JsonToMermaid = (jsonData, options = {}) => {
       .replace(/\s+/g, "_")
       .trim();
 
-    // Add edge description if it exists
-    const label = edge.description ? `|${edge.description}|` : "";
+    // Add edge label if properties exist
+    const label = edge.properties?.messageType
+      ? `|${edge.properties.messageType}|`
+      : "";
 
     mermaidCode += `    ${sourceId} -->${label} ${targetId}\n`;
   });
@@ -95,9 +92,9 @@ export const JsonToMermaid = (jsonData, options = {}) => {
 // Export a default configuration for common use cases
 export const defaultMermaidConfig = {
   direction: "TD",
-  useEditedGraph: true, // Default to using edited_graph
   styles: {
     state: { fill: "#f9f", stroke: "#333", "stroke-width": "2px", color: "#000" },
     event: { fill: "#bbf", stroke: "#333", "stroke-width": "2px", color: "#000" }
   }
 };
+
