@@ -1,120 +1,103 @@
 /**
- * Escapes special characters in node text for Mermaid compatibility
- * @param {string} text - The text to escape
- * @returns {string} Escaped text
+ * Converts a JSON graph structure to Mermaid diagram syntax
+ * @param {Object} jsonData - The graph data in JSON format
+ * @param {Object} options - Configuration options for the conversion
+ * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right)
+ * @param {Object} options.styles - Custom style definitions
+ * @param {boolean} options.useEditedGraph - Whether to use edited_graph instead of original_graph
+ * @returns {string} Mermaid diagram syntax
  */
-function escapeNodeText(text) {
-  return text.replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/"/g, "&quot;");
-}
-
-/**
- * Escapes special characters in edge text for Mermaid compatibility
- * @param {string} text - The text to escape
- * @returns {string} Escaped text
- */
-function escapeEdgeText(text) {
-  return text.replace(/\(/g, "&#40;").replace(/\)/g, "&#41;").replace(/"/g, "&quot;");
-}
-
-/**
- * Converts a JSON graph structure to Mermaid diagram code
- * @param {Object} graphData - The graph data in JSON format
- * @returns {string} Mermaid diagram code
- */
-export function convertJsonToMermaid(graphData) {
-  let mermaidCode = "flowchart TD\n";
-
-  if (graphData.procedure_name) {
-    mermaidCode += `  %% Procedure: ${graphData.procedure_name}\n`;
+export const JsonToMermaid = (jsonData, options = {}) => {
+  if (!jsonData) {
+    console.error("Invalid graph data: No data provided");
+    return "";
   }
 
-  // Add class definitions
-  mermaidCode += "  classDef stateNode fill:#60a5fa,stroke:#2563eb,stroke-width:2px\n";
-  mermaidCode += "  classDef elementNode fill:#fb923c,stroke:#d97706,stroke-width:2px\n\n";
-
-  const nodeIdMap = {};
-  const labelLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let labelIndex = 0;
-
-  // Extend label system to AA, AB, etc., if we run out of single letters
-  function getNextLabel() {
-    let label = "";
-    let index = labelIndex;
-    do {
-      label = labelLetters[index % 26] + label;
-      index = Math.floor(index / 26) - 1;
-    } while (index >= 0);
-    labelIndex++;
-    return label;
+  // Handle both direct graph data and API response format
+  let graphData;
+  if (jsonData.original_graph || jsonData.edited_graph) {
+    // API response format
+    graphData = options.useEditedGraph ? jsonData.edited_graph : jsonData.original_graph;
+  } else {
+    // Direct graph data format
+    graphData = jsonData;
   }
 
-  // Assign labels and print node definitions
-  graphData.graph.nodes.forEach(node => {
-    const label = getNextLabel();
-    nodeIdMap[node.id] = label;
-    const labelText = escapeNodeText(node.id);
-    mermaidCode += `  ${label}(${labelText})\n`;
-    // Apply class based on node type
-    mermaidCode += `  class ${label} ${node.type === 'state' ? 'stateNode' : 'elementNode'}\n`;
-    mermaidCode += `  %% Type: ${node.type}\n`;
-    if (node.description) {
-      mermaidCode += `  %% Description: ${node.description}\n`;
+  if (!graphData || !graphData.nodes || !graphData.edges) {
+    console.error("Invalid graph data structure:", graphData);
+    return "";
+  }
+
+  const {
+    direction = "TD",
+    styles = {
+      state: { fill: "#f9f", stroke: "#333", "stroke-width": "2px", color: "#000" },
+      event: { fill: "#bbf", stroke: "#333", "stroke-width": "2px", color: "#000" }
     }
+  } = options;
+
+  let mermaidCode = `flowchart ${direction}\n`;
+
+  // Style definitions
+  Object.entries(styles).forEach(([className, style]) => {
+    const styleStr = Object.entries(style)
+      .map(([key, value]) => `${key}:${value}`)
+      .join(",");
+    mermaidCode += `    classDef ${className} ${styleStr}\n`;
+  });
+  mermaidCode += "\n";
+
+  // Process nodes
+  graphData.nodes.forEach(node => {
+    // Sanitize node ID
+    const nodeId = node.id
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, "_")
+      .trim();
+
+    // Create node label based on type
+    const nodeType = node.type.toLowerCase();
+    const shape = nodeType === "event" ? "((" : "[";
+    const closeShape = nodeType === "event" ? "))" : "]";
+
+    // Build node content
+    let nodeContent = `**${node.type.toUpperCase()}**<br>`;
+    
+    if (node.description) {
+      nodeContent += `${node.description}<br>`;
+    }
+
+    // Escape quotes and add node
+    const escapedContent = nodeContent.replace(/"/g, '\\"');
+    mermaidCode += `    ${nodeId}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
   });
 
-  // Add edges using mapped labels
-  graphData.graph.edges.forEach(edge => {
-    const from = nodeIdMap[edge.from] || edge.from;
-    const to = nodeIdMap[edge.to] || edge.to;
-    mermaidCode += `  ${from} --> ${to}\n`;
-    mermaidCode += `  %% Type: ${edge.type}\n`;
-    if (edge.description) {
-      mermaidCode += `  %% Description: ${edge.description}\n`;
-    }
+  // Process edges
+  graphData.edges.forEach(edge => {
+    const sourceId = edge.from
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, "_")
+      .trim();
+    const targetId = edge.to
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, "_")
+      .trim();
+
+    // Add edge description if it exists
+    const label = edge.description ? `|${edge.description}|` : "";
+
+    mermaidCode += `    ${sourceId} -->${label} ${targetId}\n`;
   });
 
   return mermaidCode;
-}
-
-// Sample test data
-const sampleGraphData = {
-  procedure_name: "Initial Registration",
-  graph: {
-    nodes: [
-      {
-        id: "UE",
-        type: "endpoint",
-        description: "User Equipment"
-      },
-      {
-        id: "gNB",
-        type: "network_element",
-        description: "Next Generation Node B"
-      },
-      {
-        id: "AMF",
-        type: "network_function",
-        description: "Access and Mobility Management Function"
-      }
-    ],
-    edges: [
-      {
-        from: "UE",
-        to: "gNB",
-        type: "message",
-        description: "Registration Request"
-      },
-      {
-        from: "gNB",
-        to: "AMF",
-        type: "message",
-        description: "N2 Registration Request"
-      }
-    ]
-  }
 };
 
-// Export the sample data for testing
-export const getMermaidConverter = () => {
-  return (data) => convertJsonToMermaid(data || sampleGraphData);
+// Export a default configuration for common use cases
+export const defaultMermaidConfig = {
+  direction: "TD",
+  useEditedGraph: true, // Default to using edited_graph
+  styles: {
+    state: { fill: "#f9f", stroke: "#333", "stroke-width": "2px", color: "#000" },
+    event: { fill: "#bbf", stroke: "#333", "stroke-width": "2px", color: "#000" }
+  }
 };
