@@ -52,23 +52,34 @@ function FlowDiagram({ mermaidCode }) {
     if (!mermaidRef.current || !mermaidCode) return;
 
     try {
+      // Keep a reference to the current SVG before rendering
+      const oldSvg = mermaidRef.current.querySelector("svg");
+      const oldViewBox = oldSvg?.getAttribute("viewBox");
+      const oldWidth = oldSvg?.style.width;
+      const oldHeight = oldSvg?.style.height;
+
+      // Only proceed with rendering if the code is valid
+      if (!mermaidCode.includes("flowchart TD")) {
+        return;
+      }
+
       const { svg } = await mermaid.render("mermaid-diagram", mermaidCode);
 
+      // Only update if the component is still mounted
       if (mermaidRef.current) {
-        // Keep the old SVG until the new one is ready
-        const oldSvg = mermaidRef.current.querySelector("svg");
         const tempDiv = document.createElement("div");
         tempDiv.innerHTML = svg;
         const newSvg = tempDiv.querySelector("svg");
 
-        if (oldSvg) {
-          // Copy the viewBox and dimensions from the old SVG
-          const viewBox = oldSvg.getAttribute("viewBox");
-          if (viewBox) {
-            newSvg.setAttribute("viewBox", viewBox);
-          }
-          newSvg.style.width = oldSvg.style.width;
-          newSvg.style.height = oldSvg.style.height;
+        // Preserve the previous viewBox and dimensions if they exist
+        if (oldViewBox) {
+          newSvg.setAttribute("viewBox", oldViewBox);
+        }
+        if (oldWidth) {
+          newSvg.style.width = oldWidth;
+        }
+        if (oldHeight) {
+          newSvg.style.height = oldHeight;
         }
 
         // Replace the old SVG with the new one
@@ -178,8 +189,13 @@ function FlowDiagram({ mermaidCode }) {
     setIsDragging(false);
   };
 
+  // Add a debounced effect for rendering
   useEffect(() => {
-    renderDiagram();
+    const timer = setTimeout(() => {
+      renderDiagram();
+    }, 100); // Small delay to batch rapid updates
+
+    return () => clearTimeout(timer);
   }, [renderDiagram]);
 
   return (

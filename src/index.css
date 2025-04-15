@@ -407,6 +407,7 @@ pre.json-content {
   height: 100%;
   display: flex;
   flex-direction: column;
+  background-color: var(--black-800);
 }
 
 .mermaid-editor textarea {
@@ -421,6 +422,25 @@ pre.json-content {
   line-height: 1.5;
   padding: 16px;
   outline: none;
+  width: 100%;
+  height: 100%;
+}
+
+.mermaid-editor textarea:focus {
+  outline: none;
+  border: none;
+}
+
+/* Remove syntax highlighting styles that are no longer needed */
+.mermaid-editor .flowchart,
+.mermaid-editor .graph,
+.mermaid-editor .node-id,
+.mermaid-editor .node-text,
+.mermaid-editor .arrow,
+.mermaid-editor .comment,
+.mermaid-editor .type,
+.mermaid-editor .description {
+  color: inherit;
 }
 
 /* Description styles */

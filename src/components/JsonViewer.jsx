@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { fetchMockData, saveEditedData } from "../API_calls/mockapi";
 import { getMermaidConverter } from "../functions/jsontomermaid";
@@ -145,6 +145,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     message: "",
     type: "",
   });
+  const [debouncedMermaid, setDebouncedMermaid] = useState("");
 
   useEffect(() => {
     const loadMockData = async () => {
@@ -181,10 +182,14 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     loadMockData();
   }, [selectedProcedure]);
 
+  // Debounced update for the diagram
   useEffect(() => {
-    if (!isEditing) {
+    const timer = setTimeout(() => {
+      if (!isEditing) return;
       onMermaidCodeChange(mermaidGraph);
-    }
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
   }, [mermaidGraph, isEditing, onMermaidCodeChange]);
 
   // Auto-hide notification after 3 seconds
@@ -201,8 +206,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     const newCode = event.target.value;
     setMermaidGraph(newCode);
     setIsEditing(true);
-    // Update the diagram immediately
-    onMermaidCodeChange(newCode);
   };
 
   const handleSaveChanges = () => {
@@ -388,13 +391,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
                 <div className="mermaid-editor">
                   <textarea
                     className={`code-content ${isWrapped ? "wrapped" : ""}`}
-                    value={mermaidGraph}
+                    value={cleanMermaidCode(mermaidGraph)}
                     onChange={handleMermaidChange}
                     spellCheck="false"
-                  />
-                  <div 
-                    className={`syntax-preview ${isWrapped ? "wrapped" : ""}`}
-                    dangerouslySetInnerHTML={{ __html: highlightMermaid(mermaidGraph) }}
                   />
                 </div>
               ) : (
