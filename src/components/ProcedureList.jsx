@@ -1,86 +1,122 @@
-import { useState, useEffect } from "react";
-import { fetchResultSets, fetchGraphs } from "../API_calls/api"; 
+import { useState } from "react";
+
+// Define the procedure data structure
+const procedures = [
+  {
+    id: "registration",
+    label: "Registration Procedure",
+    type: "registration",
+    subProcedures: [
+      {
+        id: "Initial_Registration",
+        label: "Initial Registration",
+        type: "initial-registration",
+        description: "Initial UE registration procedure",
+      }
+    ],
+  },
+  // Add more main procedures here as needed
+];
 
 function ProcedureList({ selectedProcedure, onProcedureSelect }) {
-  const [resultSets, setResultSets] = useState([]); 
-  const [expandedResults, setExpandedResults] = useState(new Set()); 
-  const [procedures, setProcedures] = useState({}); 
+  const [expandedProcedures, setExpandedProcedures] = useState(new Set());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [floatingPanelPosition, setFloatingPanelPosition] = useState({
+    x: 0,
+    y: 0,
+  });
 
-  // Fetch available result sets on mount
-  useEffect(() => {
-    fetchResultSets().then(setResultSets);
-  }, []);
-
-  // Toggle a result set and fetch its procedures
-  const toggleResultSet = async (resultSet) => {
-    const newExpanded = new Set(expandedResults);
-    if (newExpanded.has(resultSet)) {
-      newExpanded.delete(resultSet);
+  const toggleProcedure = (procedureId, event) => {
+    const newExpanded = new Set(expandedProcedures);
+    if (newExpanded.has(procedureId)) {
+      newExpanded.delete(procedureId);
     } else {
-      newExpanded.add(resultSet);
-      if (!procedures[resultSet]) {
-        const graphs = await fetchGraphs(resultSet);
-        setProcedures((prev) => ({ ...prev, [resultSet]: graphs }));
-      }
+      // Calculate position for floating panel
+      const button = event.currentTarget;
+      const rect = button.getBoundingClientRect();
+      setFloatingPanelPosition({
+        x: rect.right + 10, // 10px offset from the button
+        y: rect.top,
+      });
+      newExpanded.add(procedureId);
     }
-    setExpandedResults(newExpanded);
+    setExpandedProcedures(newExpanded);
   };
 
-  const handleProcedureClick = (resultSet, procedure) => {
-    // Map the result set name to match the converter naming
-    const methodMap = {
-      'Result Set 1': 'method_1',
-      'Result Set 2': 'method_2',
-      'Result Set 3': 'method_3',
-    };
+  const renderProcedure = (procedure) => {
+    const isExpanded = expandedProcedures.has(procedure.id);
+    const isSelected = selectedProcedure?.id === procedure.id;
+    const hasSubProcedures = procedure.subProcedures?.length > 0;
 
-    onProcedureSelect({
-      resultSet: methodMap[resultSet] || resultSet, // Use mapped name or original if no mapping
-      procedureName: procedure,
-      id: procedure
-    });
+    return (
+      <div key={procedure.id} className="procedure-container">
+        <div
+          className={`procedure-item main-procedure ${
+            isExpanded ? "expanded" : ""
+          } ${isSelected ? "active" : ""}`}
+          onClick={(e) => {
+            if (hasSubProcedures) {
+              toggleProcedure(procedure.id, e);
+            } else {
+              onProcedureSelect(procedure);
+            }
+          }}
+        >
+          <div className="procedure-header">
+            <span>{procedure.label}</span>
+            {hasSubProcedures && <span className="expand-icon">+</span>}
+          </div>
+        </div>
+
+        {isExpanded && hasSubProcedures && (
+          <div
+            className="floating-sub-procedures"
+            style={{
+              position: "fixed",
+              left: `${floatingPanelPosition.x}px`,
+              top: `${floatingPanelPosition.y}px`,
+            }}
+          >
+            <div className="floating-panel-header">
+              <span>Sub-procedures</span>
+              <span
+                className="close-button"
+                onClick={() => toggleProcedure(procedure.id)}
+              >
+                ×
+              </span>
+            </div>
+            {procedure.subProcedures.map((subProc) => (
+              <div
+                key={subProc.id}
+                className={`procedure-item sub-procedure ${
+                  selectedProcedure?.id === subProc.id ? "active" : ""
+                }`}
+                onClick={() => {
+                  onProcedureSelect(subProc);
+                  toggleProcedure(procedure.id);
+                }}
+              >
+                <span>{subProc.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
+  // Add loading and error states to the UI
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Procedures</span>
       </div>
       <div className="content-area">
-        {resultSets.map((resultSet) => {
-          const isExpanded = expandedResults.has(resultSet);
-          return (
-            <div key={resultSet}>
-              {/* Main Result Set */}
-              <div
-                className={`procedure-item main-procedure ${isExpanded ? "expanded" : ""}`}
-                onClick={() => toggleResultSet(resultSet)}
-              >
-                <div className="procedure-header">
-                  <span>{resultSet}</span>
-                  <span className="expand-icon">{isExpanded ? "−" : "+"}</span>
-                </div>
-              </div>
-
-              {/* Sub Procedures (Graphs) */}
-              {isExpanded && procedures[resultSet] && (
-                <div className="sub-procedures">
-                  {procedures[resultSet].map((procedure) => (
-                    <div
-                      key={procedure}
-                      className={`procedure-item sub-procedure ${
-                        selectedProcedure?.id === procedure ? "active" : ""
-                      }`}
-                      onClick={() => handleProcedureClick(resultSet, procedure)}
-                    >
-                      {procedure}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {loading && <div className="loading-state">Loading data...</div>}
+        {error && <div className="error-state">Error: {error}</div>}
+        {procedures.map(renderProcedure)}
       </div>
     </div>
   );
