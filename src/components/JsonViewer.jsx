@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { fetchProcedure, insertProcedureGraphChanges } from "../API/api_calls";
 import { JsonToMermaid, defaultMermaidConfig } from "../functions/jsonToMermaid";
-import { saveMermaidAsJson, validateMermaidCode, convertMermaidToJson } from "./functions/mermaidToJson";
+import { saveMermaidAsJson, validateMermaidCode, convertMermaidToJson } from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 
