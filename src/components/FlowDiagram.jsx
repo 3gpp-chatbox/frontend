@@ -37,6 +37,21 @@ const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
 const ZOOM_SPEED = 0.1;
 
+// Clean up mermaid code by removing extra whitespace and ensuring proper formatting
+const cleanMermaidCode = (code) => {
+  if (!code) return "";
+  
+  // Split into lines and remove extra whitespace
+  const lines = code.split('\n').map(line => line.trim()).filter(line => line);
+  
+  // Ensure flowchart declaration is correct
+  if (!lines[0]?.startsWith('flowchart')) {
+    lines.unshift('flowchart TD');
+  }
+  
+  return lines.join('\n');
+};
+
 function FlowDiagram({ mermaidCode }) {
   const mermaidRef = useRef(null);
   const containerRef = useRef(null);
@@ -49,7 +64,15 @@ function FlowDiagram({ mermaidCode }) {
   const [zoomLevel, setZoomLevel] = useState(100);
 
   const renderDiagram = useCallback(async () => {
-    if (!mermaidRef.current || !mermaidCode) return;
+    console.log("Rendering diagram with code:", mermaidCode);
+    
+    if (!mermaidRef.current || !mermaidCode) {
+      console.log("Missing ref or code:", { 
+        hasRef: !!mermaidRef.current, 
+        hasCode: !!mermaidCode 
+      });
+      return;
+    }
 
     try {
       // Keep a reference to the current SVG before rendering
@@ -58,12 +81,19 @@ function FlowDiagram({ mermaidCode }) {
       const oldWidth = oldSvg?.style.width;
       const oldHeight = oldSvg?.style.height;
 
+      // Clean up the mermaid code before rendering
+      const cleanedCode = cleanMermaidCode(mermaidCode);
+      console.log("Cleaned mermaid code:", cleanedCode);
+      
       // Only proceed with rendering if the code is valid
-      if (!mermaidCode.includes("flowchart TD")) {
+      if (!cleanedCode.includes("flowchart")) {
+        console.log("Missing flowchart declaration");
         return;
       }
 
-      const { svg } = await mermaid.render("mermaid-diagram", mermaidCode);
+      console.log("Attempting to render with mermaid...");
+      const { svg } = await mermaid.render("mermaid-diagram", cleanedCode);
+      console.log("Mermaid render successful");
 
       // Only update if the component is still mounted
       if (mermaidRef.current) {
@@ -85,10 +115,12 @@ function FlowDiagram({ mermaidCode }) {
         // Replace the old SVG with the new one
         mermaidRef.current.innerHTML = "";
         mermaidRef.current.appendChild(newSvg);
+        console.log("SVG successfully added to DOM");
       }
 
       setError(null);
     } catch (err) {
+      console.error("Error rendering diagram:", err);
       // Only set error for invalid syntax, ignore rendering errors
       if (err.str?.includes("syntax")) {
         setError(err.message);

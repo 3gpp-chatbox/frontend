@@ -2,7 +2,7 @@ import { useState } from "react";
 import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
 import ProcedureList from "./components/ProcedureList";
-import Description from "./components/Descriptions"; 
+import Description from "./components/Descriptions";
 
 function App() {
   const [mermaidCode, setMermaidCode] = useState(null);
@@ -11,6 +11,11 @@ function App() {
   const handleProcedureSelect = (procedure) => {
     console.log("Selected procedure:", procedure);
     setSelectedProcedure(procedure);
+  };
+
+  const handleMermaidCodeChange = (newCode) => {
+    console.log("App: Mermaid code updated:", newCode);
+    setMermaidCode(newCode);
   };
 
   return (
@@ -27,13 +32,16 @@ function App() {
             onProcedureSelect={handleProcedureSelect}
           />
         </div>
+        <div className="panel description-panel">
+          <Description procedure={selectedProcedure} />
+        </div>
 
         {/* Editor and Diagram Container */}
         <div className="editor-diagram-container">
           {/* JSON/Mermaid Editor Panel */}
           <div className="editor-panel">
             <JsonViewer
-              onMermaidCodeChange={setMermaidCode}
+              onMermaidCodeChange={handleMermaidCodeChange}
               selectedProcedure={selectedProcedure}
             />
           </div>
@@ -42,13 +50,6 @@ function App() {
           <div className="diagram-panel">
             <FlowDiagram mermaidCode={mermaidCode} />
           </div>
-           {/* Procedure Description */}
-        
-        <div className="panel description-panel">
-          <Description 
-            procedure={selectedProcedure}
-          />
-        </div>
         </div>
       </div>
     </div>
