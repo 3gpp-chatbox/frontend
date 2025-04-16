@@ -31,40 +31,94 @@ const parseNodeLabel = (label) => {
 /**
  * Validates Mermaid code structure
  * @param {string} mermaidCode - The Mermaid code to validate
- * @returns {boolean} True if valid, false otherwise
+ * @returns {Object} Validation result with success status and error messages
  */
 export function validateMermaidCode(mermaidCode) {
-  if (!mermaidCode || typeof mermaidCode !== 'string') return false;
+  const errors = [];
   
-  const lines = mermaidCode.split('\n').map(line => line.trim());
+  if (!mermaidCode || typeof mermaidCode !== 'string') {
+    return {
+      isValid: false,
+      errors: ['No Mermaid code provided or invalid type']
+    };
+  }
+  
+  const lines = mermaidCode.split('\n').map(line => line.trim()).filter(line => line);
+  
+  if (lines.length === 0) {
+    return {
+      isValid: false,
+      errors: ['Mermaid code is empty']
+    };
+  }
   
   // Check for flowchart declaration
-  if (!lines.some(line => line === 'flowchart TD')) return false;
+  if (!lines[0].match(/^flowchart\s+(TD|LR)$/)) {
+    errors.push('First line must be "flowchart TD" or "flowchart LR"');
+  }
   
-  let hasValidContent = false;
   let hasNodes = false;
+  let nodeCount = 0;
+  let edgeCount = 0;
+  const definedNodes = new Set();
   
-  for (const line of lines) {
-    // Skip empty lines and comments
-    if (!line || line.startsWith('%%')) continue;
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
     
-    // Check for valid node definitions: A(Node text)
-    if (line.match(/^[A-Z]+\([^()]+\);?$/)) {
-      hasNodes = true;
-      hasValidContent = true;
+    // Skip valid comments and style definitions
+    if (line.startsWith('%%') || line.startsWith('classDef')) {
       continue;
     }
     
-    // Check for valid edge definitions: A --> B
-    if (line.match(/^[A-Z]+\s*-->\s*[A-Z]+;?$/)) {
-      if (hasNodes) { // Only count edges as valid if we've seen nodes
-        hasValidContent = true;
+    // Check for valid node definitions
+    // Allow more flexible node syntax
+    const nodeMatch = line.match(/^([A-Z]+)\s*(?:\[|\(|\(\()["']([^"']+)["'](?:\]|\)|\)\))(?:\s*:::[\w-]+)?$/);
+    if (nodeMatch) {
+      const [_, nodeId] = nodeMatch;
+      
+      if (definedNodes.has(nodeId)) {
+        errors.push(`Line ${i + 1}: Duplicate node ID "${nodeId}"`);
+      } else {
+        definedNodes.add(nodeId);
+        hasNodes = true;
+        nodeCount++;
       }
       continue;
     }
+    
+    // Check for valid edge definitions with more flexible syntax
+    const edgeMatch = line.match(/^([A-Z]+)\s*-->\s*(?:\|[^|]+\|\s*)?([A-Z]+)$/);
+    if (edgeMatch) {
+      const [_, fromNode, toNode] = edgeMatch;
+      if (!definedNodes.has(fromNode)) {
+        errors.push(`Line ${i + 1}: Edge references undefined node "${fromNode}"`);
+      }
+      if (!definedNodes.has(toNode)) {
+        errors.push(`Line ${i + 1}: Edge references undefined node "${toNode}"`);
+      }
+      edgeCount++;
+      continue;
+    }
+
+    // If line doesn't match any pattern and isn't a comment/style
+    if (!line.startsWith('%%') && !line.startsWith('classDef')) {
+      errors.push(`Line ${i + 1}: Invalid syntax: "${line}"`);
+    }
   }
   
-  return hasValidContent;
+  // Final validation checks
+  if (nodeCount === 0) {
+    errors.push('No valid nodes found in the diagram');
+  }
+  
+  if (edgeCount === 0 && nodeCount > 1) {
+    errors.push('Multiple nodes found but no edges connecting them');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors: errors
+  };
 }
 
 /**
@@ -77,80 +131,103 @@ export function convertMermaidToJson(mermaidCode) {
 
   const jsonOutput = {
     nodes: [],
-    edges: []
+    edges: [],
+    procedure_name: ""
   };
 
   const labelToIdMap = {};
   let lastElementType = null; // "node" or "edge"
   let lastElementRef = null;
 
+  // Extract procedure name if it exists
+  const procedureLine = lines.find(line => line.includes("%% Procedure:"));
+  if (procedureLine) {
+    jsonOutput.procedure_name = procedureLine.split("%% Procedure:")[1].trim();
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
     // Skip empty lines and flowchart declaration
-    if (!line || line === 'flowchart TD') continue;
+    if (!line || line === 'flowchart TD' || line.startsWith('classDef')) continue;
 
-    // Match node definitions
-    const nodeMatch = line.match(/^(\d+)([\[\(])"([^"]+)"([\]\)])(?:::(\w+))?/);
+    // Match node definitions with label: A["content"] or A(("content"))
+    const nodeMatch = line.match(/^([A-Z]+)(?:\[|\(\()["']([^"']+)["'](?:\]|\)\))(?:::(\w+))?/);
     if (nodeMatch) {
-      const [_, id, openBracket, content, closeBracket, nodeType] = nodeMatch;
+      const [_, label, content, nodeType] = nodeMatch;
       
-      // Determine node type from brackets or explicit type
-      let type = 'entity'; // default type
+      // Extract the actual node ID from the content
+      // Remove formatting and get the last part if there are line breaks
+      const parts = content.split('<br>');
+      const cleanContent = parts[parts.length - 1]?.replace(/\*\*/g, '') || content;
+      
+      labelToIdMap[label] = cleanContent;
+      
+      // Determine node type based on shape or explicit type
+      // Default to 'state' if not specified
+      let type = 'state';
       if (nodeType) {
-        type = nodeType === 'event' ? 'action' : 'entity';
-      } else if (openBracket === '(' && closeBracket === ')') {
-        type = 'action';
+        type = nodeType; // Use explicit type if provided via :::type
+      } else if (line.includes('((') && line.includes('))')) {
+        type = 'event'; // Double parentheses indicate event
       }
 
-      // Parse content for label
-      const parts = content.split('<br>');
-      const label = parts[parts.length - 1] || parts[0];
+      // Validate node type
+      if (!['state', 'event'].includes(type)) {
+        type = 'state'; // Default to state if invalid type
+      }
       
       const node = {
-        id: id,
+        id: cleanContent,
         type: type,
-        label: label.replace(/\*\*/g, '') // Remove markdown formatting
+        description: ""
       };
       
       jsonOutput.nodes.push(node);
-      labelToIdMap[id] = node;
-      lastElementType = 'node';
+      lastElementType = "node";
       lastElementRef = node;
       continue;
     }
 
-    // Match edge definitions: 1 --> 2
-    const edgeMatch = line.match(/^(\d+)\s*-->\s*(\d+)$/);
+    // Match edge definitions: A --> B or A -->|message| B
+    const edgeMatch = line.match(/^([A-Z]+)\s*-->\s*(?:\|([^|]+)\|)?\s*([A-Z]+)/);
     if (edgeMatch) {
-      const [_, sourceId, targetId] = edgeMatch;
+      const [_, fromLabel, messageType, toLabel] = edgeMatch;
+      const from = labelToIdMap[fromLabel] || fromLabel;
+      const to = labelToIdMap[toLabel] || toLabel;
       
       const edge = {
-        source: sourceId,
-        target: targetId,
-        label: '' // Default empty label
+        from,
+        to,
+        type: "trigger", // Default to trigger, can be overridden by Type comment
+        description: messageType || "" // Use message type as description if available
       };
       
       jsonOutput.edges.push(edge);
-      lastElementType = 'edge';
+      lastElementType = "edge";
       lastElementRef = edge;
       continue;
     }
 
-    // Match edge with label: 1 -->|label| 2
-    const labeledEdgeMatch = line.match(/^(\d+)\s*-->\|([^|]+)\|\s*(\d+)$/);
-    if (labeledEdgeMatch) {
-      const [_, sourceId, label, targetId] = labeledEdgeMatch;
-      
-      const edge = {
-        source: sourceId,
-        target: targetId,
-        label: label.trim()
-      };
-      
-      jsonOutput.edges.push(edge);
-      lastElementType = 'edge';
-      lastElementRef = edge;
+    // Match Type comment
+    const typeMatch = line.match(/^%% Type:\s*(.+)$/);
+    if (typeMatch && lastElementRef) {
+      const type = typeMatch[1].trim();
+      if (lastElementType === "edge") {
+        // Validate edge type
+        lastElementRef.type = ['trigger', 'condition'].includes(type) ? type : 'trigger';
+      } else {
+        // Validate node type
+        lastElementRef.type = ['state', 'event'].includes(type) ? type : 'state';
+      }
+      continue;
+    }
+
+    // Match Description comment
+    const descMatch = line.match(/^%% Description:\s*(.+)$/);
+    if (descMatch && lastElementRef) {
+      lastElementRef.description = descMatch[1].trim();
+      continue;
     }
   }
 
@@ -164,25 +241,65 @@ export function convertMermaidToJson(mermaidCode) {
  */
 export async function saveMermaidAsJson(mermaidCode) {
   try {
-    if (!validateMermaidCode(mermaidCode)) {
+    console.log('Starting Mermaid validation...');
+    // First validate Mermaid syntax
+    const mermaidValidation = validateMermaidCode(mermaidCode);
+    console.log('Mermaid validation result:', mermaidValidation);
+    
+    if (!mermaidValidation.isValid) {
       return {
         success: false,
-        message: 'Invalid Mermaid code structure'
+        message: 'Invalid Mermaid syntax',
+        errors: mermaidValidation.errors,
+        errorType: 'MERMAID_SYNTAX_ERROR'
       };
     }
 
-    const jsonData = convertMermaidToJson(mermaidCode);
+    // Convert to JSON
+    console.log('Converting to JSON...');
+    let jsonData;
+    try {
+      jsonData = convertMermaidToJson(mermaidCode);
+      console.log('Converted JSON:', jsonData);
+    } catch (conversionError) {
+      console.error('Conversion error:', conversionError);
+      return {
+        success: false,
+        message: 'Failed to convert Mermaid to JSON',
+        errors: [conversionError.message],
+        errorType: 'CONVERSION_ERROR'
+      };
+    }
+
+    // Validate the JSON structure
+    console.log('Validating JSON structure...');
+    const jsonValidation = validateGraph(jsonData);
+    console.log('JSON validation result:', jsonValidation);
     
+    if (!jsonValidation.valid) {
+      return {
+        success: false,
+        message: 'Invalid graph structure',
+        errors: [jsonValidation.error],
+        errorType: 'GRAPH_STRUCTURE_ERROR'
+      };
+    }
+
+    // If we get here, everything is valid
     return {
       success: true,
-      message: 'Successfully converted to JSON',
+      message: 'Successfully converted and validated',
       data: jsonData
     };
+
   } catch (error) {
-    console.error('Error in saveMermaidAsJson:', error);
+    console.error('Unexpected error in saveMermaidAsJson:', error);
     return {
       success: false,
-      message: error.message
+      message: 'Unexpected error occurred',
+      errors: [error.message],
+      errorType: 'UNEXPECTED_ERROR'
     };
   }
 } 
+

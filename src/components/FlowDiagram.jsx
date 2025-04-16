@@ -41,15 +41,56 @@ const ZOOM_SPEED = 0.1;
 const cleanMermaidCode = (code) => {
   if (!code) return "";
   
-  // Split into lines and remove extra whitespace
-  const lines = code.split('\n').map(line => line.trim()).filter(line => line);
+  console.log("Input code:", code);
   
-  // Ensure flowchart declaration is correct
-  if (!lines[0]?.startsWith('flowchart')) {
-    lines.unshift('flowchart TD');
-  }
+  // Split into lines and filter out empty lines
+  let lines = code.split('\n')
+    .map(line => {
+      // Remove any non-printable characters
+      const cleaned = line.trim().replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+      console.log("Cleaned line:", cleaned);
+      return cleaned;
+    })
+    .filter(line => line);
   
-  return lines.join('\n');
+  console.log("Lines after splitting:", lines);
+  
+  // Remove any existing flowchart/graph declarations
+  lines = lines.filter(line => {
+    const isFlowchart = line.startsWith('flowchart') || line.startsWith('graph');
+    if (isFlowchart) {
+      console.log("Removing flowchart/graph line:", line);
+    }
+    return !isFlowchart;
+  });
+  
+  // Add single flowchart declaration at the start
+  lines.unshift('flowchart TD');
+  
+  // Clean up class definitions and other special lines
+  lines = lines.map(line => {
+    // Handle class definitions
+    if (line.startsWith('classDef')) {
+      const cleaned = line.replace(/\s+/g, ' ');
+      console.log("Cleaned classDef:", cleaned);
+      return cleaned;
+    }
+    
+    // Handle node definitions and connections
+    if (line.includes('-->') || line.includes('---')) {
+      const cleaned = line.replace(/\s+/g, ' ').trim();
+      console.log("Cleaned connection:", cleaned);
+      return cleaned;
+    }
+    
+    return line;
+  });
+  
+  // Join lines with proper spacing
+  const result = lines.join('\n');
+  console.log("Final cleaned code:", result);
+  
+  return result;
 };
 
 function FlowDiagram({ mermaidCode }) {
@@ -64,7 +105,7 @@ function FlowDiagram({ mermaidCode }) {
   const [zoomLevel, setZoomLevel] = useState(100);
 
   const renderDiagram = useCallback(async () => {
-    console.log("Rendering diagram with code:", mermaidCode);
+    console.log("Original Mermaid code:", mermaidCode);
     
     if (!mermaidRef.current || !mermaidCode) {
       console.log("Missing ref or code:", { 
@@ -83,13 +124,19 @@ function FlowDiagram({ mermaidCode }) {
 
       // Clean up the mermaid code before rendering
       const cleanedCode = cleanMermaidCode(mermaidCode);
-      console.log("Cleaned mermaid code:", cleanedCode);
+      console.log("Cleaned Mermaid code:", cleanedCode);
       
-      // Only proceed with rendering if the code is valid
-      if (!cleanedCode.includes("flowchart")) {
-        console.log("Missing flowchart declaration");
-        return;
+      // Additional validation
+      if (!cleanedCode.trim()) {
+        throw new Error("Empty Mermaid code after cleaning");
       }
+      
+      if (!cleanedCode.includes("flowchart TD")) {
+        throw new Error("Invalid Mermaid syntax: Missing flowchart TD declaration");
+      }
+
+      // Split and log each line for debugging
+      console.log("Mermaid code lines:", cleanedCode.split('\n'));
 
       console.log("Attempting to render with mermaid...");
       const { svg } = await mermaid.render("mermaid-diagram", cleanedCode);
@@ -102,29 +149,29 @@ function FlowDiagram({ mermaidCode }) {
         const newSvg = tempDiv.querySelector("svg");
 
         // Preserve the previous viewBox and dimensions if they exist
-        if (oldViewBox) {
-          newSvg.setAttribute("viewBox", oldViewBox);
-        }
-        if (oldWidth) {
-          newSvg.style.width = oldWidth;
-        }
-        if (oldHeight) {
-          newSvg.style.height = oldHeight;
-        }
+        if (oldViewBox) newSvg.setAttribute("viewBox", oldViewBox);
+        if (oldWidth) newSvg.style.width = oldWidth;
+        if (oldHeight) newSvg.style.height = oldHeight;
 
         // Replace the old SVG with the new one
         mermaidRef.current.innerHTML = "";
         mermaidRef.current.appendChild(newSvg);
         console.log("SVG successfully added to DOM");
+        setError(null);
       }
-
-      setError(null);
     } catch (err) {
       console.error("Error rendering diagram:", err);
-      // Only set error for invalid syntax, ignore rendering errors
-      if (err.str?.includes("syntax")) {
-        setError(err.message);
+      let errorMessage = err.str || err.message || "Unknown error rendering diagram";
+      
+      // Add more context to the error message
+      if (err.hash) {
+        errorMessage += `\nLine number: ${err.hash.line}`;
+        errorMessage += `\nExpected: ${err.hash.expected?.join(', ')}`;
+        errorMessage += `\nFound: ${err.hash.token}`;
+        console.error("Detailed parse error:", err.hash);
       }
+      
+      setError(errorMessage);
     }
   }, [mermaidCode]);
 

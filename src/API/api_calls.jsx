@@ -28,10 +28,12 @@ export const fetchProcedure = async (procedureId) => {
 // Insert procedure graph changes
 export const insertProcedureGraphChanges = async (procedureId, changes) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/procedures/${procedureId}/graph`, changes);
+    const response = await axios.put(`${API_BASE_URL}/procedures/${procedureId}/edit`, {
+      edited_graph: changes
+    });
     return response.data || null;
   } catch (error) {
     console.error("Error inserting procedure graph changes:", error);
-    return null;
+    throw error; // Propagate the error so we can handle it in the UI
   }
 };

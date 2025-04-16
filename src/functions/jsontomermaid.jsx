@@ -20,7 +20,12 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     }
   } = options;
 
-  let mermaidCode = `graph ${direction}\n`;
+  let mermaidCode = `flowchart ${direction}\n`;
+
+  // Add procedure name if exists
+  if (jsonData.procedure_name) {
+    mermaidCode += `    %% Procedure: ${jsonData.procedure_name}\n`;
+  }
 
   // Style definitions
   Object.entries(styles).forEach(([className, style]) => {
@@ -31,9 +36,30 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   });
   mermaidCode += "\n";
 
+  // Create node label mapping
+  const nodeIdMap = {};
+  const labelLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let labelIndex = 0;
+
+  // Function to generate node labels (A, B, C, ... AA, AB, etc.)
+  const getNextLabel = () => {
+    let label = "";
+    let index = labelIndex;
+    do {
+      label = labelLetters[index % 26] + label;
+      index = Math.floor(index / 26) - 1;
+    } while (index >= 0);
+    labelIndex++;
+    return label;
+  };
+
   // Process nodes
   jsonData.nodes.forEach(node => {
-    // Sanitize node ID
+    // Generate and store label for this node
+    const label = getNextLabel();
+    nodeIdMap[node.id] = label;
+
+    // Sanitize node ID and content
     const nodeId = node.id
       .replace(/[^\w\s]/g, "")
       .replace(/\s+/g, "_")
@@ -62,28 +88,38 @@ export const JsonToMermaid = (jsonData, options = {}) => {
         });
     }
 
-    // Escape quotes and add node
+    // Escape quotes and add node with label
     const escapedContent = nodeContent.replace(/"/g, '\\"');
-    mermaidCode += `    ${nodeId}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
+    mermaidCode += `    ${label}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
+
+    // Add comments for type and description if available
+    if (node.type) {
+      mermaidCode += `    %% Type: ${node.type}\n`;
+    }
+    if (node.description) {
+      mermaidCode += `    %% Description: ${node.description}\n`;
+    }
   });
 
-  // Process edges
+  // Process edges using node labels
   jsonData.edges.forEach(edge => {
-    const sourceId = edge.from
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, "_")
-      .trim();
-    const targetId = edge.to
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, "_")
-      .trim();
+    const fromLabel = nodeIdMap[edge.from];
+    const toLabel = nodeIdMap[edge.to];
 
     // Add edge label if properties exist
     const label = edge.properties?.messageType
       ? `|${edge.properties.messageType}|`
       : "";
 
-    mermaidCode += `    ${sourceId} -->${label} ${targetId}\n`;
+    mermaidCode += `    ${fromLabel} -->${label} ${toLabel}\n`;
+
+    // Add comments for edge type and description if available
+    if (edge.type) {
+      mermaidCode += `    %% Type: ${edge.type}\n`;
+    }
+    if (edge.description) {
+      mermaidCode += `    %% Description: ${edge.description}\n`;
+    }
   });
 
   return mermaidCode;
