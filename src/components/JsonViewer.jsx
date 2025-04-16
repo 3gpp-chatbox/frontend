@@ -1,8 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { fetchProcedure, insertProcedureGraphChanges } from "../API/api_calls";
-import { JsonToMermaid, defaultMermaidConfig } from "../functions/jsonToMermaid";
-import { saveMermaidAsJson, validateMermaidCode, convertMermaidToJson } from "../functions/mermaidToJson";
+import {
+  JsonToMermaid,
+  defaultMermaidConfig,
+} from "../functions/jsonToMermaid";
+import {
+  saveMermaidAsJson,
+  validateMermaidCode,
+  convertMermaidToJson,
+} from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 
@@ -86,25 +93,28 @@ const highlightMermaid = (code) => {
 
   return code
     .split("\n")
-    .map(line => {
+    .map((line) => {
       const trimmedLine = line.trim();
       let highlightedLine = line;
 
       // Highlight flowchart declaration
       if (trimmedLine.startsWith("flowchart")) {
-        highlightedLine = line.replace(/(flowchart\s+TD)/, '<span class="flowchart">$1</span>');
+        highlightedLine = line.replace(
+          /(flowchart\s+TD)/,
+          '<span class="flowchart">$1</span>',
+        );
       }
       // Highlight comments and metadata
       else if (trimmedLine.startsWith("%%")) {
         if (trimmedLine.includes("Type:")) {
           highlightedLine = line.replace(
             /(%%.+?Type:)(.+)/,
-            '<span class="comment">$1</span><span class="type">$2</span>'
+            '<span class="comment">$1</span><span class="type">$2</span>',
           );
         } else if (trimmedLine.includes("Description:")) {
           highlightedLine = line.replace(
             /(%%.+?Description:)(.+)/,
-            '<span class="comment">$1</span><span class="description">$2</span>'
+            '<span class="comment">$1</span><span class="description">$2</span>',
           );
         } else {
           highlightedLine = `<span class="comment">${line}</span>`;
@@ -114,14 +124,14 @@ const highlightMermaid = (code) => {
       else if (/^[A-Z]+\([^)]+\)/.test(trimmedLine)) {
         highlightedLine = line.replace(
           /([A-Z]+)(\()([^)]+)(\))/,
-          '<span class="node-id">$1</span>$2<span class="node-text">$3</span>$4'
+          '<span class="node-id">$1</span>$2<span class="node-text">$3</span>$4',
         );
       }
       // Highlight edges: A --> B
       else if (/^[A-Z]+\s*-->/.test(trimmedLine)) {
         highlightedLine = line.replace(
           /([A-Z]+)(\s*-->?\s*)([A-Z]+)/,
-          '<span class="node-id">$1</span><span class="arrow">$2</span><span class="node-id">$3</span>'
+          '<span class="node-id">$1</span><span class="arrow">$2</span><span class="node-id">$3</span>',
         );
       }
 
@@ -158,7 +168,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
         );
         const procedureData = await fetchProcedure(selectedProcedure.id);
         console.log("JsonViewer: Received data:", procedureData);
-        
+
         if (!procedureData) {
           throw new Error("No data received from server");
         }
@@ -169,7 +179,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
         setJsonContent(jsonStr);
 
         // Convert to Mermaid and store original
-        const graphData = procedureData.edited_graph || procedureData.original_graph;
+        const graphData =
+          procedureData.edited_graph || procedureData.original_graph;
         const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
         setMermaidGraph(mermaidCode);
         setOriginalMermaidGraph(mermaidCode);
@@ -240,7 +251,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
           setShowConfirmation(true);
         }, 1000);
       } else {
-        throw new Error(`Structural validation failed: ${validationResult.error}`);
+        throw new Error(
+          `Structural validation failed: ${validationResult.error}`,
+        );
       }
     } catch (error) {
       setNotification({
@@ -268,9 +281,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       // Convert to JSON and save
       const jsonData = convertMermaidToJson(mermaidGraph);
       const result = await insertProcedureGraphChanges(selectedProcedure.id, {
-        edited_graph: jsonData
+        edited_graph: jsonData,
       });
-      
+
       if (!result) {
         throw new Error("Failed to save changes");
       }
@@ -282,9 +295,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       setJsonContent(JSON.stringify(result, null, 2));
       setIsEditing(false);
 
-          setNotification({
-            show: true,
-            message: "Changes saved successfully",
+      setNotification({
+        show: true,
+        message: "Changes saved successfully",
         type: "success",
       });
 
@@ -357,8 +370,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
           {isEditing && <span className="editing-indicator"> (Editing)</span>}
         </span>
         <div className="viewer-controls">
-        <button
-          className="toggle-button"
+          <button
+            className="toggle-button"
             onClick={() => {
               if (isEditing) {
                 setNotification({
@@ -371,18 +384,18 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
               setShowMermaid(!showMermaid);
             }}
             title={showMermaid ? "View JSON" : "View Mermaid"}
-        >
-          {showMermaid ? "Show JSON" : "Show Mermaid"}
-        </button>
-          {showMermaid && (
-          <button
-              className={`save-button ${isEditing ? "active" : ""}`}
-            onClick={handleSaveChanges}
-              disabled={!isEditing}
           >
-            Save Changes
+            {showMermaid ? "Show JSON" : "Show Mermaid"}
           </button>
-        )}
+          {showMermaid && (
+            <button
+              className={`save-button ${isEditing ? "active" : ""}`}
+              onClick={handleSaveChanges}
+              disabled={!isEditing}
+            >
+              Save Changes
+            </button>
+          )}
         </div>
       </div>
       {notification.show && (
@@ -393,8 +406,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       <div className="json-viewer-content">
         {selectedProcedure ? (
           data ? (
-          <pre className="json-content">
-            {showMermaid ? (
+            <pre className="json-content">
+              {showMermaid ? (
                 <div className="mermaid-editor">
                   <textarea
                     className={`code-content ${isWrapped ? "wrapped" : ""}`}
@@ -410,9 +423,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
                     __html: highlightJson(jsonContent),
                   }}
                   onClick={handleFold}
-              />
-            )}
-          </pre>
+                />
+              )}
+            </pre>
           ) : (
             <div className="placeholder-text">Loading procedure data...</div>
           )
