@@ -2,6 +2,7 @@ import { useState } from "react";
 import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
 import ProcedureList from "./components/ProcedureList";
+import Description from "./components/Descriptions"; 
 
 function App() {
   const [mermaidCode, setMermaidCode] = useState(null);
@@ -41,6 +42,13 @@ function App() {
           <div className="diagram-panel">
             <FlowDiagram mermaidCode={mermaidCode} />
           </div>
+           {/* Procedure Description */}
+        
+        <div className="panel description-panel">
+          <Description 
+            procedure={selectedProcedure}
+          />
+        </div>
         </div>
       </div>
     </div>

@@ -17,12 +17,12 @@ const validateNode = (node) => {
   
   if (!node.type) {
     errors.push("Missing required field: type");
-  } else if (!["state", "event"].includes(node.type)) {
-    errors.push(`Invalid node type: ${node.type}. Must be either 'state' or 'event'`);
+  } else if (!["entity", "action"].includes(node.type)) {
+    errors.push(`Invalid node type: ${node.type}. Must be either 'entity' or 'action'`);
   }
   
-  if (!node.description || typeof node.description !== 'string') {
-    errors.push("Missing or invalid description: must be a string");
+  if (!node.label || typeof node.label !== 'string') {
+    errors.push("Missing or invalid label: must be a string");
   }
 
   return {
@@ -40,22 +40,16 @@ const validateEdge = (edge) => {
   const errors = [];
   
   // Check required fields
-  if (!edge.from) {
-    errors.push("Missing required field: from");
+  if (!edge.source) {
+    errors.push("Missing required field: source");
   }
   
-  if (!edge.to) {
-    errors.push("Missing required field: to");
+  if (!edge.target) {
+    errors.push("Missing required field: target");
   }
   
-  if (!edge.type) {
-    errors.push("Missing required field: type");
-  } else if (!["trigger", "condition"].includes(edge.type)) {
-    errors.push(`Invalid edge type: ${edge.type}. Must be either 'trigger' or 'condition'`);
-  }
-  
-  if (!edge.description || typeof edge.description !== 'string') {
-    errors.push("Missing or invalid description: must be a string");
+  if (!edge.label || typeof edge.label !== 'string') {
+    errors.push("Missing or invalid label: must be a string");
   }
 
   return {
@@ -100,11 +94,11 @@ const validateGraphContent = (graphContent) => {
     }
     
     // Check if referenced nodes exist
-    if (!nodeIds.has(edge.from)) {
-      errors.push(`Invalid edge at index ${index}: 'from' node ${edge.from} does not exist`);
+    if (!nodeIds.has(edge.source)) {
+      errors.push(`Invalid edge at index ${index}: 'source' node ${edge.source} does not exist`);
     }
-    if (!nodeIds.has(edge.to)) {
-      errors.push(`Invalid edge at index ${index}: 'to' node ${edge.to} does not exist`);
+    if (!nodeIds.has(edge.target)) {
+      errors.push(`Invalid edge at index ${index}: 'target' node ${edge.target} does not exist`);
     }
   });
 
@@ -126,12 +120,8 @@ export const validateGraph = (data) => {
       return { valid: false, error: "Invalid data: must be an object" };
     }
 
-    if (!data.graph || typeof data.graph !== 'object') {
-      return { valid: false, error: "Invalid data: must contain a graph object" };
-    }
-
     // Validate graph content
-    const contentValidation = validateGraphContent(data.graph);
+    const contentValidation = validateGraphContent(data);
     if (!contentValidation.valid) {
       return {
         valid: false,

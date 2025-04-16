@@ -1,6 +1,7 @@
 import React from 'react';
 
 function Description({ procedure }) {
+  console.log("Description: procedure details here", procedure);
   if (!procedure) {
     return (
       <div className="section-container">
@@ -16,8 +17,18 @@ function Description({ procedure }) {
     );
   }
 
-  const title = procedure.label || procedure.type || 'Unknown Procedure';
-  const description = procedure.description || 'No description available.';
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  // Format accuracy as percentage
+  const formatAccuracy = (accuracy) => {
+    if (accuracy === undefined || accuracy === null) return 'N/A';
+    return `${(accuracy * 100).toFixed(1)}%`;
+  };
 
   return (
     <div className="section-container">
@@ -25,8 +36,41 @@ function Description({ procedure }) {
         <span>Description</span>
       </div>
       <div className="content-area">
-        <h2 className="description-title">{title}</h2>
-        <p className="description-text">{description}</p>
+        <div className="procedure-details">
+          <h2 className="procedure-name">{procedure.name || 'Unnamed Procedure'}</h2>
+          
+          <div className="detail-section">
+            <h3>Document Information</h3>
+            <div className="detail-item">
+              <span className="detail-label">Document:</span>
+              <span className="detail-value">{procedure.document_name || 'N/A'}</span>
+            </div>
+          </div>
+          
+          <div className="detail-section">
+            <h3>Graph Information</h3>
+            <div className="detail-item">
+              <span className="detail-label">Status:</span>
+              <span className="detail-value">{procedure.status || 'N/A'}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Accuracy of original graph:</span>
+              <span className="detail-value">{formatAccuracy(procedure.accuracy)}</span>
+            </div>
+          </div>
+          
+          <div className="detail-section">
+            <h3>Timestamps</h3>
+            <div className="detail-item">
+              <span className="detail-label">Extracted:</span>
+              <span className="detail-value">{formatDate(procedure.extracted_at)}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Last Edited:</span>
+              <span className="detail-value">{formatDate(procedure.last_edit_at)}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

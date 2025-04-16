@@ -181,6 +181,13 @@ button {
   margin-right: 20px;
 }
 
+.description-panel {
+  grid-column: span 12;
+  height: 500px; 
+  margin-right: 20px;
+  margin-left: 20px;
+}
+
 /* Special styling for flow diagram panel */
 .flow-diagram-panel {
   height: 1000px;

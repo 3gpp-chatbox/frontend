@@ -10,33 +10,6 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   if (!jsonData || !jsonData.nodes || !jsonData.edges) {
     console.error("Invalid graph data structure");
     return "";
- * Converts a JSON graph structure to Mermaid diagram syntax
- * @param {Object} jsonData - The graph data in JSON format
- * @param {Object} options - Configuration options for the conversion
- * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right)
- * @param {Object} options.styles - Custom style definitions
- * @param {boolean} options.useEditedGraph - Whether to use edited_graph instead of original_graph
- * @returns {string} Mermaid diagram syntax
- */
-export const JsonToMermaid = (jsonData, options = {}) => {
-  if (!jsonData) {
-    console.error("Invalid graph data: No data provided");
-    return "";
-  }
-
-  // Handle both direct graph data and API response format
-  let graphData;
-  if (jsonData.original_graph || jsonData.edited_graph) {
-    // API response format
-    graphData = options.useEditedGraph ? jsonData.edited_graph : jsonData.original_graph;
-  } else {
-    // Direct graph data format
-    graphData = jsonData;
-  }
-
-  if (!graphData || !graphData.nodes || !graphData.edges) {
-    console.error("Invalid graph data structure:", graphData);
-    return "";
   }
 
   const {

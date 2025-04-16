@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
-import { fetchMockData, saveEditedData } from "../API_calls/mockapi";
-import { getMermaidConverter } from "../functions/jsontomermaid";
-import { saveMermaidAsJson, validateMermaidCode, convertMermaidToJson } from "../functions/mermaidtojson";
+import { fetchProcedure, insertProcedureGraphChanges } from "../API/api_calls";
+import { JsonToMermaid, defaultMermaidConfig } from "../functions/jsonToMermaid";
+import { saveMermaidAsJson, validateMermaidCode, convertMermaidToJson } from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 
@@ -148,38 +148,43 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
   const [debouncedMermaid, setDebouncedMermaid] = useState("");
 
   useEffect(() => {
-    const loadMockData = async () => {
-      if (!selectedProcedure) return;
+    const loadProcedureData = async () => {
+      if (!selectedProcedure?.id) return;
 
       try {
         console.log(
-          "JsonViewer: Fetching mock data for procedure:",
-          selectedProcedure,
+          "JsonViewer: Fetching procedure data:",
+          selectedProcedure.id,
         );
-        const mockData = await fetchMockData(selectedProcedure);
-        console.log("JsonViewer: Received data:", mockData);
-        setData(mockData);
-        setOriginalData(mockData);
-        const jsonStr = JSON.stringify(mockData, null, 2);
+        const procedureData = await fetchProcedure(selectedProcedure.id);
+        console.log("JsonViewer: Received data:", procedureData);
+        
+        if (!procedureData) {
+          throw new Error("No data received from server");
+        }
+
+        setData(procedureData);
+        setOriginalData(procedureData);
+        const jsonStr = JSON.stringify(procedureData, null, 2);
         setJsonContent(jsonStr);
 
         // Convert to Mermaid and store original
-        const converter = getMermaidConverter();
-        const mermaidCode = converter(mockData);
+        const graphData = procedureData.edited_graph || procedureData.original_graph;
+        const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
         setMermaidGraph(mermaidCode);
         setOriginalMermaidGraph(mermaidCode);
       } catch (error) {
-        console.error("Error fetching mock data:", error);
+        console.error("Error fetching procedure data:", error);
         setNotification({
           show: true,
-          message: "Failed to load mock data",
+          message: `Failed to load data: ${error.message}`,
           type: "error",
         });
         setData(null);
       }
     };
 
-    loadMockData();
+    loadProcedureData();
   }, [selectedProcedure]);
 
   // Debounced update for the diagram
@@ -231,7 +236,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
           message: "Structure validation successful",
           type: "success",
         });
-        // Show save confirmation after a brief delay
         setTimeout(() => {
           setShowConfirmation(true);
         }, 1000);
@@ -262,22 +266,25 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       }
 
       // Convert to JSON and save
-      const result = await saveMermaidAsJson(mermaidGraph);
+      const jsonData = convertMermaidToJson(mermaidGraph);
+      const result = await insertProcedureGraphChanges(selectedProcedure.id, {
+        edited_graph: jsonData
+      });
       
-      if (!result.success) {
-        throw new Error(result.message);
+      if (!result) {
+        throw new Error("Failed to save changes");
       }
 
       // Update both Mermaid and JSON views
       setOriginalMermaidGraph(mermaidGraph);
-      setData(result.data);
-      setOriginalData(result.data);
-      setJsonContent(JSON.stringify(result.data, null, 2));
+      setData(result);
+      setOriginalData(result);
+      setJsonContent(JSON.stringify(result, null, 2));
       setIsEditing(false);
 
-      setNotification({
-        show: true,
-        message: "Changes saved successfully",
+          setNotification({
+            show: true,
+            message: "Changes saved successfully",
         type: "success",
       });
 
@@ -346,12 +353,12 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     <div className="section-container">
       <div className="section-header">
         <span>
-          Code View {selectedProcedure ? `- ${selectedProcedure.label}` : ""}
+          Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
           {isEditing && <span className="editing-indicator"> (Editing)</span>}
         </span>
         <div className="viewer-controls">
-          <button
-            className="toggle-button"
+        <button
+          className="toggle-button"
             onClick={() => {
               if (isEditing) {
                 setNotification({
@@ -364,18 +371,18 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
               setShowMermaid(!showMermaid);
             }}
             title={showMermaid ? "View JSON" : "View Mermaid"}
-          >
-            {showMermaid ? "Show JSON" : "Show Mermaid"}
-          </button>
+        >
+          {showMermaid ? "Show JSON" : "Show Mermaid"}
+        </button>
           {showMermaid && (
-            <button
+          <button
               className={`save-button ${isEditing ? "active" : ""}`}
-              onClick={handleSaveChanges}
+            onClick={handleSaveChanges}
               disabled={!isEditing}
-            >
-              Save Changes
-            </button>
-          )}
+          >
+            Save Changes
+          </button>
+        )}
         </div>
       </div>
       {notification.show && (
@@ -386,8 +393,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       <div className="json-viewer-content">
         {selectedProcedure ? (
           data ? (
-            <pre className="json-content">
-              {showMermaid ? (
+          <pre className="json-content">
+            {showMermaid ? (
                 <div className="mermaid-editor">
                   <textarea
                     className={`code-content ${isWrapped ? "wrapped" : ""}`}
@@ -403,11 +410,11 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
                     __html: highlightJson(jsonContent),
                   }}
                   onClick={handleFold}
-                />
-              )}
-            </pre>
+              />
+            )}
+          </pre>
           ) : (
-            <div className="placeholder-text">Loading mock data...</div>
+            <div className="placeholder-text">Loading procedure data...</div>
           )
         ) : (
           <div className="placeholder-text">
@@ -442,7 +449,10 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
 
 JsonViewer.propTypes = {
   onMermaidCodeChange: PropTypes.func.isRequired,
-  selectedProcedure: PropTypes.string,
+  selectedProcedure: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+  }),
 };
 
 export default JsonViewer;

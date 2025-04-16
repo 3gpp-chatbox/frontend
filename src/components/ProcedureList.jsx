@@ -1,125 +1,108 @@
-import { useState } from "react";
-
-// Define the procedure data structure
-const procedures = [
-  {
-    id: "registration",
-    label: "Registration Procedure",
-    type: "registration",
-    subProcedures: [
-      {
-        id: "Initial_Registration",
-        label: "Initial Registration",
-        type: "initial-registration",
-        description: "Initial UE registration procedure",
-      }
-    ],
-  },
-  // Add more main procedures here as needed
-];
+import { useState, useEffect } from "react";
+import { fetchProcedures, fetchProcedure } from "../API/api_calls";
+import { JsonToMermaid, defaultMermaidConfig } from "../functions/jsonToMermaid";
 
 function ProcedureList({ selectedProcedure, onProcedureSelect }) {
-  const [expandedProcedures, setExpandedProcedures] = useState(new Set());
-  const [loading, setLoading] = useState(false);
+  const [procedureList, setProcedureList] = useState([]);
   const [error, setError] = useState(null);
-  const [floatingPanelPosition, setFloatingPanelPosition] = useState({
-    x: 0,
-    y: 0,
-  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const toggleProcedure = (procedureId, event) => {
-    const newExpanded = new Set(expandedProcedures);
-    if (newExpanded.has(procedureId)) {
-      newExpanded.delete(procedureId);
-    } else {
-      // Calculate position for floating panel
-      const button = event.currentTarget;
-      const rect = button.getBoundingClientRect();
-      setFloatingPanelPosition({
-        x: rect.right + 10, // 10px offset from the button
-        y: rect.top,
-      });
-      newExpanded.add(procedureId);
+ // Fetch available procedures on mount
+ useEffect(() => {
+  const loadProcedures = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const data = await fetchProcedures();
+      console.log("Received procedures data:", data); 
+      
+      if (Array.isArray(data)) {
+        setProcedureList(data);
+      } else {
+        console.error("Expected array of procedures, got:", data);
+        setError("Invalid data format received from server");
+      }
+    } catch (err) {
+      console.error("Error fetching procedures:", err);
+      setError("Failed to load procedures: " + (err.message || "Unknown error"));
+    } finally {
+      setIsLoading(false);
     }
-    setExpandedProcedures(newExpanded);
   };
 
-  const renderProcedure = (procedure) => {
-    const isExpanded = expandedProcedures.has(procedure.id);
-    const isSelected = selectedProcedure?.id === procedure.id;
-    const hasSubProcedures = procedure.subProcedures?.length > 0;
+  loadProcedures();
+}, []);
 
-    return (
-      <div key={procedure.id} className="procedure-container">
-        <div
-          className={`procedure-item main-procedure ${
-            isExpanded ? "expanded" : ""
-          } ${isSelected ? "active" : ""}`}
-          onClick={(e) => {
-            if (hasSubProcedures) {
-              toggleProcedure(procedure.id, e);
-            } else {
-              onProcedureSelect(procedure);
-            }
-          }}
-        >
-          <div className="procedure-header">
-            <span>{procedure.label}</span>
-            {hasSubProcedures && <span className="expand-icon">+</span>}
-          </div>
-        </div>
+const handleProcedureClick = async (procedure) => {
+  try {
+    const procedureData = await fetchProcedure(procedure.id);
+    
+    if (procedureData) {
+      const mermaidDiagram = JsonToMermaid(
+        procedureData.edited_graph || procedureData.original_graph,
+        defaultMermaidConfig
+      );
+      
+      // Pass all procedure data to the parent component
+      onProcedureSelect({
+        ...procedureData,           // Include all API response data
+        name: procedure.name,       // Ensure name is included
+        id: procedure.id,           // Ensure ID is included
+        mermaidDiagram,            // Add generated Mermaid diagram
+        jsonData: procedureData.edited_graph || procedureData.original_graph
+      });
+    } else {
+      setError(`No data available for ${procedure.name}`);
+    }
+  } catch (err) {
+    console.error("Error fetching procedure data:", err);
+    setError(`Failed to load data for ${procedure.name}`);
+  }
+};
 
-        {isExpanded && hasSubProcedures && (
-          <div
-            className="floating-sub-procedures"
-            style={{
-              position: "fixed",
-              left: `${floatingPanelPosition.x}px`,
-              top: `${floatingPanelPosition.y}px`,
-            }}
-          >
-            <div className="floating-panel-header">
-              <span>Sub-procedures</span>
-              <span
-                className="close-button"
-                onClick={() => toggleProcedure(procedure.id)}
-              >
-                ×
-              </span>
-            </div>
-            {procedure.subProcedures.map((subProc) => (
-              <div
-                key={subProc.id}
-                className={`procedure-item sub-procedure ${
-                  selectedProcedure?.id === subProc.id ? "active" : ""
-                }`}
-                onClick={() => {
-                  onProcedureSelect(subProc);
-                  toggleProcedure(procedure.id);
-                }}
-              >
-                <span>{subProc.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Add loading and error states to the UI
+if (error) {
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Procedures</span>
       </div>
-      <div className="content-area">
-        {loading && <div className="loading-state">Loading data...</div>}
-        {error && <div className="error-state">Error: {error}</div>}
-        {procedures.map(renderProcedure)}
+      <div className="content-area error-message">
+        {error}
       </div>
     </div>
   );
 }
 
+return (
+  <div className="section-container">
+    <div className="section-header">
+      <span>Procedures</span>
+    </div>
+    <div className="content-area">
+      {isLoading ? (
+        <div className="placeholder-text">Loading procedures...</div>
+      ) : procedureList.length === 0 ? (
+        <div className="placeholder-text">No procedures available</div>
+      ) : (
+        <div className="procedure-list">
+          {procedureList.map((procedure) => (
+            <div 
+              key={procedure.id}
+              className={`procedure-item ${
+                selectedProcedure?.id === procedure.id ? "active" : ""
+              }`}
+              onClick={() => handleProcedureClick(procedure)}
+            >
+              <div className="procedure-header">
+                <span>{procedure.name}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+);
+}
 export default ProcedureList;
