@@ -155,8 +155,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     message: "",
     type: "",
   });
-  const [debouncedMermaid, setDebouncedMermaid] = useState("");
 
+  // Load procedure data
   useEffect(() => {
     const loadProcedureData = async () => {
       if (!selectedProcedure?.id) return;
@@ -182,8 +182,16 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
         const graphData =
           procedureData.edited_graph || procedureData.original_graph;
         const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+        
+        // Set both current and original mermaid code
         setMermaidGraph(mermaidCode);
         setOriginalMermaidGraph(mermaidCode);
+        
+        // Reset editing state when loading new data
+        setIsEditing(false);
+        
+        // Update the diagram with initial data
+        onMermaidCodeChange(mermaidCode);
       } catch (error) {
         console.error("Error fetching procedure data:", error);
         setNotification({
@@ -196,17 +204,19 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     };
 
     loadProcedureData();
-  }, [selectedProcedure]);
+  }, [selectedProcedure?.id]); // Only depend on the procedure ID
 
-  // Debounced update for the diagram
+  // Handle mermaid code updates
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isEditing) return;
-      onMermaidCodeChange(mermaidGraph);
-    }, 500); // 500ms delay
-
-    return () => clearTimeout(timer);
-  }, [mermaidGraph, isEditing, onMermaidCodeChange]);
+    // Only update the diagram if we're editing or this is the initial load
+    if (isEditing || mermaidGraph === originalMermaidGraph) {
+      const timer = setTimeout(() => {
+        console.log("Updating mermaid code:", mermaidGraph);
+        onMermaidCodeChange(mermaidGraph);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [mermaidGraph, isEditing, originalMermaidGraph, onMermaidCodeChange]);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -220,6 +230,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
 
   const handleMermaidChange = (event) => {
     const newCode = event.target.value;
+    console.log("Mermaid code changed:", newCode);
     setMermaidGraph(newCode);
     setIsEditing(true);
   };

@@ -76,11 +76,8 @@ export function convertMermaidToJson(mermaidCode) {
   const lines = mermaidCode.split('\n');
 
   const jsonOutput = {
-    procedure_name: '',
-    graph: {
-      nodes: [],
-      edges: []
-    }
+    nodes: [],
+    edges: []
   };
 
   const labelToIdMap = {};
@@ -93,55 +90,67 @@ export function convertMermaidToJson(mermaidCode) {
     // Skip empty lines and flowchart declaration
     if (!line || line === 'flowchart TD') continue;
 
-    // Match Procedure
-    if (line.includes('%% Procedure:')) {
-      jsonOutput.procedure_name = line.split('%% Procedure:')[1].trim();
-      continue;
-    }
-
-    // Match node: A(UE_Deregistered)
-    const nodeMatch = line.match(/^([A-Z]+)\(([^()]+)\);?/);
+    // Match node definitions
+    const nodeMatch = line.match(/^(\d+)([\[\(])"([^"]+)"([\]\)])(?:::(\w+))?/);
     if (nodeMatch) {
-      const [_, label, id] = nodeMatch;
-      // Unescape node text
-      const unescapedId = id
-        .replace(/\\\\?\(/g, '(')
-        .replace(/\\\\?\)/g, ')')
-        .replace(/&quot;/g, '"');
+      const [_, id, openBracket, content, closeBracket, nodeType] = nodeMatch;
       
-      labelToIdMap[label] = unescapedId;
-      const node = { id: unescapedId, type: '', description: '' };
-      jsonOutput.graph.nodes.push(node);
+      // Determine node type from brackets or explicit type
+      let type = 'entity'; // default type
+      if (nodeType) {
+        type = nodeType === 'event' ? 'action' : 'entity';
+      } else if (openBracket === '(' && closeBracket === ')') {
+        type = 'action';
+      }
+
+      // Parse content for label
+      const parts = content.split('<br>');
+      const label = parts[parts.length - 1] || parts[0];
+      
+      const node = {
+        id: id,
+        type: type,
+        label: label.replace(/\*\*/g, '') // Remove markdown formatting
+      };
+      
+      jsonOutput.nodes.push(node);
+      labelToIdMap[id] = node;
       lastElementType = 'node';
       lastElementRef = node;
       continue;
     }
 
-    // Match edge: A --> B
-    const edgeMatch = line.match(/^([A-Z]+)\s*-->\s*([A-Z]+);?/);
+    // Match edge definitions: 1 --> 2
+    const edgeMatch = line.match(/^(\d+)\s*-->\s*(\d+)$/);
     if (edgeMatch) {
-      const [_, fromLabel, toLabel] = edgeMatch;
-      const from = labelToIdMap[fromLabel] || fromLabel;
-      const to = labelToIdMap[toLabel] || toLabel;
-      const edge = { from, to, type: '', description: '' };
-      jsonOutput.graph.edges.push(edge);
+      const [_, sourceId, targetId] = edgeMatch;
+      
+      const edge = {
+        source: sourceId,
+        target: targetId,
+        label: '' // Default empty label
+      };
+      
+      jsonOutput.edges.push(edge);
       lastElementType = 'edge';
       lastElementRef = edge;
       continue;
     }
 
-    // Match Type
-    const typeMatch = line.match(/^%% Type:\s*(.+)$/);
-    if (typeMatch && lastElementRef) {
-      lastElementRef.type = typeMatch[1].trim();
-      continue;
-    }
-
-    // Match Description
-    const descMatch = line.match(/^%% Description:\s*(.+)$/);
-    if (descMatch && lastElementRef) {
-      lastElementRef.description = descMatch[1].trim();
-      continue;
+    // Match edge with label: 1 -->|label| 2
+    const labeledEdgeMatch = line.match(/^(\d+)\s*-->\|([^|]+)\|\s*(\d+)$/);
+    if (labeledEdgeMatch) {
+      const [_, sourceId, label, targetId] = labeledEdgeMatch;
+      
+      const edge = {
+        source: sourceId,
+        target: targetId,
+        label: label.trim()
+      };
+      
+      jsonOutput.edges.push(edge);
+      lastElementType = 'edge';
+      lastElementRef = edge;
     }
   }
 

@@ -13,6 +13,11 @@ function App() {
     setSelectedProcedure(procedure);
   };
 
+  const handleMermaidCodeChange = (newCode) => {
+    console.log("App: Mermaid code updated:", newCode);
+    setMermaidCode(newCode);
+  };
+
   return (
     <div className="container">
       <header className="header">
@@ -36,7 +41,7 @@ function App() {
           {/* JSON/Mermaid Editor Panel */}
           <div className="editor-panel">
             <JsonViewer
-              onMermaidCodeChange={setMermaidCode}
+              onMermaidCodeChange={handleMermaidCodeChange}
               selectedProcedure={selectedProcedure}
             />
           </div>
@@ -45,7 +50,6 @@ function App() {
           <div className="diagram-panel">
             <FlowDiagram mermaidCode={mermaidCode} />
           </div>
-          {/* Procedure Description */}
         </div>
       </div>
     </div>

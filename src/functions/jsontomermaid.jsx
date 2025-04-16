@@ -20,16 +20,17 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     }
   } = options;
 
-  let mermaidCode = `graph ${direction}\n`;
+  let lines = [];
+  lines.push(`flowchart ${direction}`);
 
   // Style definitions
   Object.entries(styles).forEach(([className, style]) => {
     const styleStr = Object.entries(style)
       .map(([key, value]) => `${key}:${value}`)
       .join(",");
-    mermaidCode += `    classDef ${className} ${styleStr}\n`;
+    lines.push(`classDef ${className} ${styleStr}`);
   });
-  mermaidCode += "\n";
+  lines.push("");
 
   // Process nodes
   jsonData.nodes.forEach(node => {
@@ -64,7 +65,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
 
     // Escape quotes and add node
     const escapedContent = nodeContent.replace(/"/g, '\\"');
-    mermaidCode += `    ${nodeId}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
+    lines.push(`${nodeId}${shape}"${escapedContent}"${closeShape}:::${nodeType}`);
   });
 
   // Process edges
@@ -83,10 +84,11 @@ export const JsonToMermaid = (jsonData, options = {}) => {
       ? `|${edge.properties.messageType}|`
       : "";
 
-    mermaidCode += `    ${sourceId} -->${label} ${targetId}\n`;
+    lines.push(`${sourceId} -->${label} ${targetId}`);
   });
 
-  return mermaidCode;
+  // Join all lines with newlines and ensure no extra whitespace
+  return lines.join('\n').trim();
 };
 
 // Export a default configuration for common use cases
