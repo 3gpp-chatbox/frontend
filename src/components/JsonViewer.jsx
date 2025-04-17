@@ -140,7 +140,7 @@ const highlightMermaid = (code) => {
     .join("\n");
 };
 
-function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
+function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate }) {
   const [data, setData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
@@ -173,14 +173,17 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
           throw new Error("No data received from server");
         }
 
+        // Store complete data for state management
         setData(procedureData);
         setOriginalData(procedureData);
-        const jsonStr = JSON.stringify(procedureData, null, 2);
-        setJsonContent(jsonStr);
+
+        // Get the relevant graph data (edited if available, otherwise original)
+        const graphData = procedureData.edited_graph || procedureData.original_graph;
+        
+        // Set JSON content to only show the graph data
+        setJsonContent(JSON.stringify(graphData, null, 2));
 
         // Convert to Mermaid and store original
-        const graphData =
-          procedureData.edited_graph || procedureData.original_graph;
         const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
         
         // Set both current and original mermaid code
@@ -233,6 +236,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     console.log("Mermaid code changed:", newCode);
     setMermaidGraph(newCode);
     setIsEditing(true);
+    // Always update the diagram, even if there might be errors
+    onMermaidCodeChange(newCode);
   };
 
   const handleSaveChanges = () => {
@@ -301,8 +306,15 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       setOriginalMermaidGraph(mermaidGraph);
       setData(result);
       setOriginalData(result);
-      setJsonContent(JSON.stringify(result, null, 2));
+      
+      // Only show the graph data in JSON view
+      const updatedGraphData = result.edited_graph || result.original_graph;
+      setJsonContent(JSON.stringify(updatedGraphData, null, 2));
+      
       setIsEditing(false);
+
+      // Update parent component with new data
+      onProcedureUpdate(result);
 
       setNotification({
         show: true,
@@ -328,15 +340,19 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
   const handleRevertChanges = () => {
     setMermaidGraph(originalMermaidGraph);
     setData(originalData);
-    setJsonContent(JSON.stringify(originalData, null, 2));
+    
+    // Only show the graph data in JSON view
+    const graphData = originalData.edited_graph || originalData.original_graph;
+    setJsonContent(JSON.stringify(graphData, null, 2));
+    
     setIsEditing(false);
     setShowConfirmation(false);
+    onMermaidCodeChange(originalMermaidGraph);
     setNotification({
       show: true,
       message: "Changes reverted to original",
       type: "info",
     });
-    onMermaidCodeChange(originalMermaidGraph);
   };
 
   const cleanMermaidCode = (code) => {
@@ -475,6 +491,7 @@ JsonViewer.propTypes = {
     id: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
   }),
+  onProcedureUpdate: PropTypes.func.isRequired,
 };
 
 export default JsonViewer;

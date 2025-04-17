@@ -86,14 +86,18 @@ function FlowDiagram({ mermaidCode }) {
   const [zoomLevel, setZoomLevel] = useState(100);
 
   const renderDiagram = useCallback(async () => {
-    if (!mermaidRef.current || !mermaidCode) return;
+    if (!mermaidRef.current || !mermaidCode) {
+      setError(null);
+      return;
+    }
 
     try {
       // Clean up the mermaid code before rendering
       const cleanedCode = cleanMermaidCode(mermaidCode);
       
-      // Clear the container before rendering
+      // Clear the container and error state before rendering
       mermaidRef.current.innerHTML = '';
+      setError(null);
       
       // Render new diagram
       const { svg } = await mermaid.render("mermaid-diagram", cleanedCode);
@@ -123,10 +127,13 @@ function FlowDiagram({ mermaidCode }) {
       setZoomLevel(100);
       setPosition({ x: 0, y: 0 });
       
-      setError(null);
     } catch (err) {
       console.error("Error rendering diagram:", err);
       setError(err.message || "Error rendering diagram");
+      // Clear the container when there's an error
+      if (mermaidRef.current) {
+        mermaidRef.current.innerHTML = '';
+      }
     }
   }, [mermaidCode]);
 

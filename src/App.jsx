@@ -7,15 +7,25 @@ import Description from "./components/Descriptions";
 function App() {
   const [mermaidCode, setMermaidCode] = useState(null);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
+  const [procedureData, setProcedureData] = useState(null);
 
   const handleProcedureSelect = (procedure) => {
     console.log("Selected procedure:", procedure);
     setSelectedProcedure(procedure);
+    setProcedureData(procedure);
   };
 
   const handleMermaidCodeChange = (newCode) => {
     console.log("App: Mermaid code updated:", newCode);
     setMermaidCode(newCode);
+  };
+
+  const handleProcedureUpdate = (updatedData) => {
+    console.log("App: Procedure data updated:", updatedData);
+    setProcedureData({
+      ...selectedProcedure,
+      ...updatedData
+    });
   };
 
   return (
@@ -33,7 +43,7 @@ function App() {
           />
         </div>
         <div className="panel description-panel">
-          <Description procedure={selectedProcedure} />
+          <Description procedure={procedureData} />
         </div>
 
         {/* Editor and Diagram Container */}
@@ -43,6 +53,7 @@ function App() {
             <JsonViewer
               onMermaidCodeChange={handleMermaidCodeChange}
               selectedProcedure={selectedProcedure}
+              onProcedureUpdate={handleProcedureUpdate}
             />
           </div>
 
