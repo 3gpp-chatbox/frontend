@@ -37,3 +37,14 @@ export const insertProcedureGraphChanges = async (procedureId, changes) => {
     throw error; // Propagate the error so we can handle it in the UI
   }
 };
+
+// Fetch original graph data for a procedure
+export const fetchOriginalGraph = async (procedureId) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/procedures/${procedureId}`);
+    return response.data || null;
+  } catch (error) {
+    console.error("Error fetching procedure:", error);
+    return null;
+  }
+};

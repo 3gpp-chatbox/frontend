@@ -6,7 +6,6 @@ import {
   defaultMermaidConfig,
 } from "../functions/jsonToMermaid";
 import {
-  saveMermaidAsJson,
   validateMermaidCode,
   convertMermaidToJson,
 } from "../functions/mermaidToJson";
@@ -40,7 +39,6 @@ const highlightJson = (json) => {
 
   // Second pass: generate HTML with fold buttons
   lines.forEach((line, i) => {
-    const trimmedLine = line.trim();
     const indent = line.match(/^\s*/)[0].length;
     indentLevel = Math.floor(indent / 2);
 
@@ -156,19 +154,35 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
     type: "",
   });
 
-  // Load procedure data
+  // Add effect to update view when procedure data changes
+  useEffect(() => {
+    if (data) {
+      // Get the current graph data
+      const graphData = data.graph_data || 
+        (data.status === "original" ? data.original_graph : data.edited_graph);
+      
+      if (graphData) {
+        // Update JSON content
+        setJsonContent(JSON.stringify(graphData, null, 2));
+        
+        // Update Mermaid code if not editing
+        if (!isEditing) {
+          const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+          setMermaidGraph(mermaidCode);
+          setOriginalMermaidGraph(mermaidCode);
+          onMermaidCodeChange(mermaidCode);
+        }
+      }
+    }
+  }, [data, data?.status, data?.graph_data, isEditing, onMermaidCodeChange]);
+
+  // Update when selected procedure changes
   useEffect(() => {
     const loadProcedureData = async () => {
       if (!selectedProcedure?.id) return;
 
       try {
-        console.log(
-          "JsonViewer: Fetching procedure data:",
-          selectedProcedure.id,
-        );
         const procedureData = await fetchProcedure(selectedProcedure.id);
-        console.log("JsonViewer: Received data:", procedureData);
-
         if (!procedureData) {
           throw new Error("No data received from server");
         }
@@ -177,24 +191,25 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
         setData(procedureData);
         setOriginalData(procedureData);
 
-        // Get the relevant graph data (edited if available, otherwise original)
-        const graphData = procedureData.edited_graph || procedureData.original_graph;
-        
-        // Set JSON content to only show the graph data
-        setJsonContent(JSON.stringify(graphData, null, 2));
+        // Get the relevant graph data
+        const graphData = procedureData.graph_data || 
+          (procedureData.status === "original" ? procedureData.original_graph : procedureData.edited_graph);
 
-        // Convert to Mermaid and store original
-        const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+        if (graphData) {
+          // Set JSON content
+          setJsonContent(JSON.stringify(graphData, null, 2));
+
+          // Convert to Mermaid and store
+          const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+          setMermaidGraph(mermaidCode);
+          setOriginalMermaidGraph(mermaidCode);
+          
+          // Update the diagram
+          onMermaidCodeChange(mermaidCode);
+        }
         
-        // Set both current and original mermaid code
-        setMermaidGraph(mermaidCode);
-        setOriginalMermaidGraph(mermaidCode);
-        
-        // Reset editing state when loading new data
+        // Reset editing state
         setIsEditing(false);
-        
-        // Update the diagram with initial data
-        onMermaidCodeChange(mermaidCode);
       } catch (error) {
         console.error("Error fetching procedure data:", error);
         setNotification({
@@ -207,19 +222,14 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
     };
 
     loadProcedureData();
-  }, [selectedProcedure?.id]); // Only depend on the procedure ID
+  }, [selectedProcedure?.id, onMermaidCodeChange]);
 
-  // Handle mermaid code updates
+  // Update data when procedure is updated externally
   useEffect(() => {
-    // Only update the diagram if we're editing or this is the initial load
-    if (isEditing || mermaidGraph === originalMermaidGraph) {
-      const timer = setTimeout(() => {
-        console.log("Updating mermaid code:", mermaidGraph);
-        onMermaidCodeChange(mermaidGraph);
-      }, 500);
-      return () => clearTimeout(timer);
+    if (selectedProcedure) {
+      setData(selectedProcedure);
     }
-  }, [mermaidGraph, isEditing, originalMermaidGraph, onMermaidCodeChange]);
+  }, [selectedProcedure]);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {

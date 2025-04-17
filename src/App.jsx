@@ -43,7 +43,11 @@ function App() {
           />
         </div>
         <div className="panel description-panel">
-          <Description procedure={procedureData} />
+          <Description 
+            procedure={procedureData} 
+            onProcedureUpdate={handleProcedureUpdate}
+            onMermaidCodeChange={handleMermaidCodeChange}
+          />
         </div>
 
         {/* Editor and Diagram Container */}
