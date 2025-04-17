@@ -290,10 +290,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       }
 
       // Convert to JSON and save
-      const jsonData = convertMermaidToJson(mermaidGraph);
-      const result = await insertProcedureGraphChanges(selectedProcedure.id, {
-        edited_graph: jsonData,
-      });
+      const graphData = convertMermaidToJson(mermaidGraph);
+      const result = await insertProcedureGraphChanges(selectedProcedure.id, graphData);
 
       if (!result) {
         throw new Error("Failed to save changes");

@@ -57,13 +57,10 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   jsonData.nodes.forEach(node => {
     // Generate and store label for this node
     const label = getNextLabel();
-    nodeIdMap[node.id] = label;
-
-    // Sanitize node ID and content
-    const nodeId = node.id
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, "_")
-      .trim();
+    
+    // Store both the display ID and the actual ID in the map
+    const nodeId = node.id.trim();
+    nodeIdMap[nodeId] = label;
 
     // Create node label based on type
     const nodeType = node.type.toLowerCase();
@@ -71,13 +68,13 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     const closeShape = nodeType === "event" ? "))" : "]";
 
     // Build node content
-    let nodeContent = `**${node.type.toUpperCase()}**<br>`;
+    let nodeContent = `${nodeId}`;
     
     if (node.properties) {
       if (nodeType === "event" && node.properties.eventType) {
-        nodeContent += `${node.entity}: ${node.properties.eventType}<br>`;
+        nodeContent += `${node.entity}: ${node.properties.eventType}`;
       } else if (nodeType === "state" && node.properties.state) {
-        nodeContent += `${node.entity}: ${node.properties.state}<br>`;
+        nodeContent += `${node.entity}: ${node.properties.state}`;
       }
       
       // Add any additional properties
@@ -93,9 +90,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     mermaidCode += `    ${label}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
 
     // Add comments for type and description if available
-    if (node.type) {
-      mermaidCode += `    %% Type: ${node.type}\n`;
-    }
+
     if (node.description) {
       mermaidCode += `    %% Description: ${node.description}\n`;
     }
@@ -103,12 +98,17 @@ export const JsonToMermaid = (jsonData, options = {}) => {
 
   // Process edges using node labels
   jsonData.edges.forEach(edge => {
-    const fromLabel = nodeIdMap[edge.from];
+    const fromLabel = nodeIdMap[edge.from_node] || nodeIdMap[edge.from];
     const toLabel = nodeIdMap[edge.to];
 
-    // Add edge label if properties exist
-    const label = edge.properties?.messageType
-      ? `|${edge.properties.messageType}|`
+    if (!fromLabel || !toLabel) {
+      console.warn(`Missing node mapping for edge: ${edge.from_node || edge.from} -> ${edge.to}`);
+      return;
+    }
+
+    // Add edge label (type)
+    const label = edge.type
+      ? `|${edge.type}|`
       : "";
 
     mermaidCode += `    ${fromLabel} -->${label} ${toLabel}\n`;

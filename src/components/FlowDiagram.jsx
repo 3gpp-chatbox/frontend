@@ -10,10 +10,10 @@ mermaid.initialize({
   securityLevel: "loose",
   flowchart: {
     curve: "basis",
-    nodeSpacing: 50,
-    rankSpacing: 50,
-    padding: 10,
-    useMaxWidth: true,
+    nodeSpacing: 100,
+    rankSpacing: 100,
+    padding: 20,
+    useMaxWidth: false,
     htmlLabels: true,
   },
   themeVariables: {
@@ -41,26 +41,14 @@ const ZOOM_SPEED = 0.1;
 const cleanMermaidCode = (code) => {
   if (!code) return "";
   
-  console.log("Input code:", code);
-  
   // Split into lines and filter out empty lines
   let lines = code.split('\n')
-    .map(line => {
-      // Remove any non-printable characters
-      const cleaned = line.trim().replace(/[\x00-\x1F\x7F-\x9F]/g, '');
-      console.log("Cleaned line:", cleaned);
-      return cleaned;
-    })
-    .filter(line => line);
-  
-  console.log("Lines after splitting:", lines);
+    .map(line => line.trim())
+    .filter(Boolean);
   
   // Remove any existing flowchart/graph declarations
   lines = lines.filter(line => {
     const isFlowchart = line.startsWith('flowchart') || line.startsWith('graph');
-    if (isFlowchart) {
-      console.log("Removing flowchart/graph line:", line);
-    }
     return !isFlowchart;
   });
   
@@ -71,26 +59,19 @@ const cleanMermaidCode = (code) => {
   lines = lines.map(line => {
     // Handle class definitions
     if (line.startsWith('classDef')) {
-      const cleaned = line.replace(/\s+/g, ' ');
-      console.log("Cleaned classDef:", cleaned);
-      return cleaned;
+      return line.replace(/\s+/g, ' ');
     }
     
     // Handle node definitions and connections
     if (line.includes('-->') || line.includes('---')) {
-      const cleaned = line.replace(/\s+/g, ' ').trim();
-      console.log("Cleaned connection:", cleaned);
-      return cleaned;
+      return line.replace(/\s+/g, ' ').trim();
     }
     
     return line;
   });
   
   // Join lines with proper spacing
-  const result = lines.join('\n');
-  console.log("Final cleaned code:", result);
-  
-  return result;
+  return lines.join('\n');
 };
 
 function FlowDiagram({ mermaidCode }) {
@@ -105,75 +86,63 @@ function FlowDiagram({ mermaidCode }) {
   const [zoomLevel, setZoomLevel] = useState(100);
 
   const renderDiagram = useCallback(async () => {
-    console.log("Original Mermaid code:", mermaidCode);
-    
-    if (!mermaidRef.current || !mermaidCode) {
-      console.log("Missing ref or code:", { 
-        hasRef: !!mermaidRef.current, 
-        hasCode: !!mermaidCode 
-      });
-      return;
-    }
+    if (!mermaidRef.current || !mermaidCode) return;
 
     try {
-      // Keep a reference to the current SVG before rendering
-      const oldSvg = mermaidRef.current.querySelector("svg");
-      const oldViewBox = oldSvg?.getAttribute("viewBox");
-      const oldWidth = oldSvg?.style.width;
-      const oldHeight = oldSvg?.style.height;
-
       // Clean up the mermaid code before rendering
       const cleanedCode = cleanMermaidCode(mermaidCode);
-      console.log("Cleaned Mermaid code:", cleanedCode);
       
-      // Additional validation
-      if (!cleanedCode.trim()) {
-        throw new Error("Empty Mermaid code after cleaning");
-      }
+      // Clear the container before rendering
+      mermaidRef.current.innerHTML = '';
       
-      if (!cleanedCode.includes("flowchart TD")) {
-        throw new Error("Invalid Mermaid syntax: Missing flowchart TD declaration");
-      }
-
-      // Split and log each line for debugging
-      console.log("Mermaid code lines:", cleanedCode.split('\n'));
-
-      console.log("Attempting to render with mermaid...");
+      // Render new diagram
       const { svg } = await mermaid.render("mermaid-diagram", cleanedCode);
-      console.log("Mermaid render successful");
-
-      // Only update if the component is still mounted
-      if (mermaidRef.current) {
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = svg;
-        const newSvg = tempDiv.querySelector("svg");
-
-        // Preserve the previous viewBox and dimensions if they exist
-        if (oldViewBox) newSvg.setAttribute("viewBox", oldViewBox);
-        if (oldWidth) newSvg.style.width = oldWidth;
-        if (oldHeight) newSvg.style.height = oldHeight;
-
-        // Replace the old SVG with the new one
-        mermaidRef.current.innerHTML = "";
-        mermaidRef.current.appendChild(newSvg);
-        console.log("SVG successfully added to DOM");
-        setError(null);
+      
+      // Create temporary div to hold SVG
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = svg;
+      const newSvg = tempDiv.querySelector("svg");
+      
+      // Set fixed dimensions for SVG
+      newSvg.style.width = "100%";
+      newSvg.style.height = "100%";
+      newSvg.style.minWidth = "800px"; // Set minimum width
+      newSvg.style.minHeight = "600px"; // Set minimum height
+      
+      // Ensure viewBox is set correctly
+      if (!newSvg.getAttribute("viewBox")) {
+        const bbox = newSvg.getBBox();
+        newSvg.setAttribute("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
       }
+      
+      // Add the SVG to the container
+      mermaidRef.current.appendChild(newSvg);
+      
+      // Reset zoom and position
+      setScale(1);
+      setZoomLevel(100);
+      setPosition({ x: 0, y: 0 });
+      
+      setError(null);
     } catch (err) {
       console.error("Error rendering diagram:", err);
-      let errorMessage = err.str || err.message || "Unknown error rendering diagram";
-      
-      // Add more context to the error message
-      if (err.hash) {
-        errorMessage += `\nLine number: ${err.hash.line}`;
-        errorMessage += `\nExpected: ${err.hash.expected?.join(', ')}`;
-        errorMessage += `\nFound: ${err.hash.token}`;
-        console.error("Detailed parse error:", err.hash);
-      }
-      
-      setError(errorMessage);
+      setError(err.message || "Error rendering diagram");
     }
   }, [mermaidCode]);
+
+  // Add useEffect to handle initial render and window resize
+  useEffect(() => {
+    const handleResize = () => {
+      renderDiagram();
+    };
+
+    window.addEventListener('resize', handleResize);
+    renderDiagram();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [renderDiagram]);
 
   const fitDiagramToContainer = () => {
     if (!containerRef.current || !svgRef.current) return;
@@ -192,7 +161,7 @@ function FlowDiagram({ mermaidCode }) {
     setPosition({ x: centerX, y: centerY });
   };
 
-  // Update zoom function to be more controlled
+  // Handle zoom
   const handleZoom = useCallback(
     (delta, mousePosition = null) => {
       const oldScale = scale;
@@ -202,7 +171,6 @@ function FlowDiagram({ mermaidCode }) {
       );
 
       if (mousePosition && containerRef.current) {
-        // Zoom towards mouse position
         const container = containerRef.current.getBoundingClientRect();
         const mouseX = mousePosition.x - container.left;
         const mouseY = mousePosition.y - container.top;
@@ -243,11 +211,6 @@ function FlowDiagram({ mermaidCode }) {
   // Add zoom control buttons
   const zoomIn = () => handleZoom(1);
   const zoomOut = () => handleZoom(-1);
-  const resetZoom = () => {
-    setScale(1);
-    setZoomLevel(100);
-    fitDiagramToContainer();
-  };
 
   // Handle drag
   const handleMouseDown = (e) => {
@@ -268,29 +231,19 @@ function FlowDiagram({ mermaidCode }) {
     setIsDragging(false);
   };
 
-  // Add a debounced effect for rendering
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      renderDiagram();
-    }, 100); // Small delay to batch rapid updates
-
-    return () => clearTimeout(timer);
-  }, [renderDiagram]);
-
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Flow Diagram</span>
         <div className="diagram-controls">
-          <button onClick={zoomOut} title="Zoom Out">
-            -
-          </button>
+          <button onClick={zoomOut} title="Zoom Out">-</button>
           <span className="zoom-level">{zoomLevel}%</span>
-          <button onClick={zoomIn} title="Zoom In">
-            +
-          </button>
-          <button onClick={resetZoom}>Reset View</button>
-          <button onClick={renderDiagram}>Refresh</button>
+          <button onClick={zoomIn} title="Zoom In">+</button>
+          <button onClick={() => {
+            setScale(1);
+            setZoomLevel(100);
+            setPosition({ x: 0, y: 0 });
+          }}>Reset View</button>
         </div>
       </div>
       <div
@@ -300,6 +253,13 @@ function FlowDiagram({ mermaidCode }) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          width: '100%',
+          height: '100%',
+          minHeight: '600px'
+        }}
       >
         {error ? (
           <div className="error-overlay">

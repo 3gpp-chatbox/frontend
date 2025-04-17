@@ -27,7 +27,9 @@ function Description({ procedure }) {
   // Format accuracy as percentage
   const formatAccuracy = (accuracy) => {
     if (accuracy === undefined || accuracy === null) return "N/A";
-    return `${(accuracy * 100).toFixed(1)}%`;
+    // If accuracy is already in percentage form (> 1), don't multiply by 100
+    const value = accuracy > 1 ? accuracy : accuracy * 100;
+    return `${value.toFixed(1)}%`;
   };
 
   return (
@@ -50,6 +52,7 @@ function Description({ procedure }) {
               <span className="detail-label">Status:</span>
               <span className="detail-value">{procedure.status || "N/A"}</span>
             </div>
+            {/*Accuracy format should be a percentage*/}
             <div className="detail-item">
               <span className="detail-label">Accuracy:</span>
               <span className="detail-value">
