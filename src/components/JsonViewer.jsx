@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
 import { fetchProcedure, insertProcedureGraphChanges } from "../API/api_calls";
 import {
@@ -154,9 +154,13 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
     type: "",
   });
 
+  // Add ref to track user edits
+  const userEditedContent = useRef("");
+  const isUserEditing = useRef(false);
+
   // Add effect to update view when procedure data changes
   useEffect(() => {
-    if (data) {
+    if (data && !isUserEditing.current) {
       // Get the current graph data
       const graphData = data.graph_data || 
         (data.status === "original" ? data.original_graph : data.edited_graph);
@@ -165,7 +169,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
         // Update JSON content
         setJsonContent(JSON.stringify(graphData, null, 2));
         
-        // Update Mermaid code if not editing
+        // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
           setMermaidGraph(mermaidCode);
@@ -180,6 +184,16 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
   useEffect(() => {
     const loadProcedureData = async () => {
       if (!selectedProcedure?.id) return;
+
+      // Don't reload if user is currently editing
+      if (isUserEditing.current) {
+        setNotification({
+          show: true,
+          message: "Please save or discard your changes before switching procedures",
+          type: "warning",
+        });
+        return;
+      }
 
       try {
         const procedureData = await fetchProcedure(selectedProcedure.id);
@@ -209,6 +223,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
         }
         
         // Reset editing state
+        isUserEditing.current = false;
         setIsEditing(false);
       } catch (error) {
         console.error("Error fetching procedure data:", error);
@@ -244,9 +259,10 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
   const handleMermaidChange = (event) => {
     const newCode = event.target.value;
     console.log("Mermaid code changed:", newCode);
+    isUserEditing.current = true;
+    userEditedContent.current = newCode;
     setMermaidGraph(newCode);
     setIsEditing(true);
-    // Always update the diagram, even if there might be errors
     onMermaidCodeChange(newCode);
   };
 
@@ -321,6 +337,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
       const updatedGraphData = result.edited_graph || result.original_graph;
       setJsonContent(JSON.stringify(updatedGraphData, null, 2));
       
+      isUserEditing.current = false;
       setIsEditing(false);
 
       // Update parent component with new data
@@ -355,6 +372,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
     const graphData = originalData.edited_graph || originalData.original_graph;
     setJsonContent(JSON.stringify(graphData, null, 2));
     
+    isUserEditing.current = false;
     setIsEditing(false);
     setShowConfirmation(false);
     onMermaidCodeChange(originalMermaidGraph);
