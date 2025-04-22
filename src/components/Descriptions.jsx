@@ -44,7 +44,19 @@ function Description({ procedure }) {
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
+    
+    // Parse date string in format "DD-MM-YYYY HH:MI"
+    const [datePart, timePart] = dateString.split(' ');
+    const [day, month, year] = datePart.split('-');
+    const [hour, minute] = timePart.split(':');
+    
+    // Create date object (months are 0-based in JavaScript)
+    const date = new Date(year, month - 1, day, hour, minute);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) return "Invalid Date";
+    
+    // Format using browser's locale
     return date.toLocaleString();
   };
 
@@ -82,11 +94,11 @@ function Description({ procedure }) {
               <h3>Graph Information</h3>
               <div className="detail-item">
                 <text className="detail-label">Status:</text>
-                <text className="detail-value">{procedure.status || "N/A"}</text>
+                <text className="detail-value">{procedure.edited ? "Edited" : "Original"}</text>
                 <text className="detail-label">Model:</text>
-                <text className="detail-value">{procedure.model || "N/A"}</text>
+                <text className="detail-value">{procedure.model_name || "N/A"}</text>
                 <text className="detail-label">Method:</text>
-                <text className="detail-value">{procedure.method || "N/A"}</text>
+                <text className="detail-value">{procedure.extraction_method || "N/A"}</text>
               </div>
               {/*Accuracy format should be a percentage*/}
               <div className="detail-item">

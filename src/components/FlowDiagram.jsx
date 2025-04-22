@@ -46,14 +46,20 @@ const cleanMermaidCode = (code) => {
     .map(line => line.trim())
     .filter(Boolean);
   
-  // Remove any existing flowchart/graph declarations
+  // Extract style definitions
+  const styleLines = lines.filter(line => line.startsWith('classDef'));
+  
+  // Remove flowchart declarations but keep style definitions
   lines = lines.filter(line => {
     const isFlowchart = line.startsWith('flowchart') || line.startsWith('graph');
     return !isFlowchart;
   });
   
-  // Add single flowchart declaration at the start
+  // Add flowchart declaration and styles at the start
   lines.unshift('flowchart TD');
+  if (styleLines.length > 0) {
+    lines.splice(1, 0, ...styleLines);
+  }
   
   // Clean up class definitions and other special lines
   lines = lines.map(line => {
@@ -84,6 +90,7 @@ function FlowDiagram({ mermaidCode }) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(100);
+  const lastViewStateRef = useRef({ scale: 1, position: { x: 0, y: 0 }, zoomLevel: 100 });
 
   const renderDiagram = useCallback(async () => {
     if (!mermaidRef.current || !mermaidCode) {
@@ -122,10 +129,10 @@ function FlowDiagram({ mermaidCode }) {
       // Add the SVG to the container
       mermaidRef.current.appendChild(newSvg);
       
-      // Reset zoom and position
-      setScale(1);
-      setZoomLevel(100);
-      setPosition({ x: 0, y: 0 });
+      // Restore the previous view state
+      setScale(lastViewStateRef.current.scale);
+      setZoomLevel(lastViewStateRef.current.zoomLevel);
+      setPosition(lastViewStateRef.current.position);
       
     } catch (err) {
       console.error("Error rendering diagram:", err);
@@ -136,6 +143,15 @@ function FlowDiagram({ mermaidCode }) {
       }
     }
   }, [mermaidCode]);
+
+  // Save view state when it changes
+  useEffect(() => {
+    lastViewStateRef.current = {
+      scale,
+      position,
+      zoomLevel
+    };
+  }, [scale, position, zoomLevel]);
 
   // Add useEffect to handle initial render and window resize
   useEffect(() => {
@@ -151,122 +167,74 @@ function FlowDiagram({ mermaidCode }) {
     };
   }, [renderDiagram]);
 
-  const fitDiagramToContainer = () => {
-    if (!containerRef.current || !svgRef.current) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const svgRect = svgRef.current.getBoundingClientRect();
-
-    const scaleX = (containerRect.width * 0.9) / svgRect.width;
-    const scaleY = (containerRect.height * 0.9) / svgRect.height;
-    const newScale = Math.min(scaleX, scaleY, 1);
-
-    const centerX = (containerRect.width - svgRect.width * newScale) / 2;
-    const centerY = (containerRect.height - svgRect.height * newScale) / 2;
-
+  // Handle zooming
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY;
+    const newScale = Math.min(
+      Math.max(scale + (delta > 0 ? -ZOOM_SPEED : ZOOM_SPEED), MIN_SCALE),
+      MAX_SCALE
+    );
     setScale(newScale);
-    setPosition({ x: centerX, y: centerY });
-  };
+    setZoomLevel(Math.round(newScale * 100));
+  }, [scale]);
 
-  // Handle zoom
-  const handleZoom = useCallback(
-    (delta, mousePosition = null) => {
-      const oldScale = scale;
-      const newScale = Math.min(
-        Math.max(scale + delta * ZOOM_SPEED, MIN_SCALE),
-        MAX_SCALE,
-      );
-
-      if (mousePosition && containerRef.current) {
-        const container = containerRef.current.getBoundingClientRect();
-        const mouseX = mousePosition.x - container.left;
-        const mouseY = mousePosition.y - container.top;
-
-        const newPosition = {
-          x:
-            position.x -
-            ((mouseX - position.x) * (newScale - oldScale)) / oldScale,
-          y:
-            position.y -
-            ((mouseY - position.y) * (newScale - oldScale)) / oldScale,
-        };
-
-        setPosition(newPosition);
-      }
-
-      setScale(newScale);
-      setZoomLevel(Math.round(newScale * 100));
-    },
-    [scale, position],
-  );
-
-  // Handle wheel zoom
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e) => {
-      e.preventDefault();
-      const delta = -Math.sign(e.deltaY);
-      handleZoom(delta, { x: e.clientX, y: e.clientY });
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [handleZoom]);
-
-  // Add zoom control buttons
-  const zoomIn = () => handleZoom(1);
-  const zoomOut = () => handleZoom(-1);
-
-  // Handle drag
-  const handleMouseDown = (e) => {
+  // Handle dragging
+  const handleMouseDown = useCallback((e) => {
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-  };
+  }, [position]);
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (isDragging) {
       setPosition({
         x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
+        y: e.clientY - dragStart.y
       });
     }
-  };
+  }, [isDragging, dragStart]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
+
+  // Add event listeners for dragging
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.addEventListener('wheel', handleWheel, { passive: false });
+      containerRef.current.addEventListener('mousedown', handleMouseDown);
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+
+      return () => {
+        containerRef.current?.removeEventListener('wheel', handleWheel);
+        containerRef.current?.removeEventListener('mousedown', handleMouseDown);
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Flow Diagram</span>
         <div className="diagram-controls">
-          <button onClick={zoomOut} title="Zoom Out">-</button>
-          <span className="zoom-level">{zoomLevel}%</span>
-          <button onClick={zoomIn} title="Zoom In">+</button>
+          <span>Zoom: {zoomLevel}%</span>
           <button onClick={() => {
-            setScale(1);
+            const newScale = 1;
+            const newPosition = { x: 0, y: 0 };
+            setScale(newScale);
             setZoomLevel(100);
-            setPosition({ x: 0, y: 0 });
+            setPosition(newPosition);
+            lastViewStateRef.current = { scale: newScale, position: newPosition, zoomLevel: 100 };
           }}>Reset View</button>
         </div>
       </div>
       <div
         ref={containerRef}
         className="content-area diagram-container"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        style={{
-          position: 'relative',
-          overflow: 'hidden',
-          width: '100%',
-          height: '100%',
-          minHeight: '600px'
-        }}
+        style={{ overflow: "hidden" }}
       >
         {error ? (
           <div className="error-overlay">

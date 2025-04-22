@@ -16,7 +16,8 @@ export function convertMermaidToJson(mermaidCode) {
 
   const jsonOutput = {
     nodes: [],
-    edges: []
+    edges: [],
+    direction: 'TD' // Default direction
   };
 
   const labelToIdMap = {};
@@ -25,14 +26,27 @@ export function convertMermaidToJson(mermaidCode) {
 
   // Clean text helper function
   const cleanText = (text) => {
-    return text.replace(/\*\*/g, '').replace(/<br>/g, '').trim();
+    if (!text) return "";
+    return text.replace(/\*\*/g, '').replace(/<br>/g, '').replace(/['"]/g, '').trim();
   };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
-    // Skip empty lines and flowchart declaration
-    if (!line || line === 'flowchart TD' || line.startsWith('classDef')) continue;
+    // Skip empty lines
+    if (!line) continue;
+
+    // Handle flowchart declaration and direction
+    if (line.startsWith('flowchart')) {
+      const dirMatch = line.match(/flowchart\s+(TD|LR)/);
+      if (dirMatch) {
+        jsonOutput.direction = dirMatch[1];
+      }
+      continue;
+    }
+
+    // Skip class definitions
+    if (line.startsWith('classDef')) continue;
 
     // Match node definitions
     const nodeMatch = line.match(/^([A-Z0-9]+)(?:\[|\(\()["']([^"']+)["'](?:\]|\)\))(?:::(\w+))?/);
@@ -67,8 +81,8 @@ export function convertMermaidToJson(mermaidCode) {
       continue;
     }
 
-    // Match edge definitions
-    const edgeMatch = line.match(/^([A-Z0-9]+)\s*-->\s*(?:\|([^|]+)\|)?\s*([A-Z0-9]+)/);
+    // Match edge definitions with improved label handling
+    const edgeMatch = line.match(/^([A-Z0-9]+)\s*-->\s*(?:\|["']([^"']+)["']\|)?\s*([A-Z0-9]+)/);
     if (edgeMatch) {
       const [, fromLabel, messageType, toLabel] = edgeMatch;
       const from = cleanText(labelToIdMap[fromLabel] || fromLabel);
@@ -92,9 +106,9 @@ export function convertMermaidToJson(mermaidCode) {
     if (typeMatch && lastElementRef) {
       const [, matchedType] = typeMatch;
       if (lastElementType === "edge") {
-        lastElementRef.type = ['trigger', 'condition'].includes(matchedType) ? matchedType : 'trigger';
+        lastElementRef.type = ['trigger', 'condition'].includes(matchedType.toLowerCase()) ? matchedType.toLowerCase() : 'trigger';
       } else {
-        lastElementRef.type = ['state', 'event'].includes(matchedType) ? matchedType : 'state';
+        lastElementRef.type = ['state', 'event'].includes(matchedType.toLowerCase()) ? matchedType.toLowerCase() : 'state';
       }
       continue;
     }

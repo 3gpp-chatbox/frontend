@@ -6,7 +6,7 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 // Fetch all procedures
 export const fetchProcedures = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/procedures/list`);
+      const response = await axios.get(`${API_BASE_URL}/procedures`);
       return response.data; // API returns array of {id, name} objects directly
     } catch (error) {
       console.error("Error fetching procedure list:", error);
@@ -28,7 +28,7 @@ export const fetchProcedure = async (procedureId) => {
 // Insert procedure graph changes
 export const insertProcedureGraphChanges = async (procedureId, changes) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/procedures/${procedureId}/edit`, {
+    const response = await axios.put(`${API_BASE_URL}/procedures/${procedureId}`, {
       edited_graph: changes
     });
     return response.data || null;

@@ -161,29 +161,53 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
   // Add effect to update view when procedure data changes
   useEffect(() => {
     if (data && !isUserEditing.current) {
-      // Get the current graph data
-      const graphData = data.graph_data || 
-        (data.status === "original" ? data.original_graph : data.edited_graph);
-      
-      if (graphData) {
+      try {
+        // Get the current graph data based on edited status
+        const graphData = data.edited ? data.edited_graph : data.original_graph;
+        
+        if (!graphData) {
+          console.error("No graph data available:", data);
+          setNotification({
+            show: true,
+            message: "No graph data available for this procedure",
+            type: "error"
+          });
+          return;
+        }
+
         // Update JSON content
-        setJsonContent(JSON.stringify(graphData, null, 2));
+        const jsonString = JSON.stringify(graphData, null, 2);
+        console.log("Setting JSON content:", jsonString);
+        setJsonContent(jsonString);
         
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+          console.log("Generated Mermaid code:", mermaidCode);
           setMermaidGraph(mermaidCode);
           setOriginalMermaidGraph(mermaidCode);
           onMermaidCodeChange(mermaidCode);
         }
+      } catch (error) {
+        console.error("Error processing graph data:", error);
+        setNotification({
+          show: true,
+          message: "Error processing graph data",
+          type: "error"
+        });
       }
     }
-  }, [data, data?.status, data?.graph_data, isEditing, onMermaidCodeChange]);
+  }, [data, isEditing, onMermaidCodeChange]);
 
   // Update when selected procedure changes
   useEffect(() => {
     const loadProcedureData = async () => {
-      if (!selectedProcedure?.id) return;
+      if (!selectedProcedure?.id) {
+        console.log("No procedure ID provided");
+        return;
+      }
+
+      console.log("Loading procedure data for ID:", selectedProcedure.id);
 
       // Don't reload if user is currently editing
       if (isUserEditing.current) {
@@ -196,7 +220,18 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
       }
 
       try {
+        // Clear previous data
+        setData(null);
+        setOriginalData(null);
+        setMermaidGraph("");
+        setOriginalMermaidGraph("");
+        setJsonContent("");
+        setIsEditing(false);
+        isUserEditing.current = false;
+
         const procedureData = await fetchProcedure(selectedProcedure.id);
+        console.log("Received procedure data:", procedureData);
+
         if (!procedureData) {
           throw new Error("No data received from server");
         }
@@ -204,40 +239,18 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
         // Store complete data for state management
         setData(procedureData);
         setOriginalData(procedureData);
-
-        // Get the relevant graph data
-        const graphData = procedureData.graph_data || 
-          (procedureData.status === "original" ? procedureData.original_graph : procedureData.edited_graph);
-
-        if (graphData) {
-          // Set JSON content
-          setJsonContent(JSON.stringify(graphData, null, 2));
-
-          // Convert to Mermaid and store
-          const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
-          setMermaidGraph(mermaidCode);
-          setOriginalMermaidGraph(mermaidCode);
-          
-          // Update the diagram
-          onMermaidCodeChange(mermaidCode);
-        }
-        
-        // Reset editing state
-        isUserEditing.current = false;
-        setIsEditing(false);
       } catch (error) {
-        console.error("Error fetching procedure data:", error);
+        console.error("Error loading procedure data:", error);
         setNotification({
           show: true,
           message: `Failed to load data: ${error.message}`,
           type: "error",
         });
-        setData(null);
       }
     };
 
     loadProcedureData();
-  }, [selectedProcedure?.id, onMermaidCodeChange]);
+  }, [selectedProcedure?.id]);
 
   // Update data when procedure is updated externally
   useEffect(() => {

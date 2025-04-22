@@ -2,7 +2,7 @@
  * Converts a JSON graph structure to Mermaid diagram syntax
  * @param {Object} jsonData - The graph data in JSON format
  * @param {Object} options - Configuration options for the conversion
- * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right)
+ * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right), overrides jsonData.direction if provided
  * @param {Object} options.styles - Custom style definitions
  * @returns {string} Mermaid diagram syntax
  */
@@ -13,7 +13,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   }
 
   const {
-    direction = "TD",
+    direction = jsonData.direction || "TD",
     styles = {
       state: { fill: "#f9f", stroke: "#333", "stroke-width": "2px", color: "#000" },
       event: { fill: "#bbf", stroke: "#333", "stroke-width": "2px", color: "#000" }
@@ -90,7 +90,6 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     mermaidCode += `    ${label}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
 
     // Add comments for type and description if available
-
     if (node.description) {
       mermaidCode += `    %% Description: ${node.description}\n`;
     }
@@ -107,11 +106,9 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     }
 
     // Add edge label (type)
-    const label = edge.type
-      ? `|${edge.type}|`
-      : "";
+    const label = edge.description ? `"${edge.description}"` : "";
 
-    mermaidCode += `    ${fromLabel} -->${label} ${toLabel}\n`;
+    mermaidCode += `    ${fromLabel} -->|${label}| ${toLabel}\n`;
 
     // Add comments for edge type and description if available
     if (edge.type) {
