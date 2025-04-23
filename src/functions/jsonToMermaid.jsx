@@ -2,7 +2,7 @@
  * Converts a JSON graph structure to Mermaid diagram syntax
  * @param {Object} jsonData - The graph data in JSON format
  * @param {Object} options - Configuration options for the conversion
- * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right)
+ * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right), overrides jsonData.direction if provided
  * @param {Object} options.styles - Custom style definitions
  * @returns {string} Mermaid diagram syntax
  */
@@ -13,14 +13,29 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   }
 
   const {
-    direction = "TD",
+    direction = jsonData.direction || "TD",
     styles = {
-      state: { fill: "#f9f", stroke: "#333", "stroke-width": "2px", color: "#000" },
-      event: { fill: "#bbf", stroke: "#333", "stroke-width": "2px", color: "#000" }
-    }
+      state: {
+        fill: "#f9f",
+        stroke: "#333",
+        "stroke-width": "2px",
+        color: "#000",
+      },
+      event: {
+        fill: "#bbf",
+        stroke: "#333",
+        "stroke-width": "2px",
+        color: "#000",
+      },
+    },
   } = options;
 
-  let mermaidCode = `graph ${direction}\n`;
+  let mermaidCode = `flowchart ${direction}\n`;
+
+  // Add procedure name if exists
+  if (jsonData.procedure_name) {
+    mermaidCode += `    %% Procedure: ${jsonData.procedure_name}\n`;
+  }
 
   // Style definitions
   Object.entries(styles).forEach(([className, style]) => {
@@ -31,13 +46,31 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   });
   mermaidCode += "\n";
 
+  // Create node label mapping
+  const nodeIdMap = {};
+  const labelLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let labelIndex = 0;
+
+  // Function to generate node labels (A, B, C, ... AA, AB, etc.)
+  const getNextLabel = () => {
+    let label = "";
+    let index = labelIndex;
+    do {
+      label = labelLetters[index % 26] + label;
+      index = Math.floor(index / 26) - 1;
+    } while (index >= 0);
+    labelIndex++;
+    return label;
+  };
+
   // Process nodes
-  jsonData.nodes.forEach(node => {
-    // Sanitize node ID
-    const nodeId = node.id
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, "_")
-      .trim();
+  jsonData.nodes.forEach((node) => {
+    // Generate and store label for this node
+    const label = getNextLabel();
+
+    // Store both the display ID and the actual ID in the map
+    const nodeId = node.id.trim();
+    nodeIdMap[nodeId] = label;
 
     // Create node label based on type
     const nodeType = node.type.toLowerCase();
@@ -45,15 +78,15 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     const closeShape = nodeType === "event" ? "))" : "]";
 
     // Build node content
-    let nodeContent = `**${node.type.toUpperCase()}**<br>`;
-    
+    let nodeContent = `${nodeId}`;
+
     if (node.properties) {
       if (nodeType === "event" && node.properties.eventType) {
-        nodeContent += `${node.entity}: ${node.properties.eventType}<br>`;
+        nodeContent += `${node.entity}: ${node.properties.eventType}`;
       } else if (nodeType === "state" && node.properties.state) {
-        nodeContent += `${node.entity}: ${node.properties.state}<br>`;
+        nodeContent += `${node.entity}: ${node.properties.state}`;
       }
-      
+
       // Add any additional properties
       Object.entries(node.properties)
         .filter(([key]) => !["eventType", "state"].includes(key))
@@ -62,28 +95,42 @@ export const JsonToMermaid = (jsonData, options = {}) => {
         });
     }
 
-    // Escape quotes and add node
+    // Escape quotes and add node with label
     const escapedContent = nodeContent.replace(/"/g, '\\"');
-    mermaidCode += `    ${nodeId}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
+    mermaidCode += `    ${label}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
+
+    // Add comments for type and description if available
+    if (node.description) {
+      mermaidCode += `    %% Description: ${node.description}\n`;
+    }
   });
 
-  // Process edges
-  jsonData.edges.forEach(edge => {
-    const sourceId = edge.from
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, "_")
-      .trim();
-    const targetId = edge.to
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, "_")
-      .trim();
+  // Process edges using node labels
+  jsonData.edges.forEach((edge) => {
+    const fromLabel = nodeIdMap[edge.from_node] || nodeIdMap[edge.from];
+    const toLabel = nodeIdMap[edge.to];
 
-    // Add edge label if properties exist
-    const label = edge.properties?.messageType
-      ? `|${edge.properties.messageType}|`
-      : "";
+    if (!fromLabel || !toLabel) {
+      console.warn(
+        `Missing node mapping for edge: ${edge.from_node || edge.from} -> ${
+          edge.to
+        }`,
+      );
+      return;
+    }
 
-    mermaidCode += `    ${sourceId} -->${label} ${targetId}\n`;
+    // Add edge label (type)
+    const label = edge.description ? `"${edge.description}"` : "";
+
+    mermaidCode += `    ${fromLabel} -->|${label}| ${toLabel}\n`;
+
+    // Add comments for edge type and description if available
+    if (edge.type) {
+      mermaidCode += `    %% Type: ${edge.type}\n`;
+    }
+    if (edge.description) {
+      mermaidCode += `    %% Description: ${edge.description}\n`;
+    }
   });
 
   return mermaidCode;
@@ -93,8 +140,17 @@ export const JsonToMermaid = (jsonData, options = {}) => {
 export const defaultMermaidConfig = {
   direction: "TD",
   styles: {
-    state: { fill: "#f9f", stroke: "#333", "stroke-width": "2px", color: "#000" },
-    event: { fill: "#bbf", stroke: "#333", "stroke-width": "2px", color: "#000" }
-  }
+    state: {
+      fill: "#f9f",
+      stroke: "#333",
+      "stroke-width": "2px",
+      color: "#000",
+    },
+    event: {
+      fill: "#bbf",
+      stroke: "#333",
+      "stroke-width": "2px",
+      color: "#000",
+    },
+  },
 };
-
