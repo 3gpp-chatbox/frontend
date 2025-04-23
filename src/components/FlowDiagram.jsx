@@ -10,10 +10,10 @@ mermaid.initialize({
   securityLevel: "loose",
   flowchart: {
     curve: "basis",
-    nodeSpacing: 50,
-    rankSpacing: 50,
-    padding: 10,
-    useMaxWidth: true,
+    nodeSpacing: 100,
+    rankSpacing: 100,
+    padding: 20,
+    useMaxWidth: false,
     htmlLabels: true,
   },
   themeVariables: {
@@ -37,6 +37,49 @@ const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
 const ZOOM_SPEED = 0.1;
 
+// Clean up mermaid code by removing extra whitespace and ensuring proper formatting
+const cleanMermaidCode = (code) => {
+  if (!code) return "";
+  
+  // Split into lines and filter out empty lines
+  let lines = code.split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  
+  // Extract style definitions
+  const styleLines = lines.filter(line => line.startsWith('classDef'));
+  
+  // Remove flowchart declarations but keep style definitions
+  lines = lines.filter(line => {
+    const isFlowchart = line.startsWith('flowchart') || line.startsWith('graph');
+    return !isFlowchart;
+  });
+  
+  // Add flowchart declaration and styles at the start
+  lines.unshift('flowchart TD');
+  if (styleLines.length > 0) {
+    lines.splice(1, 0, ...styleLines);
+  }
+  
+  // Clean up class definitions and other special lines
+  lines = lines.map(line => {
+    // Handle class definitions
+    if (line.startsWith('classDef')) {
+      return line.replace(/\s+/g, ' ');
+    }
+    
+    // Handle node definitions and connections
+    if (line.includes('-->') || line.includes('---')) {
+      return line.replace(/\s+/g, ' ').trim();
+    }
+    
+    return line;
+  });
+  
+  // Join lines with proper spacing
+  return lines.join('\n');
+};
+
 function FlowDiagram({ mermaidCode }) {
   const mermaidRef = useRef(null);
   const containerRef = useRef(null);
@@ -47,180 +90,151 @@ function FlowDiagram({ mermaidCode }) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(100);
+  const lastViewStateRef = useRef({ scale: 1, position: { x: 0, y: 0 }, zoomLevel: 100 });
 
   const renderDiagram = useCallback(async () => {
-    if (!mermaidRef.current || !mermaidCode) return;
+    if (!mermaidRef.current || !mermaidCode) {
+      setError(null);
+      return;
+    }
 
     try {
-      // Keep a reference to the current SVG before rendering
-      const oldSvg = mermaidRef.current.querySelector("svg");
-      const oldViewBox = oldSvg?.getAttribute("viewBox");
-      const oldWidth = oldSvg?.style.width;
-      const oldHeight = oldSvg?.style.height;
-
-      // Only proceed with rendering if the code is valid
-      if (!mermaidCode.includes("flowchart TD")) {
-        return;
-      }
-
-      const { svg } = await mermaid.render("mermaid-diagram", mermaidCode);
-
-      // Only update if the component is still mounted
-      if (mermaidRef.current) {
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = svg;
-        const newSvg = tempDiv.querySelector("svg");
-
-        // Preserve the previous viewBox and dimensions if they exist
-        if (oldViewBox) {
-          newSvg.setAttribute("viewBox", oldViewBox);
-        }
-        if (oldWidth) {
-          newSvg.style.width = oldWidth;
-        }
-        if (oldHeight) {
-          newSvg.style.height = oldHeight;
-        }
-
-        // Replace the old SVG with the new one
-        mermaidRef.current.innerHTML = "";
-        mermaidRef.current.appendChild(newSvg);
-      }
-
+      // Clean up the mermaid code before rendering
+      const cleanedCode = cleanMermaidCode(mermaidCode);
+      
+      // Clear the container and error state before rendering
+      mermaidRef.current.innerHTML = '';
       setError(null);
+      
+      // Render new diagram
+      const { svg } = await mermaid.render("mermaid-diagram", cleanedCode);
+      
+      // Create temporary div to hold SVG
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = svg;
+      const newSvg = tempDiv.querySelector("svg");
+      
+      // Set fixed dimensions for SVG
+      newSvg.style.width = "100%";
+      newSvg.style.height = "100%";
+      newSvg.style.minWidth = "800px"; // Set minimum width
+      newSvg.style.minHeight = "600px"; // Set minimum height
+      
+      // Ensure viewBox is set correctly
+      if (!newSvg.getAttribute("viewBox")) {
+        const bbox = newSvg.getBBox();
+        newSvg.setAttribute("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+      }
+      
+      // Add the SVG to the container
+      mermaidRef.current.appendChild(newSvg);
+      
+      // Restore the previous view state
+      setScale(lastViewStateRef.current.scale);
+      setZoomLevel(lastViewStateRef.current.zoomLevel);
+      setPosition(lastViewStateRef.current.position);
+      
     } catch (err) {
-      // Only set error for invalid syntax, ignore rendering errors
-      if (err.str?.includes("syntax")) {
-        setError(err.message);
+      console.error("Error rendering diagram:", err);
+      setError(err.message || "Error rendering diagram");
+      // Clear the container when there's an error
+      if (mermaidRef.current) {
+        mermaidRef.current.innerHTML = '';
       }
     }
   }, [mermaidCode]);
 
-  const fitDiagramToContainer = () => {
-    if (!containerRef.current || !svgRef.current) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const svgRect = svgRef.current.getBoundingClientRect();
-
-    const scaleX = (containerRect.width * 0.9) / svgRect.width;
-    const scaleY = (containerRect.height * 0.9) / svgRect.height;
-    const newScale = Math.min(scaleX, scaleY, 1);
-
-    const centerX = (containerRect.width - svgRect.width * newScale) / 2;
-    const centerY = (containerRect.height - svgRect.height * newScale) / 2;
-
-    setScale(newScale);
-    setPosition({ x: centerX, y: centerY });
-  };
-
-  // Update zoom function to be more controlled
-  const handleZoom = useCallback(
-    (delta, mousePosition = null) => {
-      const oldScale = scale;
-      const newScale = Math.min(
-        Math.max(scale + delta * ZOOM_SPEED, MIN_SCALE),
-        MAX_SCALE,
-      );
-
-      if (mousePosition && containerRef.current) {
-        // Zoom towards mouse position
-        const container = containerRef.current.getBoundingClientRect();
-        const mouseX = mousePosition.x - container.left;
-        const mouseY = mousePosition.y - container.top;
-
-        const newPosition = {
-          x:
-            position.x -
-            ((mouseX - position.x) * (newScale - oldScale)) / oldScale,
-          y:
-            position.y -
-            ((mouseY - position.y) * (newScale - oldScale)) / oldScale,
-        };
-
-        setPosition(newPosition);
-      }
-
-      setScale(newScale);
-      setZoomLevel(Math.round(newScale * 100));
-    },
-    [scale, position],
-  );
-
-  // Handle wheel zoom
+  // Save view state when it changes
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    lastViewStateRef.current = {
+      scale,
+      position,
+      zoomLevel
+    };
+  }, [scale, position, zoomLevel]);
 
-    const handleWheel = (e) => {
-      e.preventDefault();
-      const delta = -Math.sign(e.deltaY);
-      handleZoom(delta, { x: e.clientX, y: e.clientY });
+  // Add useEffect to handle initial render and window resize
+  useEffect(() => {
+    const handleResize = () => {
+      renderDiagram();
     };
 
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [handleZoom]);
+    window.addEventListener('resize', handleResize);
+    renderDiagram();
 
-  // Add zoom control buttons
-  const zoomIn = () => handleZoom(1);
-  const zoomOut = () => handleZoom(-1);
-  const resetZoom = () => {
-    setScale(1);
-    setZoomLevel(100);
-    fitDiagramToContainer();
-  };
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [renderDiagram]);
 
-  // Handle drag
-  const handleMouseDown = (e) => {
+  // Handle zooming
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY;
+    const newScale = Math.min(
+      Math.max(scale + (delta > 0 ? -ZOOM_SPEED : ZOOM_SPEED), MIN_SCALE),
+      MAX_SCALE
+    );
+    setScale(newScale);
+    setZoomLevel(Math.round(newScale * 100));
+  }, [scale]);
+
+  // Handle dragging
+  const handleMouseDown = useCallback((e) => {
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-  };
+  }, [position]);
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (isDragging) {
       setPosition({
         x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
+        y: e.clientY - dragStart.y
       });
     }
-  };
+  }, [isDragging, dragStart]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
-  // Add a debounced effect for rendering
+  // Add event listeners for dragging
   useEffect(() => {
-    const timer = setTimeout(() => {
-      renderDiagram();
-    }, 100); // Small delay to batch rapid updates
+    if (containerRef.current) {
+      containerRef.current.addEventListener('wheel', handleWheel, { passive: false });
+      containerRef.current.addEventListener('mousedown', handleMouseDown);
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
 
-    return () => clearTimeout(timer);
-  }, [renderDiagram]);
+      return () => {
+        containerRef.current?.removeEventListener('wheel', handleWheel);
+        containerRef.current?.removeEventListener('mousedown', handleMouseDown);
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
     <div className="section-container">
       <div className="section-header">
         <span>Flow Diagram</span>
         <div className="diagram-controls">
-          <button onClick={zoomOut} title="Zoom Out">
-            -
-          </button>
-          <span className="zoom-level">{zoomLevel}%</span>
-          <button onClick={zoomIn} title="Zoom In">
-            +
-          </button>
-          <button onClick={resetZoom}>Reset View</button>
-          <button onClick={renderDiagram}>Refresh</button>
+          <span>Zoom: {zoomLevel}%</span>
+          <button onClick={() => {
+            const newScale = 1;
+            const newPosition = { x: 0, y: 0 };
+            setScale(newScale);
+            setZoomLevel(100);
+            setPosition(newPosition);
+            lastViewStateRef.current = { scale: newScale, position: newPosition, zoomLevel: 100 };
+          }}>Reset View</button>
         </div>
       </div>
       <div
         ref={containerRef}
         className="content-area diagram-container"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        style={{ overflow: "hidden" }}
       >
         {error ? (
           <div className="error-overlay">

@@ -1,8 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { fetchMockData, saveEditedData } from "../API_calls/mockapi";
-import { getMermaidConverter } from "../functions/jsontomermaid";
-import { saveMermaidAsJson, validateMermaidCode, convertMermaidToJson } from "../functions/mermaidtojson";
+import { fetchProcedure, insertProcedureGraphChanges } from "../API/api_calls";
+import {
+  JsonToMermaid,
+  defaultMermaidConfig,
+} from "../functions/jsonToMermaid";
+import {
+  validateMermaidCode,
+  convertMermaidToJson,
+} from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 
@@ -33,7 +39,6 @@ const highlightJson = (json) => {
 
   // Second pass: generate HTML with fold buttons
   lines.forEach((line, i) => {
-    const trimmedLine = line.trim();
     const indent = line.match(/^\s*/)[0].length;
     indentLevel = Math.floor(indent / 2);
 
@@ -86,25 +91,28 @@ const highlightMermaid = (code) => {
 
   return code
     .split("\n")
-    .map(line => {
+    .map((line) => {
       const trimmedLine = line.trim();
       let highlightedLine = line;
 
       // Highlight flowchart declaration
       if (trimmedLine.startsWith("flowchart")) {
-        highlightedLine = line.replace(/(flowchart\s+TD)/, '<span class="flowchart">$1</span>');
+        highlightedLine = line.replace(
+          /(flowchart\s+TD)/,
+          '<span class="flowchart">$1</span>',
+        );
       }
       // Highlight comments and metadata
       else if (trimmedLine.startsWith("%%")) {
         if (trimmedLine.includes("Type:")) {
           highlightedLine = line.replace(
             /(%%.+?Type:)(.+)/,
-            '<span class="comment">$1</span><span class="type">$2</span>'
+            '<span class="comment">$1</span><span class="type">$2</span>',
           );
         } else if (trimmedLine.includes("Description:")) {
           highlightedLine = line.replace(
             /(%%.+?Description:)(.+)/,
-            '<span class="comment">$1</span><span class="description">$2</span>'
+            '<span class="comment">$1</span><span class="description">$2</span>',
           );
         } else {
           highlightedLine = `<span class="comment">${line}</span>`;
@@ -114,14 +122,14 @@ const highlightMermaid = (code) => {
       else if (/^[A-Z]+\([^)]+\)/.test(trimmedLine)) {
         highlightedLine = line.replace(
           /([A-Z]+)(\()([^)]+)(\))/,
-          '<span class="node-id">$1</span>$2<span class="node-text">$3</span>$4'
+          '<span class="node-id">$1</span>$2<span class="node-text">$3</span>$4',
         );
       }
       // Highlight edges: A --> B
       else if (/^[A-Z]+\s*-->/.test(trimmedLine)) {
         highlightedLine = line.replace(
           /([A-Z]+)(\s*-->?\s*)([A-Z]+)/,
-          '<span class="node-id">$1</span><span class="arrow">$2</span><span class="node-id">$3</span>'
+          '<span class="node-id">$1</span><span class="arrow">$2</span><span class="node-id">$3</span>',
         );
       }
 
@@ -130,7 +138,7 @@ const highlightMermaid = (code) => {
     .join("\n");
 };
 
-function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
+function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate }) {
   const [data, setData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
@@ -145,52 +153,111 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     message: "",
     type: "",
   });
-  const [debouncedMermaid, setDebouncedMermaid] = useState("");
 
+  // Add ref to track user edits
+  const userEditedContent = useRef("");
+  const isUserEditing = useRef(false);
+
+  // Add effect to update view when procedure data changes
   useEffect(() => {
-    const loadMockData = async () => {
-      if (!selectedProcedure) return;
-
+    if (data && !isUserEditing.current) {
       try {
-        console.log(
-          "JsonViewer: Fetching mock data for procedure:",
-          selectedProcedure,
-        );
-        const mockData = await fetchMockData(selectedProcedure);
-        console.log("JsonViewer: Received data:", mockData);
-        setData(mockData);
-        setOriginalData(mockData);
-        const jsonStr = JSON.stringify(mockData, null, 2);
-        setJsonContent(jsonStr);
+        // Get the current graph data based on edited status
+        const graphData = data.edited ? data.edited_graph : data.original_graph;
+        
+        if (!graphData) {
+          console.error("No graph data available:", data);
+          setNotification({
+            show: true,
+            message: "No graph data available for this procedure",
+            type: "error"
+          });
+          return;
+        }
 
-        // Convert to Mermaid and store original
-        const converter = getMermaidConverter();
-        const mermaidCode = converter(mockData);
-        setMermaidGraph(mermaidCode);
-        setOriginalMermaidGraph(mermaidCode);
+        // Update JSON content
+        const jsonString = JSON.stringify(graphData, null, 2);
+        console.log("Setting JSON content:", jsonString);
+        setJsonContent(jsonString);
+        
+        // Only update Mermaid code if not actively editing
+        if (!isEditing) {
+          const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+          console.log("Generated Mermaid code:", mermaidCode);
+          setMermaidGraph(mermaidCode);
+          setOriginalMermaidGraph(mermaidCode);
+          onMermaidCodeChange(mermaidCode);
+        }
       } catch (error) {
-        console.error("Error fetching mock data:", error);
+        console.error("Error processing graph data:", error);
         setNotification({
           show: true,
-          message: "Failed to load mock data",
+          message: "Error processing graph data",
+          type: "error"
+        });
+      }
+    }
+  }, [data, isEditing, onMermaidCodeChange]);
+
+  // Update when selected procedure changes
+  useEffect(() => {
+    const loadProcedureData = async () => {
+      if (!selectedProcedure?.id) {
+        console.log("No procedure ID provided");
+        return;
+      }
+
+      console.log("Loading procedure data for ID:", selectedProcedure.id);
+
+      // Don't reload if user is currently editing
+      if (isUserEditing.current) {
+        setNotification({
+          show: true,
+          message: "Please save or discard your changes before switching procedures",
+          type: "warning",
+        });
+        return;
+      }
+
+      try {
+        // Clear previous data
+        setData(null);
+        setOriginalData(null);
+        setMermaidGraph("");
+        setOriginalMermaidGraph("");
+        setJsonContent("");
+        setIsEditing(false);
+        isUserEditing.current = false;
+
+        const procedureData = await fetchProcedure(selectedProcedure.id);
+        console.log("Received procedure data:", procedureData);
+
+        if (!procedureData) {
+          throw new Error("No data received from server");
+        }
+
+        // Store complete data for state management
+        setData(procedureData);
+        setOriginalData(procedureData);
+      } catch (error) {
+        console.error("Error loading procedure data:", error);
+        setNotification({
+          show: true,
+          message: `Failed to load data: ${error.message}`,
           type: "error",
         });
-        setData(null);
       }
     };
 
-    loadMockData();
-  }, [selectedProcedure]);
+    loadProcedureData();
+  }, [selectedProcedure?.id]);
 
-  // Debounced update for the diagram
+  // Update data when procedure is updated externally
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isEditing) return;
-      onMermaidCodeChange(mermaidGraph);
-    }, 500); // 500ms delay
-
-    return () => clearTimeout(timer);
-  }, [mermaidGraph, isEditing, onMermaidCodeChange]);
+    if (selectedProcedure) {
+      setData(selectedProcedure);
+    }
+  }, [selectedProcedure]);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -204,8 +271,12 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
 
   const handleMermaidChange = (event) => {
     const newCode = event.target.value;
+    console.log("Mermaid code changed:", newCode);
+    isUserEditing.current = true;
+    userEditedContent.current = newCode;
     setMermaidGraph(newCode);
     setIsEditing(true);
+    onMermaidCodeChange(newCode);
   };
 
   const handleSaveChanges = () => {
@@ -231,12 +302,13 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
           message: "Structure validation successful",
           type: "success",
         });
-        // Show save confirmation after a brief delay
         setTimeout(() => {
           setShowConfirmation(true);
         }, 1000);
       } else {
-        throw new Error(`Structural validation failed: ${validationResult.error}`);
+        throw new Error(
+          `Structural validation failed: ${validationResult.error}`,
+        );
       }
     } catch (error) {
       setNotification({
@@ -262,18 +334,27 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
       }
 
       // Convert to JSON and save
-      const result = await saveMermaidAsJson(mermaidGraph);
-      
-      if (!result.success) {
-        throw new Error(result.message);
+      const graphData = convertMermaidToJson(mermaidGraph);
+      const result = await insertProcedureGraphChanges(selectedProcedure.id, graphData);
+
+      if (!result) {
+        throw new Error("Failed to save changes");
       }
 
       // Update both Mermaid and JSON views
       setOriginalMermaidGraph(mermaidGraph);
-      setData(result.data);
-      setOriginalData(result.data);
-      setJsonContent(JSON.stringify(result.data, null, 2));
+      setData(result);
+      setOriginalData(result);
+      
+      // Only show the graph data in JSON view
+      const updatedGraphData = result.edited_graph || result.original_graph;
+      setJsonContent(JSON.stringify(updatedGraphData, null, 2));
+      
+      isUserEditing.current = false;
       setIsEditing(false);
+
+      // Update parent component with new data
+      onProcedureUpdate(result);
 
       setNotification({
         show: true,
@@ -299,15 +380,20 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
   const handleRevertChanges = () => {
     setMermaidGraph(originalMermaidGraph);
     setData(originalData);
-    setJsonContent(JSON.stringify(originalData, null, 2));
+    
+    // Only show the graph data in JSON view
+    const graphData = originalData.edited_graph || originalData.original_graph;
+    setJsonContent(JSON.stringify(graphData, null, 2));
+    
+    isUserEditing.current = false;
     setIsEditing(false);
     setShowConfirmation(false);
+    onMermaidCodeChange(originalMermaidGraph);
     setNotification({
       show: true,
       message: "Changes reverted to original",
       type: "info",
     });
-    onMermaidCodeChange(originalMermaidGraph);
   };
 
   const cleanMermaidCode = (code) => {
@@ -346,7 +432,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
     <div className="section-container">
       <div className="section-header">
         <span>
-          Code View {selectedProcedure ? `- ${selectedProcedure.label}` : ""}
+          Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
           {isEditing && <span className="editing-indicator"> (Editing)</span>}
         </span>
         <div className="viewer-controls">
@@ -407,7 +493,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
               )}
             </pre>
           ) : (
-            <div className="placeholder-text">Loading mock data...</div>
+            <div className="placeholder-text">Loading procedure data...</div>
           )
         ) : (
           <div className="placeholder-text">
@@ -442,7 +528,11 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure }) {
 
 JsonViewer.propTypes = {
   onMermaidCodeChange: PropTypes.func.isRequired,
-  selectedProcedure: PropTypes.string,
+  selectedProcedure: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+  }),
+  onProcedureUpdate: PropTypes.func.isRequired,
 };
 
 export default JsonViewer;
