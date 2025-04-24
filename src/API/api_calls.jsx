@@ -1,23 +1,25 @@
 // api_calls.jsx
 import axios from "axios";
 
-const API_BASE_URL = "http://127.0.0.1:8000"; 
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 // Fetch all procedures
 export const fetchProcedures = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/procedures`);
-      return response.data; // API returns array of {id, name} objects directly
-    } catch (error) {
-      console.error("Error fetching procedure list:", error);
-      return [];
-    }
+  try {
+    const response = await axios.get(`${API_BASE_URL}/procedures`);
+    return response.data; // API returns array of {id, name} objects directly
+  } catch (error) {
+    console.error("Error fetching procedure list:", error);
+    return [];
+  }
 };
-  
-// Fetch data for a specific procedure 
+
+// Fetch data for a specific procedure
 export const fetchProcedure = async (procedureId) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/procedures/${procedureId}`);
+    const response = await axios.get(
+      `${API_BASE_URL}/procedures/${procedureId}`,
+    );
     return response.data || null;
   } catch (error) {
     console.error("Error fetching procedure:", error);
@@ -28,9 +30,13 @@ export const fetchProcedure = async (procedureId) => {
 // Insert procedure graph changes
 export const insertProcedureGraphChanges = async (procedureId, changes) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/procedures/${procedureId}`, {
-      edited_graph: changes
-    });
+    console.log("Inserting procedure graph changes:", changes);
+    const response = await axios.put(
+      `${API_BASE_URL}/procedures/${procedureId}`,
+      {
+        edited_graph: changes,
+      },
+    );
     return response.data || null;
   } catch (error) {
     console.error("Error inserting procedure graph changes:", error);
@@ -41,7 +47,9 @@ export const insertProcedureGraphChanges = async (procedureId, changes) => {
 // Fetch original graph data for a procedure
 export const fetchOriginalGraph = async (procedureId) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/procedures/${procedureId}`);
+    const response = await axios.get(
+      `${API_BASE_URL}/procedures/${procedureId}`,
+    );
     return response.data || null;
   } catch (error) {
     console.error("Error fetching procedure:", error);

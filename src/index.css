@@ -185,8 +185,7 @@ button {
 
 .description-panel {
   grid-column: span 12;
-  height: 190px; /* Reduced height since we're going horizontal */
-
+  height: auto; /* Reduced height since we're going horizontal */
   background-color: var(--black-800);
   border: 1px solid var(--blue-600);
   border-radius: 8px;
@@ -319,7 +318,7 @@ button {
   background-color: var(--black-700);
   border: 1px solid var(--black-500);
   border-radius: 8px;
-  padding: 1rem;
+  padding: 0.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -332,7 +331,7 @@ button {
 
 .procedure-item.active {
   background-color: var(--blue-900);
-  border-color: var(--blue-400);
+  border-color: var(--orange-400);
 }
 
 .procedure-header {
@@ -341,6 +340,7 @@ button {
   gap: 0.5rem;
   color: var(--silver-100);
   font-weight: 500;
+  font-size: 0.8em;
 }
 
 .procedure-header span {

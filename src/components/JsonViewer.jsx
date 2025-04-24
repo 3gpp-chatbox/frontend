@@ -138,7 +138,11 @@ const highlightMermaid = (code) => {
     .join("\n");
 };
 
-function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate }) {
+function JsonViewer({
+  onMermaidCodeChange,
+  selectedProcedure,
+  onProcedureUpdate,
+}) {
   const [data, setData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
@@ -164,13 +168,13 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
       try {
         // Get the current graph data based on edited status
         const graphData = data.edited ? data.edited_graph : data.original_graph;
-        
+
         if (!graphData) {
           console.error("No graph data available:", data);
           setNotification({
             show: true,
             message: "No graph data available for this procedure",
-            type: "error"
+            type: "error",
           });
           return;
         }
@@ -179,7 +183,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
         const jsonString = JSON.stringify(graphData, null, 2);
         console.log("Setting JSON content:", jsonString);
         setJsonContent(jsonString);
-        
+
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
@@ -193,7 +197,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
         setNotification({
           show: true,
           message: "Error processing graph data",
-          type: "error"
+          type: "error",
         });
       }
     }
@@ -213,7 +217,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
       if (isUserEditing.current) {
         setNotification({
           show: true,
-          message: "Please save or discard your changes before switching procedures",
+          message:
+            "Please save or discard your changes before switching procedures",
           type: "warning",
         });
         return;
@@ -335,7 +340,10 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
 
       // Convert to JSON and save
       const graphData = convertMermaidToJson(mermaidGraph);
-      const result = await insertProcedureGraphChanges(selectedProcedure.id, graphData);
+      const result = await insertProcedureGraphChanges(selectedProcedure.id, {
+        nodes: graphData.nodes,
+        edges: graphData.edges,
+      });
 
       if (!result) {
         throw new Error("Failed to save changes");
@@ -345,11 +353,11 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
       setOriginalMermaidGraph(mermaidGraph);
       setData(result);
       setOriginalData(result);
-      
+
       // Only show the graph data in JSON view
       const updatedGraphData = result.edited_graph || result.original_graph;
       setJsonContent(JSON.stringify(updatedGraphData, null, 2));
-      
+
       isUserEditing.current = false;
       setIsEditing(false);
 
@@ -380,11 +388,11 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
   const handleRevertChanges = () => {
     setMermaidGraph(originalMermaidGraph);
     setData(originalData);
-    
+
     // Only show the graph data in JSON view
     const graphData = originalData.edited_graph || originalData.original_graph;
     setJsonContent(JSON.stringify(graphData, null, 2));
-    
+
     isUserEditing.current = false;
     setIsEditing(false);
     setShowConfirmation(false);
