@@ -1482,7 +1482,7 @@ pre.code-block {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 50%;
+  width: 51%;
   background-color: rgba(0, 0, 0, 0.2);
   display: flex;
   justify-content: flex-start;
@@ -1496,7 +1496,7 @@ pre.code-block {
   border-radius: 8px;
   border: 1px solid var(--blue-700);
   width: 95%;
-  height: 90vh;
+  height: 95vh;
   margin: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   display: flex;
@@ -1617,4 +1617,43 @@ pre.code-block {
 .view-original-btn:focus {
   outline: 2px solid var(--blue-500);
   outline-offset: 2px;
+}
+
+/* Add these styles to your existing CSS */
+.modal-view-buttons {
+  display: flex;
+  gap: 8px;
+  margin-right: 16px;
+}
+
+.modal-view-button {
+  padding: 6px 12px;
+  background-color: var(--black-700);
+  color: var(--silver-300);
+  border: 1px solid var(--black-600);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.modal-view-button:hover {
+  background-color: var(--black-600);
+  color: var(--silver-200);
+  border-color: var(--blue-600);
+}
+
+.modal-view-button.active {
+  background-color: var(--blue-700);
+  color: var(--silver-100);
+  border-color: var(--blue-500);
+}
+
+.graph-view {
+  height: 100%;
+  width: 100%;
+  background-color: var(--black-800);
+  border-radius: 6px;
+  padding: 20px;
+  overflow: auto;
 }
