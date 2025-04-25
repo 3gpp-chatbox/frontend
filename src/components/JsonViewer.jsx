@@ -11,132 +11,7 @@ import {
 } from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
-
-// Function to highlight JSON syntax with folding
-const highlightJson = (json) => {
-  if (!json) return "";
-
-  // Parse and re-stringify to ensure proper formatting
-  try {
-    const parsed = JSON.parse(json);
-    json = JSON.stringify(parsed, null, 2);
-  } catch (e) {
-    console.warn("JSON parsing failed, using original string");
-  }
-
-  let lines = json.split("\n");
-  let result = [];
-  let indentLevel = 0;
-  let foldable = new Set(); // Track which lines can be folded
-
-  // First pass: identify foldable lines
-  lines.forEach((line, i) => {
-    const trimmedLine = line.trim();
-    if (trimmedLine.endsWith("{") || trimmedLine.endsWith("[")) {
-      foldable.add(i);
-    }
-  });
-
-  // Second pass: generate HTML with fold buttons
-  lines.forEach((line, i) => {
-    const indent = line.match(/^\s*/)[0].length;
-    indentLevel = Math.floor(indent / 2);
-
-    let lineHtml = line
-      .replace(
-        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
-        function (match) {
-          let cls = "json-number";
-          if (/^"/.test(match)) {
-            if (/:$/.test(match)) {
-              cls = "json-key";
-              match = match.slice(0, -1);
-            } else {
-              cls = "json-string";
-            }
-          } else if (/true|false/.test(match)) {
-            cls = "json-boolean";
-          } else if (/null/.test(match)) {
-            cls = "json-null";
-          }
-          return `<span class="${cls}">${match}</span>${
-            /:$/.test(match) ? ":" : ""
-          }`;
-        },
-      )
-      .replace(
-        /[{}\[\]]/g,
-        (match) => `<span class="json-punctuation">${match}</span>`,
-      );
-
-    // Add fold button if line is foldable
-    if (foldable.has(i)) {
-      const foldButton = `<button class="fold-button" data-line="${i}">▼</button>`;
-      result.push(
-        `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${foldButton}${lineHtml}</div>`,
-      );
-    } else {
-      result.push(
-        `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${lineHtml}</div>`,
-      );
-    }
-  });
-
-  return result.join("");
-};
-
-// Function to highlight Mermaid syntax
-const highlightMermaid = (code) => {
-  if (!code) return "";
-
-  return code
-    .split("\n")
-    .map((line) => {
-      const trimmedLine = line.trim();
-      let highlightedLine = line;
-
-      // Highlight flowchart declaration
-      if (trimmedLine.startsWith("flowchart")) {
-        highlightedLine = line.replace(
-          /(flowchart\s+TD)/,
-          '<span class="flowchart">$1</span>',
-        );
-      }
-      // Highlight comments and metadata
-      else if (trimmedLine.startsWith("%%")) {
-        if (trimmedLine.includes("Type:")) {
-          highlightedLine = line.replace(
-            /(%%.+?Type:)(.+)/,
-            '<span class="comment">$1</span><span class="type">$2</span>',
-          );
-        } else if (trimmedLine.includes("Description:")) {
-          highlightedLine = line.replace(
-            /(%%.+?Description:)(.+)/,
-            '<span class="comment">$1</span><span class="description">$2</span>',
-          );
-        } else {
-          highlightedLine = `<span class="comment">${line}</span>`;
-        }
-      }
-      // Highlight node definitions: A(text)
-      else if (/^[A-Z]+\([^)]+\)/.test(trimmedLine)) {
-        highlightedLine = line.replace(
-          /([A-Z]+)(\()([^)]+)(\))/,
-          '<span class="node-id">$1</span>$2<span class="node-text">$3</span>$4',
-        );
-      }
-      // Highlight edges: A --> B
-      else if (/^[A-Z]+\s*-->/.test(trimmedLine)) {
-        highlightedLine = line.replace(
-          /([A-Z]+)(\s*-->?\s*)([A-Z]+)/,
-          '<span class="node-id">$1</span><span class="arrow">$2</span><span class="node-id">$3</span>',
-        );
-      }
-
-      return highlightedLine;
-    })
-    .join("\n");
-};
+import { highlightJson } from "../utils/jsonHighlighter";
 
 function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate }) {
   const [data, setData] = useState(null);
@@ -259,12 +134,12 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
     }
   }, [selectedProcedure]);
 
-  // Auto-hide notification after 3 seconds
+  // Auto-hide notification after 4 seconds
   useEffect(() => {
     if (notification.show) {
       const timer = setTimeout(() => {
         setNotification({ show: false, message: "", type: "" });
-      }, 3000);
+      }, 4000);
       return () => clearTimeout(timer);
     }
   }, [notification.show]);
@@ -335,7 +210,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
 
       // Convert to JSON and save
       const graphData = convertMermaidToJson(mermaidGraph);
-      const result = await insertProcedureGraphChanges(selectedProcedure.id, graphData);
+      const result = await insertProcedureGraphChanges(selectedProcedure.id,{nodes:graphData.nodes,edges:graphData.edges});
 
       if (!result) {
         throw new Error("Failed to save changes");

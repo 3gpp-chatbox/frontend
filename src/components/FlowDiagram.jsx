@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import mermaid from "mermaid";
 
+
 // Initialize mermaid with optimized settings
 mermaid.initialize({
   startOnLoad: true,

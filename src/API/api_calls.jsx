@@ -28,6 +28,7 @@ export const fetchProcedure = async (procedureId) => {
 // Insert procedure graph changes
 export const insertProcedureGraphChanges = async (procedureId, changes) => {
   try {
+    console.log("Inserting procedure graph changes:", changes);
     const response = await axios.put(`${API_BASE_URL}/procedures/${procedureId}`, {
       edited_graph: changes
     });

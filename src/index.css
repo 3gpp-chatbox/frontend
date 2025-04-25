@@ -109,7 +109,7 @@ button {
   z-index: 100;
   /* margin-bottom: 24px; */
   background-color: var(--black-600);
-  padding: 24px;
+  padding: 4px;
   border-radius: 8px;
   border: 1px solid var(--black-500);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
@@ -147,7 +147,7 @@ button {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 24px;
-  padding-top: 64px; /* Increased padding to ensure content is below header */
+  padding-top: 24px; /* Increased padding to ensure content is below header */
 }
 
 .panel {
@@ -186,7 +186,7 @@ button {
   height: 190px; /* Reduced height since we're going horizontal */
   margin-right: 10px;
   margin-left: 10px;
-  padding: 5px;
+  padding: 15px;
   background-color: var(--black-800);
   border: 1px solid var(--blue-600);
   border-radius: 8px;
