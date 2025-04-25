@@ -1473,7 +1473,6 @@ pre.code-block {
 .fetch-original-btn:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
-  ring-offset-2: #ffffff;
 }
 
 /* Modal Styles */
