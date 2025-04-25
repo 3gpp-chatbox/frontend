@@ -164,7 +164,8 @@ button {
 /* Panel heights */
 .col-3 {
   grid-column: span 12;
-  height: 130px;
+  height: auto;
+  min-height: 130px;
   margin-right: 20px;
   margin-left: 20px;
 }
@@ -305,15 +306,15 @@ button {
 
 .procedure-list {
   display: flex;
-  flex-direction: row;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem;
-  overflow-x: auto;
   width: 100%;
 }
 
 .procedure-item {
   flex: 0 0 auto;
+  width: calc(20% - 1rem); /* Show 5 items per row with gap consideration */
   min-width: 200px;
   background-color: var(--black-700);
   border: 1px solid var(--black-500);
@@ -326,7 +327,6 @@ button {
 .procedure-item:hover {
   background-color: var(--black-600);
   border-color: var(--blue-500);
-  transform: translateY(-2px);
 }
 
 .procedure-item.active {
