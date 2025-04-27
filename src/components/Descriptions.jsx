@@ -76,7 +76,7 @@ function Description({ procedure }) {
   };
 
   return (
-    <div className="section-container">
+    <div>
       {procedure ? (
         <>
           <div className="detail-sections-container">

@@ -8,7 +8,7 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
   if (!isOpen) return null;
 
   const jsonContent = originalData ? JSON.stringify(originalData, null, 2) : "";
-  const mermaidCode = originalData ? JsonToMermaid(originalData) : "";
+  const mermaidCode = originalData ? JsonToMermaid(originalData, { styles: {} }) : "";
 
   return (
     <div className="modal-overlay" onClick={(e) => e.stopPropagation()}>

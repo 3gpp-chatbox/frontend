@@ -2,7 +2,7 @@
  * Converts a JSON graph structure to Mermaid diagram syntax
  * @param {Object} jsonData - The graph data in JSON format
  * @param {Object} options - Configuration options for the conversion
- * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right, 'RL' for right-left, 'BT' for bottom-top)
+ * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right), overrides jsonData.direction if provided
  * @param {Object} options.styles - Custom style definitions
  * @returns {string} Mermaid diagram syntax
  */
@@ -13,7 +13,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   }
 
   const {
-    direction = "TD",
+    direction = jsonData.direction || "TD",
     styles = {
       state: {
         fill: "#f9f",
@@ -30,11 +30,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     },
   } = options;
 
-  // Validate direction
-  const validDirections = ["TD", "LR", "RL", "BT"];
-  const graphDirection = validDirections.includes(direction.toUpperCase()) ? direction.toUpperCase() : "TD";
-
-  let mermaidCode = `flowchart ${graphDirection}\n`;
+  let mermaidCode = `flowchart ${direction}\n`;
 
   // Add procedure name if exists
   if (jsonData.procedure_name) {
@@ -142,7 +138,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
 
 // Export a default configuration for common use cases
 export const defaultMermaidConfig = {
-  direction: "TD", // Default to top-down
+  direction: "TD",
   styles: {
     state: {
       fill: "#f9f",

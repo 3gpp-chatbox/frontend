@@ -8,6 +8,7 @@ function App() {
   const [mermaidCode, setMermaidCode] = useState(null);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
   const [procedureData, setProcedureData] = useState(null);
+  const [highlightedElement, setHighlightedElement] = useState(null);
 
   const handleProcedureSelect = (procedure) => {
     console.log("Selected procedure:", procedure);
@@ -28,6 +29,11 @@ function App() {
     });
   };
 
+  const handleElementClick = (element) => {
+    console.log("Diagram element clicked:", element);
+    setHighlightedElement(element);
+  };
+
   return (
     <div className="container">
       <header className="header">
@@ -42,7 +48,7 @@ function App() {
             onProcedureSelect={handleProcedureSelect}
           />
         </div>
-        <div className="panel description-panel">
+        <div className="description-panel">
           <Description 
             procedure={procedureData} 
             onProcedureUpdate={handleProcedureUpdate}
@@ -58,12 +64,16 @@ function App() {
               onMermaidCodeChange={handleMermaidCodeChange}
               selectedProcedure={selectedProcedure}
               onProcedureUpdate={handleProcedureUpdate}
+              highlightedElement={highlightedElement}
             />
           </div>
 
           {/* Flow Diagram Panel */}
           <div className="diagram-panel">
-            <FlowDiagram mermaidCode={mermaidCode} />
+            <FlowDiagram 
+              mermaidCode={mermaidCode} 
+              onElementClick={handleElementClick}
+            />
           </div>
         </div>
       </div>

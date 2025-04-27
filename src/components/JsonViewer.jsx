@@ -12,8 +12,9 @@ import {
 import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
+import { highlightMermaid } from "../utils/MermaidHighlighter";
 
-function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate }) {
+function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement }) {
   const [data, setData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
@@ -73,6 +74,11 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
       }
     }
   }, [data, isEditing, onMermaidCodeChange]);
+
+  // Log isWrapped state changes
+  useEffect(() => {
+    console.log("isWrapped state changed:", isWrapped);
+  }, [isWrapped]);
 
   // Update when selected procedure changes
   useEffect(() => {
@@ -134,12 +140,12 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
     }
   }, [selectedProcedure]);
 
-  // Auto-hide notification after 4 seconds
+  // Auto-hide notification after 3 seconds
   useEffect(() => {
     if (notification.show) {
       const timer = setTimeout(() => {
         setNotification({ show: false, message: "", type: "" });
-      }, 4000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [notification.show]);
@@ -157,8 +163,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
   const handleSaveChanges = () => {
     try {
       // Validate Mermaid syntax (basic validation)
-      if (!mermaidGraph.includes("flowchart TD")) {
-        throw new Error('Invalid Mermaid syntax: Must include "flowchart TD"');
+      if (!mermaidGraph.match(/flowchart\s+(TD|TB|BT|LR|RL)/)) {
+        throw new Error('Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)');
       }
 
       setNotification({
@@ -275,7 +281,11 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
     return code
       .split("\n")
       .filter(
-        (line) => !line.includes("%%{init:") && !line.includes("classDef"),
+        (line) => 
+          // Keep flowchart direction lines
+          (line.startsWith('flowchart') || line.startsWith('graph')) ||
+          // Filter out only init and class definitions
+          (!line.includes("%%{init:") && !line.includes("classDef"))
       )
       .join("\n");
   };
@@ -298,9 +308,73 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
     // Find the range to fold/unfold
     let current = line.nextElementSibling;
     while (current && parseInt(current.dataset.level) > level) {
-      current.style.display = isFolded ? "none" : "flex";
+      current.style. display= isFolded ? "none" : "flex";
       current = current.nextElementSibling;
     }
+  };
+
+  const highlightMermaidLine = (code, elementId, elementType) => {
+    if (!code || !elementId) {
+      console.log("No code or elementId provided");
+      return code;
+    }
+    
+    console.log("Received element:", { id: elementId, type: elementType });
+    
+    // Extract the node label for node highlighting
+    const nodeMatch = elementId.match(/flowchart-([A-Z0-9]+)-/);
+    if (!nodeMatch && elementType === 'node') {
+      console.log("No node match found for elementId:", elementId);
+      return code;
+    }
+    
+    const nodeLabel = nodeMatch ? nodeMatch[1] : null;
+    console.log("Looking for node/edge:", { nodeLabel, elementId });
+    
+    // First split and process the raw code
+    const lines = code.replace(/<[^>]*>/g, '').split('\n');
+    const highlightedLines = lines.map(line => {
+      console.log("Checking raw line:", line);
+      
+      if (elementType === 'node' && nodeLabel) {
+        // Match node definitions with optional leading whitespace
+        const nodePattern = new RegExp(`^\\s*${nodeLabel}(\\[|\\(\\()`);
+        const matches = nodePattern.test(line);
+        console.log("Node pattern test:", { line, matches });
+        if (matches) {
+          console.log("Found matching node line:", line);
+          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
+        }
+      } else if (elementType === 'edge') {
+        // For edges, we now use the label text directly
+        // The elementId is now the label text from the edge label
+        // We need to escape special characters in the elementId for the regex
+        const escapedElementId = elementId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        // Look for the edge label with quotes around it
+        // The edge label in the Mermaid code is wrapped in quotes, but the elementId doesn't have quotes
+        const edgePattern = new RegExp(`^\\s*.*-->\\|"${escapedElementId}"\\|.*`);
+        const matches = edgePattern.test(line);
+        console.log("Edge pattern test:", { line, matches, elementId, escapedElementId });
+        if (matches) {
+          console.log("Found matching edge line:", line);
+          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
+        }
+        
+        // If the first pattern didn't match, try without quotes
+        // This handles cases where the edge label might not have quotes
+        const edgePatternNoQuotes = new RegExp(`^\\s*.*-->\\|${escapedElementId}\\|.*`);
+        const matchesNoQuotes = edgePatternNoQuotes.test(line);
+        console.log("Edge pattern test (no quotes):", { line, matches: matchesNoQuotes });
+        if (matchesNoQuotes) {
+          console.log("Found matching edge line (no quotes):", line);
+          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
+        }
+      }
+      return highlightMermaid(line);
+    });
+    
+    return highlightedLines.join('\n');
   };
 
   return (
@@ -349,14 +423,24 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
           data ? (
             <pre className="json-content">
               {showMermaid ? (
-                <div className="mermaid-editor">
-                  <textarea
-                    className={`code-content ${isWrapped ? "wrapped" : ""}`}
-                    value={cleanMermaidCode(mermaidGraph)}
-                    onChange={handleMermaidChange}
-                    spellCheck="false"
-                  />
-                </div>
+              <div className="mermaid-editor">
+                <div
+                  className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                  contentEditable={true}
+                  onInput={(e) => {
+                    const newCode = e.currentTarget.textContent;
+                    handleMermaidChange({ target: { value: newCode } });
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: highlightMermaidLine(
+                      highlightMermaid(cleanMermaidCode(mermaidGraph)),
+                      highlightedElement?.id,
+                      highlightedElement?.type
+                    )
+                  }}
+                  spellCheck="false"
+                />
+              </div>
               ) : (
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}
@@ -381,7 +465,10 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate 
           <input
             type="checkbox"
             checked={isWrapped}
-            onChange={() => setIsWrapped(!isWrapped)}
+            onChange={() => {
+              console.log("Toggling wrap state:", !isWrapped);
+              setIsWrapped(!isWrapped);
+            }}
           />
           Wrap Text
         </label>
@@ -408,6 +495,10 @@ JsonViewer.propTypes = {
     name: PropTypes.string.isRequired,
   }),
   onProcedureUpdate: PropTypes.func.isRequired,
+  highlightedElement: PropTypes.shape({
+    type: PropTypes.oneOf(['node', 'edge']),
+    id: PropTypes.string,
+  }),
 };
 
 export default JsonViewer;

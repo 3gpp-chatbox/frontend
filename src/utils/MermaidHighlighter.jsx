@@ -11,7 +11,7 @@ export const highlightMermaid = (code) => {
       // Highlight flowchart declaration
       if (trimmedLine.startsWith("flowchart")) {
         highlightedLine = line.replace(
-          /(flowchart\s+TD)/,
+          /(flowchart\s+(TD|TB|BT|LR|RL))/,
           '<span class="flowchart">$1</span>',
         );
       }
