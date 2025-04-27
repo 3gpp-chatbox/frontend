@@ -33,6 +33,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   // Add ref to track user edits
   const userEditedContent = useRef("");
   const isUserEditing = useRef(false);
+  const editorRef = useRef(null);
+  const cursorPosition = useRef(null);
 
   // Add effect to update view when procedure data changes
   useEffect(() => {
@@ -151,7 +153,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   }, [notification.show]);
 
   const handleMermaidChange = (event) => {
-    const newCode = event.target.value;
+    saveCursorPosition();
+    const newCode = event.currentTarget.textContent;
     console.log("Mermaid code changed:", newCode);
     isUserEditing.current = true;
     userEditedContent.current = newCode;
@@ -377,6 +380,68 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     return highlightedLines.join('\n');
   };
 
+  const saveCursorPosition = () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editorRef.current);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      cursorPosition.current = preCaretRange.toString().length;
+    }
+  };
+
+  const restoreCursorPosition = useCallback(() => {
+    if (editorRef.current && cursorPosition.current !== null) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      let charCount = 0;
+      let targetNode = null;
+      let targetOffset = 0;
+
+      const findPosition = (node) => {
+        if (targetNode) return;
+
+        if (node.nodeType === Node.TEXT_NODE) {
+          const length = node.textContent.length;
+          if (charCount + length >= cursorPosition.current) {
+            targetNode = node;
+            targetOffset = cursorPosition.current - charCount;
+            return;
+          }
+          charCount += length;
+        } else {
+          for (const child of node.childNodes) {
+            findPosition(child);
+            if (targetNode) return;
+          }
+        }
+      };
+
+      findPosition(editorRef.current);
+
+      if (targetNode) {
+        try {
+          range.setStart(targetNode, targetOffset);
+          range.setEnd(targetNode, targetOffset);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (error) {
+          console.log("Error restoring cursor position:", error);
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isEditing) {
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        restoreCursorPosition();
+      });
+    }
+  }, [mermaidGraph, isEditing, restoreCursorPosition]);
+
   return (
     <div className="section-container">
       <div className="section-header">
@@ -425,11 +490,24 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
               {showMermaid ? (
               <div className="mermaid-editor">
                 <div
+                  ref={editorRef}
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}
                   contentEditable={true}
-                  onInput={(e) => {
-                    const newCode = e.currentTarget.textContent;
-                    handleMermaidChange({ target: { value: newCode } });
+                  onInput={handleMermaidChange}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const selection = window.getSelection();
+                      const range = selection.getRangeAt(0);
+                      const br = document.createElement('br');
+                      range.deleteContents();
+                      range.insertNode(br);
+                      range.setStartAfter(br);
+                      range.setEndAfter(br);
+                      selection.removeAllRanges();
+                      selection.addRange(range);
+                      handleMermaidChange(e);
+                    }
                   }}
                   dangerouslySetInnerHTML={{
                     __html: highlightMermaidLine(
