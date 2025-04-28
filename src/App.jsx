@@ -19,6 +19,10 @@ function App() {
   const handleMermaidCodeChange = (newCode) => {
     console.log("App: Mermaid code updated:", newCode);
     setMermaidCode(newCode);
+    // Only clear highlight if the code actually changed
+    if (newCode !== mermaidCode) {
+      setHighlightedElement(null);
+    }
   };
 
   const handleProcedureUpdate = (updatedData) => {
@@ -32,6 +36,10 @@ function App() {
   const handleElementClick = (element) => {
     console.log("Diagram element clicked:", element);
     setHighlightedElement(element);
+  };
+
+  const handleEditorFocus = () => {
+    setHighlightedElement(null);
   };
 
   return (
@@ -65,6 +73,7 @@ function App() {
               selectedProcedure={selectedProcedure}
               onProcedureUpdate={handleProcedureUpdate}
               highlightedElement={highlightedElement}
+              onEditorFocus={handleEditorFocus}
             />
           </div>
 

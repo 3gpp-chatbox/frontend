@@ -14,7 +14,7 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
 
-function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement }) {
+function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
   const [data, setData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
@@ -155,12 +155,15 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   const handleMermaidChange = (event) => {
     saveCursorPosition();
     const newCode = event.currentTarget.textContent;
-    console.log("Mermaid code changed:", newCode);
-    isUserEditing.current = true;
-    userEditedContent.current = newCode;
-    setMermaidGraph(newCode);
-    setIsEditing(true);
-    onMermaidCodeChange(newCode);
+    // Only trigger changes if the code actually changed
+    if (newCode !== mermaidGraph) {
+      console.log("Mermaid code changed:", newCode);
+      isUserEditing.current = true;
+      userEditedContent.current = newCode;
+      setMermaidGraph(newCode);
+      setIsEditing(true);
+      onMermaidCodeChange(newCode);
+    }
   };
 
   const handleSaveChanges = () => {
@@ -494,6 +497,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}
                   contentEditable={true}
                   onInput={handleMermaidChange}
+                  onFocus={onEditorFocus}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -577,6 +581,7 @@ JsonViewer.propTypes = {
     type: PropTypes.oneOf(['node', 'edge']),
     id: PropTypes.string,
   }),
+  onEditorFocus: PropTypes.func.isRequired,
 };
 
 export default JsonViewer;
