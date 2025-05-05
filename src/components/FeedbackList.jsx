@@ -9,23 +9,23 @@ const FeedbackList = ({ graphId }) => {
   const [resolutionReason, setResolutionReason] = useState('');
   const [filterType, setFilterType] = useState('all');
 
-  useEffect(() => {
-    const fetchFeedbacks = async () => {
-      try {
-        const response = await fetch(`http://localhost:8000/feedback/graph/${graphId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch feedbacks');
-        }
-        const data = await response.json();
-        setFeedbacks(data);
-      } catch (err) {
-        console.error('Error fetching feedbacks:', err);
-        setError('Failed to load feedbacks');
-      } finally {
-        setLoading(false);
+  const fetchFeedbacks = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/feedback/graph/${graphId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch feedbacks');
       }
-    };
+      const data = await response.json();
+      setFeedbacks(data);
+    } catch (err) {
+      console.error('Error fetching feedbacks:', err);
+      setError('Failed to load feedbacks');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (graphId) {
       fetchFeedbacks();
     }
@@ -48,11 +48,8 @@ const FeedbackList = ({ graphId }) => {
         throw new Error('Failed to resolve feedback');
       }
 
-      // Update the feedbacks list with the resolved feedback
-      const updatedFeedback = await response.json();
-      setFeedbacks(feedbacks.map(f => 
-        f.id === feedbackId ? updatedFeedback : f
-      ));
+      // Fetch updated feedback list after resolution
+      await fetchFeedbacks();
       
       // Reset the resolution form
       setResolvingFeedback(null);
@@ -105,7 +102,7 @@ const FeedbackList = ({ graphId }) => {
             <div className="feedback-header">
               <div className="feedback-meta">
                 <span className="feedback-type">{feedback.feedback_type.charAt(0).toUpperCase() + feedback.feedback_type.slice(1)}</span>
-                <span className="feedback-date">{feedback.created_at}</span>
+                <span className="feedback-date">{new Date(feedback.created_at).toLocaleDateString()}</span>
               </div>
               <div className="feedback-user">
                 {feedback.user_email && (
@@ -118,8 +115,10 @@ const FeedbackList = ({ graphId }) => {
             </div>
             <div className="feedback-content">{feedback.comment}</div>
             {feedback.status === 'resolved' && feedback.resolution_reason && (
-              <div className="resolution-reason">
-                <strong>Resolution:</strong> {feedback.resolution_reason}
+              <div className="resolution-info">
+                <p className="resolution-reason">
+                  <strong>Resolution:</strong> {feedback.resolution_reason}
+                </p>
               </div>
             )}
             {feedback.status === 'pending' && (
