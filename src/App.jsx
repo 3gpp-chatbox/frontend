@@ -3,11 +3,14 @@ import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
 import ProcedureList from "./components/ProcedureList";
 import Description from "./components/Descriptions";
+import FeedbackForm from "./components/FeedbackForm";
+import FeedbackList from "./components/FeedbackList";
 
 function App() {
   const [mermaidCode, setMermaidCode] = useState(null);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
   const [procedureData, setProcedureData] = useState(null);
+  const [feedbackKey, setFeedbackKey] = useState(0); // For forcing feedback list refresh
 
   const handleProcedureSelect = (procedure) => {
     console.log("Selected procedure:", procedure);
@@ -26,6 +29,11 @@ function App() {
       ...selectedProcedure,
       ...updatedData
     });
+  };
+
+  const handleFeedbackSubmitted = () => {
+    // Force feedback list to refresh by changing its key
+    setFeedbackKey(prev => prev + 1);
   };
 
   return (
@@ -64,6 +72,18 @@ function App() {
           {/* Flow Diagram Panel */}
           <div className="diagram-panel">
             <FlowDiagram mermaidCode={mermaidCode} />
+            {selectedProcedure && (
+              <div className="feedback-section">
+                <FeedbackForm 
+                  graphId={selectedProcedure.id} 
+                  onFeedbackSubmitted={handleFeedbackSubmitted}
+                />
+                <FeedbackList 
+                  key={feedbackKey}
+                  graphId={selectedProcedure.id} 
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

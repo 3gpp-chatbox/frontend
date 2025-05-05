@@ -35,7 +35,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   // Add procedure name if exists
   if (jsonData.procedure_name) {
     mermaidCode += `    %% Procedure: ${jsonData.procedure_name}\n`;
-  }
+  } 
 
   // Style definitions
   Object.entries(styles).forEach(([className, style]) => {
