@@ -8,6 +8,7 @@ const FeedbackList = ({ graphId }) => {
   const [resolvingFeedback, setResolvingFeedback] = useState(null);
   const [resolutionReason, setResolutionReason] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('pending');
 
   const fetchFeedbacks = async () => {
     try {
@@ -61,7 +62,8 @@ const FeedbackList = ({ graphId }) => {
   };
 
   const filteredFeedback = feedbacks.filter(item => 
-    filterType === 'all' || item.feedback_type === filterType
+    (filterType === 'all' || item.feedback_type === filterType) &&
+    (filterStatus === 'all' || item.status === filterStatus)
   );
 
   if (loading) {
@@ -79,20 +81,35 @@ const FeedbackList = ({ graphId }) => {
   return (
     <div className="feedback-list">
       <h3>Previous Feedback</h3>
-      <div className="feedback-filter">
-        <label htmlFor="feedbackFilter">Filter by type:</label>
-        <select 
-          id="feedbackFilter" 
-          value={filterType} 
-          onChange={(e) => setFilterType(e.target.value)}
-          className="feedback-filter-select"
-        >
-          <option value="all">All Feedback</option>
-          <option value="correction">Correction</option>
-          <option value="suggestion">Suggestion</option>
-          <option value="question">Question</option>
-          <option value="clarification">Clarification</option>
-        </select>
+      <div className="feedback-filters">
+        <div className="feedback-filter">
+          <label htmlFor="feedbackFilter">Filter by type:</label>
+          <select 
+            id="feedbackFilter" 
+            value={filterType} 
+            onChange={(e) => setFilterType(e.target.value)}
+            className="feedback-filter-select"
+          >
+            <option value="all">All Types</option>
+            <option value="correction">Correction</option>
+            <option value="suggestion">Suggestion</option>
+            <option value="question">Question</option>
+            <option value="clarification">Clarification</option>
+          </select>
+        </div>
+        <div className="feedback-filter">
+          <label htmlFor="statusFilter">Filter by status:</label>
+          <select 
+            id="statusFilter" 
+            value={filterStatus} 
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="feedback-filter-select"
+          >
+            <option value="pending">Pending</option>
+            <option value="resolved">Resolved</option>
+            <option value="all">All Status</option>
+          </select>
+        </div>
       </div>
       {filteredFeedback.length === 0 ? (
         <p className="no-feedback">No feedback available</p>
