@@ -80,13 +80,18 @@ const FeedbackList = ({ graphId }) => {
       {feedbacks.map((feedback) => (
         <div key={feedback.id} className={`feedback-item ${feedback.status === 'resolved' ? 'resolved' : ''}`}>
           <div className="feedback-header">
-            <span className="feedback-date">{feedback.created_at}</span>
-            {feedback.user_email && (
-              <span className="feedback-email">{feedback.user_email}</span>
-            )}
-            {feedback.status === 'resolved' && (
-              <span className="feedback-status resolved">✓ Resolved</span>
-            )}
+            <div className="feedback-meta">
+              <span className="feedback-type">{feedback.feedback_type.charAt(0).toUpperCase() + feedback.feedback_type.slice(1)}</span>
+              <span className="feedback-date">{feedback.created_at}</span>
+            </div>
+            <div className="feedback-user">
+              {feedback.user_email && (
+                <span className="feedback-email">{feedback.user_email}</span>
+              )}
+              {feedback.status === 'resolved' && (
+                <span className="feedback-status resolved">✓ Resolved</span>
+              )}
+            </div>
           </div>
           <div className="feedback-content">{feedback.comment}</div>
           {feedback.status === 'resolved' && feedback.resolution_reason && (

@@ -41,6 +41,28 @@
   color: #666;
 }
 
+.feedback-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feedback-type {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.feedback-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .feedback-date {
   font-weight: 500;
 }

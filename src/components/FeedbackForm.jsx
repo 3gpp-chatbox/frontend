@@ -5,6 +5,7 @@ const FeedbackForm = ({ graphId, onFeedbackSubmitted }) => {
   const [comment, setComment] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('');
+  const [feedbackType, setFeedbackType] = useState('correction');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,6 +21,7 @@ const FeedbackForm = ({ graphId, onFeedbackSubmitted }) => {
           graph_id: graphId,
           comment: comment,
           user_email: email || null,
+          feedback_type: feedbackType,
         }),
       });
 
@@ -30,6 +32,7 @@ const FeedbackForm = ({ graphId, onFeedbackSubmitted }) => {
       setStatus('success');
       setComment('');
       setEmail('');
+      setFeedbackType('correction');
       
       // Notify parent component to refresh feedback list
       if (onFeedbackSubmitted) {
@@ -54,6 +57,23 @@ const FeedbackForm = ({ graphId, onFeedbackSubmitted }) => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your.email@example.com"
           />
+        </div>
+        <div className="form-group">
+          <label>Feedback Type:</label>
+          <div className="feedback-type-options">
+            {['correction', 'suggestion', 'question', 'clarification'].map((type) => (
+              <label key={type} className="feedback-type-option">
+                <input
+                  type="radio"
+                  name="feedbackType"
+                  value={type}
+                  checked={feedbackType === type}
+                  onChange={(e) => setFeedbackType(e.target.value)}
+                />
+                <span className="feedback-type-label">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+              </label>
+            ))}
+          </div>
         </div>
         <div className="form-group">
           <label htmlFor="comment">Feedback:</label>
