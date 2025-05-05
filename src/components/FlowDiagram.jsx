@@ -34,7 +34,7 @@ mermaid.initialize({
 
 // Add zoom controls and constants
 const MIN_SCALE = 0.2;
-const MAX_SCALE = 6;
+const MAX_SCALE = 10;
 const ZOOM_SPEED = 0.1;
 
 // Clean up mermaid code by removing extra whitespace and ensuring proper formatting
