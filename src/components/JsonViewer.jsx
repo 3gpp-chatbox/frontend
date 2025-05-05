@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
 import { fetchProcedure, insertProcedureGraphChanges } from "../API/api_calls";
 import {
@@ -11,85 +11,10 @@ import {
 } from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
+import { highlightJson } from "../utils/jsonHighlighter";
+import { highlightMermaid } from "../utils/MermaidHighlighter";
 
-// Function to highlight JSON syntax with folding
-const highlightJson = (json) => {
-  if (!json) return "";
-
-  // Parse and re-stringify to ensure proper formatting
-  try {
-    const parsed = JSON.parse(json);
-    json = JSON.stringify(parsed, null, 2);
-  } catch (e) {
-    console.warn("JSON parsing failed, using original string");
-  }
-
-  let lines = json.split("\n");
-  let result = [];
-  let indentLevel = 0;
-  let foldable = new Set(); // Track which lines can be folded
-
-  // First pass: identify foldable lines
-  lines.forEach((line, i) => {
-    const trimmedLine = line.trim();
-    if (trimmedLine.endsWith("{") || trimmedLine.endsWith("[")) {
-      foldable.add(i);
-    }
-  });
-
-  // Second pass: generate HTML with fold buttons
-  lines.forEach((line, i) => {
-    const indent = line.match(/^\s*/)[0].length;
-    indentLevel = Math.floor(indent / 2);
-
-    let lineHtml = line
-      .replace(
-        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
-        function (match) {
-          let cls = "json-number";
-          if (/^"/.test(match)) {
-            if (/:$/.test(match)) {
-              cls = "json-key";
-              match = match.slice(0, -1);
-            } else {
-              cls = "json-string";
-            }
-          } else if (/true|false/.test(match)) {
-            cls = "json-boolean";
-          } else if (/null/.test(match)) {
-            cls = "json-null";
-          }
-          return `<span class="${cls}">${match}</span>${
-            /:$/.test(match) ? ":" : ""
-          }`;
-        },
-      )
-      .replace(
-        /[{}[\]]/g,
-        (match) => `<span class="json-punctuation">${match}</span>`,
-      );
-
-    // Add fold button if line is foldable
-    if (foldable.has(i)) {
-      const foldButton = `<button class="fold-button" data-line="${i}">▼</button>`;
-      result.push(
-        `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${foldButton}${lineHtml}</div>`,
-      );
-    } else {
-      result.push(
-        `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${lineHtml}</div>`,
-      );
-    }
-  });
-
-  return result.join("");
-};
-
-function JsonViewer({
-  onMermaidCodeChange,
-  selectedProcedure,
-  onProcedureUpdate,
-}) {
+function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
   const [data, setData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
@@ -108,6 +33,8 @@ function JsonViewer({
   // Add ref to track user edits
   const userEditedContent = useRef("");
   const isUserEditing = useRef(false);
+  const editorRef = useRef(null);
+  const cursorPosition = useRef(null);
 
   // Add effect to update view when procedure data changes
   useEffect(() => {
@@ -115,13 +42,13 @@ function JsonViewer({
       try {
         // Get the current graph data based on edited status
         const graphData = data.edited ? data.edited_graph : data.original_graph;
-
+        
         if (!graphData) {
           console.error("No graph data available:", data);
           setNotification({
             show: true,
             message: "No graph data available for this procedure",
-            type: "error",
+            type: "error"
           });
           return;
         }
@@ -130,7 +57,7 @@ function JsonViewer({
         const jsonString = JSON.stringify(graphData, null, 2);
         console.log("Setting JSON content:", jsonString);
         setJsonContent(jsonString);
-
+        
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
@@ -144,11 +71,16 @@ function JsonViewer({
         setNotification({
           show: true,
           message: "Error processing graph data",
-          type: "error",
+          type: "error"
         });
       }
     }
   }, [data, isEditing, onMermaidCodeChange]);
+
+  // Log isWrapped state changes
+  useEffect(() => {
+    console.log("isWrapped state changed:", isWrapped);
+  }, [isWrapped]);
 
   // Update when selected procedure changes
   useEffect(() => {
@@ -164,8 +96,7 @@ function JsonViewer({
       if (isUserEditing.current) {
         setNotification({
           show: true,
-          message:
-            "Please save or discard your changes before switching procedures",
+          message: "Please save or discard your changes before switching procedures",
           type: "warning",
         });
         return;
@@ -222,20 +153,24 @@ function JsonViewer({
   }, [notification.show]);
 
   const handleMermaidChange = (event) => {
-    const newCode = event.target.value;
-    console.log("Mermaid code changed:", newCode);
-    isUserEditing.current = true;
-    userEditedContent.current = newCode;
-    setMermaidGraph(newCode);
-    setIsEditing(true);
-    onMermaidCodeChange(newCode);
+    saveCursorPosition();
+    const newCode = event.currentTarget.textContent;
+    // Only trigger changes if the code actually changed
+    if (newCode !== mermaidGraph) {
+      console.log("Mermaid code changed:", newCode);
+      isUserEditing.current = true;
+      userEditedContent.current = newCode;
+      setMermaidGraph(newCode);
+      setIsEditing(true);
+      onMermaidCodeChange(newCode);
+    }
   };
 
   const handleSaveChanges = () => {
     try {
       // Validate Mermaid syntax (basic validation)
-      if (!mermaidGraph.includes("flowchart TD")) {
-        throw new Error('Invalid Mermaid syntax: Must include "flowchart TD"');
+      if (!mermaidGraph.match(/flowchart\s+(TD|TB|BT|LR|RL)/)) {
+        throw new Error('Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)');
       }
 
       setNotification({
@@ -287,10 +222,7 @@ function JsonViewer({
 
       // Convert to JSON and save
       const graphData = convertMermaidToJson(mermaidGraph);
-      const result = await insertProcedureGraphChanges(selectedProcedure.id, {
-        nodes: graphData.nodes,
-        edges: graphData.edges,
-      });
+      const result = await insertProcedureGraphChanges(selectedProcedure.id,{nodes:graphData.nodes,edges:graphData.edges});
 
       if (!result) {
         throw new Error("Failed to save changes");
@@ -300,11 +232,11 @@ function JsonViewer({
       setOriginalMermaidGraph(mermaidGraph);
       setData(result);
       setOriginalData(result);
-
+      
       // Only show the graph data in JSON view
       const updatedGraphData = result.edited_graph || result.original_graph;
       setJsonContent(JSON.stringify(updatedGraphData, null, 2));
-
+      
       isUserEditing.current = false;
       setIsEditing(false);
 
@@ -335,11 +267,11 @@ function JsonViewer({
   const handleRevertChanges = () => {
     setMermaidGraph(originalMermaidGraph);
     setData(originalData);
-
+    
     // Only show the graph data in JSON view
     const graphData = originalData.edited_graph || originalData.original_graph;
     setJsonContent(JSON.stringify(graphData, null, 2));
-
+    
     isUserEditing.current = false;
     setIsEditing(false);
     setShowConfirmation(false);
@@ -355,7 +287,11 @@ function JsonViewer({
     return code
       .split("\n")
       .filter(
-        (line) => !line.includes("%%{init:") && !line.includes("classDef"),
+        (line) => 
+          // Keep flowchart direction lines
+          (line.startsWith('flowchart') || line.startsWith('graph')) ||
+          // Filter out only init and class definitions
+          (!line.includes("%%{init:") && !line.includes("classDef"))
       )
       .join("\n");
   };
@@ -368,6 +304,7 @@ function JsonViewer({
     const line = button.closest(".code-line");
     if (!line) return;
 
+    const lineNumber = parseInt(line.dataset.line);
     const level = parseInt(line.dataset.level);
 
     // Toggle fold state
@@ -377,10 +314,136 @@ function JsonViewer({
     // Find the range to fold/unfold
     let current = line.nextElementSibling;
     while (current && parseInt(current.dataset.level) > level) {
-      current.style.display = isFolded ? "none" : "flex";
+      current.style. display= isFolded ? "none" : "flex";
       current = current.nextElementSibling;
     }
   };
+
+  const highlightMermaidLine = (code, elementId, elementType) => {
+    if (!code || !elementId) {
+      console.log("No code or elementId provided");
+      return code;
+    }
+    
+    console.log("Received element:", { id: elementId, type: elementType });
+    
+    // Extract the node label for node highlighting
+    const nodeMatch = elementId.match(/flowchart-([A-Z0-9]+)-/);
+    if (!nodeMatch && elementType === 'node') {
+      console.log("No node match found for elementId:", elementId);
+      return code;
+    }
+    
+    const nodeLabel = nodeMatch ? nodeMatch[1] : null;
+    console.log("Looking for node/edge:", { nodeLabel, elementId });
+    
+    // First split and process the raw code
+    const lines = code.replace(/<[^>]*>/g, '').split('\n');
+    const highlightedLines = lines.map(line => {
+      console.log("Checking raw line:", line);
+      
+      if (elementType === 'node' && nodeLabel) {
+        // Match node definitions with optional leading whitespace
+        const nodePattern = new RegExp(`^\\s*${nodeLabel}(\\[|\\(\\()`);
+        const matches = nodePattern.test(line);
+        console.log("Node pattern test:", { line, matches });
+        if (matches) {
+          console.log("Found matching node line:", line);
+          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
+        }
+      } else if (elementType === 'edge') {
+        // For edges, we now use the label text directly
+        // The elementId is now the label text from the edge label
+        // We need to escape special characters in the elementId for the regex
+        const escapedElementId = elementId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        // Look for the edge label with quotes around it
+        // The edge label in the Mermaid code is wrapped in quotes, but the elementId doesn't have quotes
+        const edgePattern = new RegExp(`^\\s*.*-->\\|"${escapedElementId}"\\|.*`);
+        const matches = edgePattern.test(line);
+        console.log("Edge pattern test:", { line, matches, elementId, escapedElementId });
+        if (matches) {
+          console.log("Found matching edge line:", line);
+          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
+        }
+        
+        // If the first pattern didn't match, try without quotes
+        // This handles cases where the edge label might not have quotes
+        const edgePatternNoQuotes = new RegExp(`^\\s*.*-->\\|${escapedElementId}\\|.*`);
+        const matchesNoQuotes = edgePatternNoQuotes.test(line);
+        console.log("Edge pattern test (no quotes):", { line, matches: matchesNoQuotes });
+        if (matchesNoQuotes) {
+          console.log("Found matching edge line (no quotes):", line);
+          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
+        }
+      }
+      return highlightMermaid(line);
+    });
+    
+    return highlightedLines.join('\n');
+  };
+
+  const saveCursorPosition = () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editorRef.current);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      cursorPosition.current = preCaretRange.toString().length;
+    }
+  };
+
+  const restoreCursorPosition = useCallback(() => {
+    if (editorRef.current && cursorPosition.current !== null) {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      let charCount = 0;
+      let targetNode = null;
+      let targetOffset = 0;
+
+      const findPosition = (node) => {
+        if (targetNode) return;
+
+        if (node.nodeType === Node.TEXT_NODE) {
+          const length = node.textContent.length;
+          if (charCount + length >= cursorPosition.current) {
+            targetNode = node;
+            targetOffset = cursorPosition.current - charCount;
+            return;
+          }
+          charCount += length;
+        } else {
+          for (const child of node.childNodes) {
+            findPosition(child);
+            if (targetNode) return;
+          }
+        }
+      };
+
+      findPosition(editorRef.current);
+
+      if (targetNode) {
+        try {
+          range.setStart(targetNode, targetOffset);
+          range.setEnd(targetNode, targetOffset);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch (error) {
+          console.log("Error restoring cursor position:", error);
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isEditing) {
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        restoreCursorPosition();
+      });
+    }
+  }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
   return (
     <div className="section-container">
@@ -428,14 +491,38 @@ function JsonViewer({
           data ? (
             <pre className="json-content">
               {showMermaid ? (
-                <div className="mermaid-editor">
-                  <textarea
-                    className={`code-content ${isWrapped ? "wrapped" : ""}`}
-                    value={cleanMermaidCode(mermaidGraph)}
-                    onChange={handleMermaidChange}
-                    spellCheck="false"
-                  />
-                </div>
+              <div className="mermaid-editor">
+                <div
+                  ref={editorRef}
+                  className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                  contentEditable={true}
+                  onInput={handleMermaidChange}
+                  onFocus={onEditorFocus}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const selection = window.getSelection();
+                      const range = selection.getRangeAt(0);
+                      const br = document.createElement('br');
+                      range.deleteContents();
+                      range.insertNode(br);
+                      range.setStartAfter(br);
+                      range.setEndAfter(br);
+                      selection.removeAllRanges();
+                      selection.addRange(range);
+                      handleMermaidChange(e);
+                    }
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: highlightMermaidLine(
+                      highlightMermaid(cleanMermaidCode(mermaidGraph)),
+                      highlightedElement?.id,
+                      highlightedElement?.type
+                    )
+                  }}
+                  spellCheck="false"
+                />
+              </div>
               ) : (
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}
@@ -460,7 +547,10 @@ function JsonViewer({
           <input
             type="checkbox"
             checked={isWrapped}
-            onChange={() => setIsWrapped(!isWrapped)}
+            onChange={() => {
+              console.log("Toggling wrap state:", !isWrapped);
+              setIsWrapped(!isWrapped);
+            }}
           />
           Wrap Text
         </label>
@@ -487,6 +577,11 @@ JsonViewer.propTypes = {
     name: PropTypes.string.isRequired,
   }),
   onProcedureUpdate: PropTypes.func.isRequired,
+  highlightedElement: PropTypes.shape({
+    type: PropTypes.oneOf(['node', 'edge']),
+    id: PropTypes.string,
+  }),
+  onEditorFocus: PropTypes.func.isRequired,
 };
 
 export default JsonViewer;

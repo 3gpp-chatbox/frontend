@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import { JsonToMermaid } from "../functions/jsonToMermaid";
 import ModalDiagram from "./ModalDiagram";
+import { highlightJson } from "../utils/jsonHighlighter";
+import { highlightMermaid } from "../utils/MermaidHighlighter";
 
 function OriginalDataModal({ isOpen, onClose, originalData }) {
   const [selectedView, setSelectedView] = useState("json");
@@ -78,197 +80,55 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
   if (!isOpen) return null;
 
   const jsonContent = originalData ? JSON.stringify(originalData, null, 2) : "";
-  let mermaidCode = "";
+  const mermaidCode = originalData ? JsonToMermaid(originalData) : "";
 
-  try {
-    // Generate mermaid code and log for debugging
-    if (originalData && originalData.nodes && originalData.edges) {
-      mermaidCode = JsonToMermaid(originalData);
-      console.log("Generated Mermaid Code:", mermaidCode);
-
-      if (!mermaidCode) {
-        console.warn(
-          "No mermaid code generated from originalData:",
-          originalData,
-        );
-        setError("Failed to generate diagram");
-      }
-    } else {
-      console.warn("Invalid or missing data structure:", originalData);
-      setError("Invalid data structure");
-    }
-  } catch (error) {
-    console.error("Error generating mermaid code:", error);
-    setError(error.message);
-    mermaidCode =
-      "graph TD\nA[Error] -->|Failed to generate diagram| B[Please check console]";
-  }
-
-  // Clean up mermaid code by removing initialization and class definitions
-  const cleanMermaidCode = (code) => {
-    return code
-      .split("\n")
-      .filter(
-        (line) => !line.includes("%%{init:") && !line.includes("classDef"),
-      )
-      .join("\n");
-  };
-
-  // Function to highlight JSON syntax with folding
+  // Function to highlight JSON syntax
   const highlightJson = (json) => {
     if (!json) return "";
-
-    // Parse and re-stringify to ensure proper formatting
-    try {
-      const parsed = JSON.parse(json);
-      json = JSON.stringify(parsed, null, 2);
-    } catch (e) {
-      console.warn("JSON parsing failed, using original string");
-    }
-
-    let lines = json.split("\n");
-    let result = [];
-    let indentLevel = 0;
-    let foldable = new Set(); // Track which lines can be folded
-
-    // First pass: identify foldable lines
-    lines.forEach((line, i) => {
-      const trimmedLine = line.trim();
-      if (trimmedLine.endsWith("{") || trimmedLine.endsWith("[")) {
-        foldable.add(i);
-      }
-    });
-
-    // Second pass: generate HTML with fold buttons
-    lines.forEach((line, i) => {
-      const indent = line.match(/^\s*/)[0].length;
-      indentLevel = Math.floor(indent / 2);
-
-      let lineHtml = line
-        .replace(
-          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
-          function (match) {
-            let cls = "json-number";
-            if (/^"/.test(match)) {
-              if (/:$/.test(match)) {
-                cls = "json-key";
-                match = match.slice(0, -1);
-              } else {
-                cls = "json-string";
-              }
-            } else if (/true|false/.test(match)) {
-              cls = "json-boolean";
-            } else if (/null/.test(match)) {
-              cls = "json-null";
+    return json
+      .replace(
+        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+        (match) => {
+          let cls = "json-number";
+          if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+              cls = "json-key";
+              match = match.slice(0, -1);
+            } else {
+              cls = "json-string";
             }
-            return `<span class="${cls}">${match}</span>${
-              /:$/.test(match) ? ":" : ""
-            }`;
-          },
-        )
-        .replace(
-          /[{}[\]]/g,
-          (match) => `<span class="json-punctuation">${match}</span>`,
-        );
-
-      // Add fold button if line is foldable
-      if (foldable.has(i)) {
-        const foldButton = `<button class="fold-button" data-line="${i}">▼</button>`;
-        result.push(
-          `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${foldButton}${lineHtml}</div>`,
-        );
-      } else {
-        result.push(
-          `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${lineHtml}</div>`,
-        );
-      }
-    });
-
-    return result.join("");
+          } else if (/true|false/.test(match)) {
+            cls = "json-boolean";
+          } else if (/null/.test(match)) {
+            cls = "json-null";
+          }
+          return `<span class="${cls}">${match}</span>${
+            /:$/.test(match) ? ":" : ""
+          }`;
+        }
+      )
+      .replace(/[{}\[\]]/g, (match) => `<span class="json-punctuation">${match}</span>`);
   };
 
-  // Handle fold/unfold
-  const handleFold = (event) => {
-    const button = event.target;
-    if (!button.classList.contains("fold-button")) return;
-
-    const line = button.closest(".code-line");
-    if (!line) return;
-
-    const level = parseInt(line.dataset.level);
-
-    // Toggle fold state
-    const isFolded = button.textContent === "▼";
-    button.textContent = isFolded ? "▶" : "▼";
-
-    // Find the range to fold/unfold
-    let current = line.nextElementSibling;
-    while (current && parseInt(current.dataset.level) > level) {
-      current.style.display = isFolded ? "none" : "flex";
-      current = current.nextElementSibling;
-    }
-  };
-
-  // Function to render the appropriate view
-  const renderView = () => {
-    switch (selectedView) {
-      case "json":
-        return (
-          <pre className="modal-json-content content-area" onClick={handleFold}>
-            <code
-              dangerouslySetInnerHTML={{ __html: highlightJson(jsonContent) }}
-            />
-          </pre>
-        );
-      case "mermaid":
-        return (
-          <div className="mermaid-editor content-area">
-            <textarea
-              className="code-content"
-              value={cleanMermaidCode(mermaidCode)}
-              readOnly
-              spellCheck="false"
-            />
-          </div>
-        );
-      case "graph":
-        return (
-          <div
-            className="graph-view content-area"
-            style={{
-              height: "calc(100vh - 200px)",
-              width: "100%",
-              position: "relative",
-              display: "flex",
-              flexDirection: "column",
-              backgroundColor: "#1a1a1a",
-              border: "1px solid #333",
-            }}
-          >
-            {error ? (
-              <div
-                className="error-message"
-                style={{ padding: "20px", textAlign: "center", color: "red" }}
-              >
-                {error}
-              </div>
-            ) : mermaidCode ? (
-              <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-                <ModalDiagram mermaidCode={mermaidCode} />
-              </div>
-            ) : (
-              <div
-                className="error-message"
-                style={{ padding: "20px", textAlign: "center" }}
-              >
-                No diagram data available
-              </div>
-            )}
-          </div>
-        );
-      default:
-        return null;
-    }
+  // Function to highlight Mermaid syntax
+  const highlightMermaid = (code) => {
+    if (!code) return "";
+    return code
+      .split("\n")
+      .map((line) => {
+        if (line.trim().startsWith("flowchart")) {
+          return `<span class="mermaid-keyword">${line}</span>`;
+        } else if (line.includes("-->")) {
+          return line.replace(
+            /([A-Za-z0-9]+)(\s*-->?\s*)([A-Za-z0-9]+)/g,
+            '<span class="mermaid-node">$1</span><span class="mermaid-arrow">$2</span><span class="mermaid-node">$3</span>'
+          );
+        } else if (line.trim().startsWith("%%")) {
+          return `<span class="mermaid-comment">${line}</span>`;
+        }
+        return line;
+      })
+      .join("\n");
   };
 
   return (

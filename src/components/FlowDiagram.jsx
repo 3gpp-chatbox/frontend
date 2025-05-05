@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import mermaid from "mermaid";
 
+
 // Initialize mermaid with optimized settings
 mermaid.initialize({
   startOnLoad: true,
@@ -33,12 +34,12 @@ mermaid.initialize({
 });
 
 // Add zoom controls and constants
-const MIN_SCALE = 0.2;
+const MIN_SCALE = 0.1;
 const MAX_SCALE = 10;
 const ZOOM_SPEED = 0.1;
 
 // Clean up mermaid code by removing extra whitespace and ensuring proper formatting
-const cleanMermaidCode = (code) => {
+const cleanMermaidCode = (code, direction = 'TD') => {
   if (!code) return "";
 
   // Split into lines and filter out empty lines
@@ -48,17 +49,26 @@ const cleanMermaidCode = (code) => {
     .filter(Boolean);
 
   // Extract style definitions
-  const styleLines = lines.filter((line) => line.startsWith("classDef"));
-
+  const styleLines = lines.filter(line => line.startsWith('classDef'));
+  
+  // Extract existing direction if present
+  let flowDirection = direction;
+  lines.forEach(line => {
+    const match = line.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
+    if (match) {
+      flowDirection = match[1];
+    }
+  });
+  
   // Remove flowchart declarations but keep style definitions
   lines = lines.filter((line) => {
     const isFlowchart =
       line.startsWith("flowchart") || line.startsWith("graph");
     return !isFlowchart;
   });
-
-  // Add flowchart declaration and styles at the start
-  lines.unshift("flowchart TD");
+  
+  // Add flowchart declaration with preserved direction and styles at the start
+  lines.unshift(`flowchart ${flowDirection}`);
   if (styleLines.length > 0) {
     lines.splice(1, 0, ...styleLines);
   }
@@ -82,7 +92,7 @@ const cleanMermaidCode = (code) => {
   return lines.join("\n");
 };
 
-function FlowDiagram({ mermaidCode, onElementClick }) {
+function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
   const mermaidRef = useRef(null);
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -104,17 +114,46 @@ function FlowDiagram({ mermaidCode, onElementClick }) {
     }
 
     try {
-      const cleanedCode = cleanMermaidCode(mermaidCode);
-      mermaidRef.current.innerHTML = "";
+      const cleanedCode = cleanMermaidCode(mermaidCode, direction);
+      mermaidRef.current.innerHTML = '';
       setError(null);
-
+      
       const { svg } = await mermaid.render("mermaid-diagram", cleanedCode);
-
+      
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = svg;
       const newSvg = tempDiv.querySelector("svg");
+      
+      // First, let's add a debug log to see what elements we're finding
+      console.log("Setting up click handlers for elements:", {
+        nodes: newSvg.querySelectorAll('.node').length,
+        edges: newSvg.querySelectorAll('.edge').length,
+        edgePaths: newSvg.querySelectorAll('.edge path').length,
+        edgeLabels: newSvg.querySelectorAll('.edgeLabel').length
+      });
+      
+      // First set up node click handlers
+      newSvg.querySelectorAll('.node').forEach(element => {
+        element.style.cursor = 'pointer';
+        element.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onElementClick?.({ type: 'node', id: element.id });
+        });
+      });
 
-      // Set dimensions
+      // Handle edge labels - we need to find the corresponding edge
+      newSvg.querySelectorAll('.edgeLabel').forEach(edgeLabel => {
+        edgeLabel.style.cursor = 'pointer';
+        
+        edgeLabel.addEventListener('click', (e) => {
+          e.stopPropagation();
+          console.log("Edge label clicked:", edgeLabel.textContent);
+          const edgeLabelText = edgeLabel.textContent.trim();
+          onElementClick?.({ type: 'edge', id: edgeLabelText });
+        });
+      });
+      
+      // Set fixed dimensions for SVG
       newSvg.style.width = "100%";
       newSvg.style.height = "100%";
       newSvg.style.minWidth = "800px";
@@ -276,7 +315,7 @@ function FlowDiagram({ mermaidCode, onElementClick }) {
         mermaidRef.current.innerHTML = "";
       }
     }
-  }, [mermaidCode, onElementClick]);
+  }, [mermaidCode, direction, onElementClick]);
 
   // Save view state when it changes
   useEffect(() => {
@@ -478,7 +517,8 @@ function FlowDiagram({ mermaidCode, onElementClick }) {
 
 FlowDiagram.propTypes = {
   mermaidCode: PropTypes.string,
-  onElementClick: PropTypes.func.isRequired,
+  direction: PropTypes.oneOf(['TD', 'TB', 'BT', 'LR', 'RL']),
+  onElementClick: PropTypes.func,
 };
 
 export default FlowDiagram;

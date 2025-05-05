@@ -109,7 +109,7 @@ button {
   z-index: 100;
   /* margin-bottom: 24px; */
   background-color: var(--black-600);
-  padding: 24px;
+  padding: 4px;
   border-radius: 8px;
   border: 1px solid var(--black-500);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
@@ -146,8 +146,8 @@ button {
 .grid-layout {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 24px;
-  padding-top: 64px; /* Increased padding to ensure content is below header */
+  gap: 12px;
+  padding-top: 12px; 
 }
 
 .panel {
@@ -187,10 +187,13 @@ button {
 .description-panel {
   grid-column: span 12;
   height: auto; /* Reduced height since we're going horizontal */
+  height: 100%;
   background-color: var(--black-800);
   border: 1px solid var(--blue-600);
   border-radius: 8px;
-  overflow-x: auto; /* Enable horizontal scroll if needed */
+  overflow-x: auto; 
+  margin-right: 20px;
+  margin-left: 20px;
 }
 
 /* Container for all detail sections */
@@ -529,8 +532,10 @@ pre.json-content {
 }
 
 .code-content.wrapped {
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100%;
 }
 
 /* Ensure proper scrolling for the JSON content wrapper */
@@ -1106,9 +1111,9 @@ pre.code-block {
 .editor-diagram-container {
   grid-column: span 12;
   display: flex;
-  gap: 20px;
+  gap: 8px;
   margin: 0 20px;
-  height: 1000px;
+  height: 100%;
 }
 
 .editor-panel {
@@ -1121,7 +1126,7 @@ pre.code-block {
 }
 
 .diagram-panel {
-  flex: 1;
+  flex: 2;
   min-width: 0;
   background: var(--black-700);
   border-radius: 8px;
@@ -1135,13 +1140,19 @@ pre.code-block {
   align-items: center;
   min-height: 24px;
   position: relative;
-  padding: 0 8px 0 24px;
+  padding: 2px 4px 2px 24px; /* Increased left padding to make room for fold button */
+  font-family: 'Consolas', 'Monaco', monospace;
   white-space: pre;
-  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  line-height: 1.5;
 }
 
 .code-line:hover {
   background-color: var(--black-700);
+}
+
+.code-line.highlighted {
+  background-color: rgba(59, 130, 246, 0.2); /* Blue with opacity */
+  border-radius: 4px;
 }
 
 /* Fold button styles */
@@ -1161,6 +1172,7 @@ pre.code-block {
   border: none;
   padding: 0;
   margin: 0;
+  z-index: 1; /* Ensure button stays above content */
 }
 
 .fold-button:hover {
@@ -1249,8 +1261,10 @@ pre.code-block {
 }
 
 .json-content code.wrapped {
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100%;
 }
 
 .json-content code:not(.wrapped) {
@@ -1301,6 +1315,7 @@ pre.code-block {
 }
 .json-key {
   color: var(--blue-400);
+  margin-left: 10px;
 }
 .json-punctuation {
   color: var(--silver-500);
@@ -1358,8 +1373,10 @@ pre.code-block {
   min-height: 24px;
   position: relative;
   background-color: var(--black-800);
-  padding: 0 8px 0 24px;
-  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  padding: 1px 20px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  white-space: pre;
+  line-height: 1.5;
 }
 
 .code-line:hover {
@@ -1368,7 +1385,7 @@ pre.code-block {
 
 .fold-button {
   position: absolute;
-  left: 4px;
+  left: 1px;
   cursor: pointer;
   color: var(--blue-400);
   font-size: 12px;
@@ -1396,6 +1413,18 @@ pre.code-block {
 /* Add transition for smooth folding */
 .json-content div {
   transition: all 0.2s ease;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100%;
+}
+
+/* Ensure JSON content divs wrap properly */
+.json-content div.wrapped {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100%;
 }
 
 /* Mermaid syntax highlighting */
@@ -1655,4 +1684,84 @@ pre.code-block {
   border-radius: 6px;
   padding: 20px;
   overflow: auto;
+/* mermaid editor styles */
+/* Mermaid syntax highlighting in modal */
+.modal-mermaid-content {
+  background-color: var(--black-700);
+  padding: 1rem;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.modal-mermaid-content .flowchart {
+  color: var(--blue-500); /* Electric blue for flowchart declarations */
+}
+
+.modal-mermaid-content .node-id {
+  color: var(--blue-300); /* Light blue for node IDs */
+}
+
+.modal-mermaid-content .node-text {
+  color: var(--orange-400); /* Orange for node text */
+}
+
+.modal-mermaid-content .arrow {
+  color: var(--blue-400); /* Mid blue for arrows */
+}
+
+.modal-mermaid-content .comment {
+  color: var(--silver-500); /* Gray for comments */
+  font-style: italic;
+}
+
+.modal-mermaid-content .type {
+  color: var(--orange-500); /* Orange for types */
+}
+
+.modal-mermaid-content .description {
+  color: var(--silver-300); /* Light gray for descriptions */
+}
+
+.mermaid-editor {
+  position: relative;
+}
+
+.mermaid-editor .code-content {
+  font-family: 'Consolas', 'Monaco', monospace;
+  background-color: var(--black-700);
+  color: var(--silver-100);
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* Add these styles */
+.highlighted-line {
+  background-color: var(--blue-600);
+  border-radius: 4px;
+  /* margin: -2px -8px;
+  padding: 2px 8px; */
+}
+
+.node:hover, .edge:hover {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+/* Add these styles for diagram element highlighting */
+.node.highlighted rect,
+.node.highlighted circle {
+  filter: brightness(1.2);
+  stroke: var(--blue-400) !important;
+  stroke-width: 3px !important;
+}
+
+.edge.highlighted path {
+  stroke: var(--blue-400) !important;
+  stroke-width: 4px !important;
+}
+
+.edge.highlighted marker {
+  fill: var(--blue-400) !important;
+}
 }
