@@ -101,6 +101,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
 
     // Add comments for type and description if available
     if (node.description) {
+      mermaidCode += `    %% Type: ${node.type}\n`;
       mermaidCode += `    %% Description: ${node.description}\n`;
     }
   });
