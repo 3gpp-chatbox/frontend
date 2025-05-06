@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
 import { JsonToMermaid } from "../functions/jsonToMermaid";
 import ModalDiagram from "./ModalDiagram";
+import { highlightJson } from "../utils/jsonHighlighter";
+import { highlightMermaid } from "../utils/MermaidHighlighter";
 
 function OriginalDataModal({ isOpen, onClose, originalData }) {
   const [selectedView, setSelectedView] = useState("json");
@@ -9,6 +11,8 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isWrapped, setIsWrapped] = useState(true);
+  const editorRef = useRef(null);
 
   // Reset position when modal is opened
   useEffect(() => {
@@ -109,82 +113,13 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
     return code
       .split("\n")
       .filter(
-        (line) => !line.includes("%%{init:") && !line.includes("classDef"),
+        (line) => 
+          // Keep flowchart direction lines
+          (line.startsWith('flowchart') || line.startsWith('graph')) ||
+          // Filter out only init and class definitions
+          (!line.includes("%%{init:") && !line.includes("classDef"))
       )
       .join("\n");
-  };
-
-  // Function to highlight JSON syntax with folding
-  const highlightJson = (json) => {
-    if (!json) return "";
-
-    // Parse and re-stringify to ensure proper formatting
-    try {
-      const parsed = JSON.parse(json);
-      json = JSON.stringify(parsed, null, 2);
-    } catch (e) {
-      console.warn("JSON parsing failed, using original string");
-    }
-
-    let lines = json.split("\n");
-    let result = [];
-    let indentLevel = 0;
-    let foldable = new Set(); // Track which lines can be folded
-
-    // First pass: identify foldable lines
-    lines.forEach((line, i) => {
-      const trimmedLine = line.trim();
-      if (trimmedLine.endsWith("{") || trimmedLine.endsWith("[")) {
-        foldable.add(i);
-      }
-    });
-
-    // Second pass: generate HTML with fold buttons
-    lines.forEach((line, i) => {
-      const indent = line.match(/^\s*/)[0].length;
-      indentLevel = Math.floor(indent / 2);
-
-      let lineHtml = line
-        .replace(
-          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
-          function (match) {
-            let cls = "json-number";
-            if (/^"/.test(match)) {
-              if (/:$/.test(match)) {
-                cls = "json-key";
-                match = match.slice(0, -1);
-              } else {
-                cls = "json-string";
-              }
-            } else if (/true|false/.test(match)) {
-              cls = "json-boolean";
-            } else if (/null/.test(match)) {
-              cls = "json-null";
-            }
-            return `<span class="${cls}">${match}</span>${
-              /:$/.test(match) ? ":" : ""
-            }`;
-          },
-        )
-        .replace(
-          /[{}[\]]/g,
-          (match) => `<span class="json-punctuation">${match}</span>`,
-        );
-
-      // Add fold button if line is foldable
-      if (foldable.has(i)) {
-        const foldButton = `<button class="fold-button" data-line="${i}">▼</button>`;
-        result.push(
-          `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${foldButton}${lineHtml}</div>`,
-        );
-      } else {
-        result.push(
-          `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${lineHtml}</div>`,
-        );
-      }
-    });
-
-    return result.join("");
   };
 
   // Handle fold/unfold
@@ -214,21 +149,54 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
     switch (selectedView) {
       case "json":
         return (
-          <pre className="modal-json-content content-area" onClick={handleFold}>
-            <code
-              dangerouslySetInnerHTML={{ __html: highlightJson(jsonContent) }}
-            />
-          </pre>
+          <div className="json-viewer-content">
+            <pre className="json-content">
+              <div
+                className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                dangerouslySetInnerHTML={{
+                  __html: highlightJson(jsonContent),
+                }}
+                onClick={handleFold}
+              />
+            </pre>
+            <div className="viewer-controls bottom-controls">
+              <label className="wrap-toggle">
+                <input
+                  type="checkbox"
+                  checked={isWrapped}
+                  onChange={() => setIsWrapped(!isWrapped)}
+                />
+                Wrap Text
+              </label>
+            </div>
+          </div>
         );
       case "mermaid":
         return (
-          <div className="mermaid-editor content-area">
-            <textarea
-              className="code-content"
-              value={cleanMermaidCode(mermaidCode)}
-              readOnly
-              spellCheck="false"
-            />
+          <div className="json-viewer-content">
+            <pre className="json-content">
+              <div className="mermaid-editor">
+                <div
+                  ref={editorRef}
+                  className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                  contentEditable={false}
+                  spellCheck="false"
+                  dangerouslySetInnerHTML={{
+                    __html: highlightMermaid(cleanMermaidCode(mermaidCode))
+                  }}
+                />
+              </div>
+            </pre>
+            <div className="viewer-controls bottom-controls">
+              <label className="wrap-toggle">
+                <input
+                  type="checkbox"
+                  checked={isWrapped}
+                  onChange={() => setIsWrapped(!isWrapped)}
+                />
+                Wrap Text
+              </label>
+            </div>
           </div>
         );
       case "graph":
@@ -281,7 +249,7 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
         right: 0,
         bottom: 0,
         background: "transparent",
-        pointerEvents: "none", // Allow interactions with elements behind
+        pointerEvents: "none",
         zIndex: 1000,
       }}
     >
@@ -302,7 +270,7 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
           transform: `translate(${position.x}px, ${position.y}px)`,
           cursor: isDragging ? "grabbing" : "default",
           transition: isDragging ? "none" : "transform 0.1s ease-out",
-          pointerEvents: "auto", // Re-enable interactions for the modal itself
+          pointerEvents: "auto",
           boxShadow:
             "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
         }}
