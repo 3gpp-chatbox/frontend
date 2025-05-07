@@ -17,7 +17,7 @@ export function convertMermaidToJson(mermaidCode) {
   const jsonOutput = {
     nodes: [],
     edges: [],
-    direction: 'TD' // Default direction
+    direction: 'LR' // Changed default direction from TD to LR
   };
 
   const labelToIdMap = {};

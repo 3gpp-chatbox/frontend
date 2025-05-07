@@ -2,7 +2,7 @@
  * Converts a JSON graph structure to Mermaid diagram syntax
  * @param {Object} jsonData - The graph data in JSON format
  * @param {Object} options - Configuration options for the conversion
- * @param {string} options.direction - Graph direction ('TD' for top-down, 'LR' for left-right), overrides jsonData.direction if provided
+ * @param {string} options.direction - Graph direction ('LR' for left-right, 'TD' for top-down), overrides jsonData.direction if provided
  * @param {Object} options.styles - Custom style definitions
  * @returns {string} Mermaid diagram syntax
  */
@@ -13,19 +13,21 @@ export const JsonToMermaid = (jsonData, options = {}) => {
   }
 
   const {
-    direction = jsonData.direction || "TD",
+    direction = jsonData.direction || "LR",
     styles = {
       state: {
         fill: "#f9f",
         stroke: "#333",
         "stroke-width": "2px",
         color: "#000",
+        "font-size": "16px",
       },
       event: {
         fill: "#bbf",
         stroke: "#333",
         "stroke-width": "2px",
         color: "#000",
+        "font-size": "16px",
       },
     },
   } = options;
@@ -120,8 +122,8 @@ export const JsonToMermaid = (jsonData, options = {}) => {
       return;
     }
 
-    // Add edge label (type)
-    const label = edge.description ? `"${edge.description}"` : "";
+    // Add edge label (type) with HTML formatting for larger text
+    const label = edge.description ? `"<span style='font-size:16px'>${edge.description}</span>"` : "";
 
     mermaidCode += `    ${fromLabel} -->|${label}| ${toLabel}\n`;
 
@@ -139,7 +141,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
 
 // Export a default configuration for common use cases
 export const defaultMermaidConfig = {
-  direction: "TD",
+  direction: "LR",
   styles: {
     state: {
       fill: "#f9f",

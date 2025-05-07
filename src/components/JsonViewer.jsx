@@ -168,9 +168,17 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
 
   const handleSaveChanges = () => {
     try {
-      // Validate Mermaid syntax (basic validation)
-      if (!mermaidGraph.match(/flowchart\s+(TD|TB|BT|LR|RL)/)) {
-        throw new Error('Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)');
+      // Get current direction or default to LR
+      const directionMatch = mermaidGraph.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
+      if (!directionMatch) {
+        // If no direction specified, prepend LR direction
+        const lines = mermaidGraph.split('\n');
+        const firstLine = lines[0].trim();
+        if (!firstLine.startsWith('flowchart')) {
+          setMermaidGraph(`flowchart LR\n${mermaidGraph}`);
+        } else {
+          throw new Error('Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)');
+        }
       }
 
       setNotification({
