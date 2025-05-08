@@ -30,6 +30,7 @@ mermaid.initialize({
     titleColor: "#f4f4f5",
     edgeLabelBackground: "#1a1a1a",
     textColor: "#f4f4f5",
+    fontSize: "18px",
   },
 });
 

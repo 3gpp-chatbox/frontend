@@ -456,37 +456,49 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   return (
     <div className="section-container">
       <div className="section-header">
-        <span>
-          Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
-          {isEditing && <span className="editing-indicator"> (Editing)</span>}
-        </span>
-        <div className="viewer-controls">
-          <button
-            className="toggle-button"
-            onClick={() => {
-              if (isEditing) {
-                setNotification({
-                  show: true,
-                  message: "Please save or revert your changes first",
-                  type: "warning",
-                });
-                return;
-              }
-              setShowMermaid(!showMermaid);
-            }}
-            title={showMermaid ? "View JSON" : "View Mermaid"}
-          >
-            {showMermaid ? "Show JSON" : "Show Mermaid"}
-          </button>
-          {showMermaid && (
+        <div className="header-content">
+          <span className="title">
+            Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
+            {isEditing && <span className="editing-indicator"> (Editing)</span>}
+          </span>
+          <div className="viewer-controls">
             <button
-              className={`save-button ${isEditing ? "active" : ""}`}
-              onClick={handleSaveChanges}
-              disabled={!isEditing}
+              className="toggle-button"
+              onClick={() => {
+                if (isEditing) {
+                  setNotification({
+                    show: true,
+                    message: "Please save or revert your changes first",
+                    type: "warning",
+                  });
+                  return;
+                }
+                setShowMermaid(!showMermaid);
+              }}
+              title={showMermaid ? "View JSON" : "View Mermaid"}
             >
-              Save Changes
+              {showMermaid ? "Show JSON" : "Show Mermaid"}
             </button>
-          )}
+            <button
+              className="toggle-button"
+              onClick={() => {
+                // Document viewer logic will be implemented later
+                console.log("Document viewer clicked");
+              }}
+              title="View Document"
+            >
+              Document Viewer
+            </button>
+            {showMermaid && (
+              <button
+                className={`save-button ${isEditing ? "active" : ""}`}
+                onClick={handleSaveChanges}
+                disabled={!isEditing}
+              >
+                Save Changes
+              </button>
+            )}
+          </div>
         </div>
       </div>
       {notification.show && (

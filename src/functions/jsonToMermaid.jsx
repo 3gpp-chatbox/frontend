@@ -20,14 +20,14 @@ export const JsonToMermaid = (jsonData, options = {}) => {
         stroke: "#333",
         "stroke-width": "2px",
         color: "#000",
-        "font-size": "16px",
+        "font-size": "50px",
       },
       event: {
         fill: "#bbf",
         stroke: "#333",
         "stroke-width": "2px",
         color: "#000",
-        "font-size": "16px",
+        "font-size": "50px",
       },
     },
   } = options;
@@ -123,7 +123,7 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     }
 
     // Add edge label (type) with HTML formatting for larger text
-    const label = edge.description ? `"<span style='font-size:16px'>${edge.description}</span>"` : "";
+    const label = edge.description ? `"<span style='font-size:14px'>${edge.description}</span>"` : "";
 
     mermaidCode += `    ${fromLabel} -->|${label}| ${toLabel}\n`;
 

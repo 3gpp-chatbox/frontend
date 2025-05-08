@@ -277,12 +277,21 @@ button {
 }
 
 .section-header {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px;
+  padding: 12px 16px;
   border-bottom: 2px solid var(--blue-700);
   background: var(--black-700);
-  justify-content: space-between;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header-content .title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--silver-100);
 }
 
 .content-area {
@@ -473,11 +482,14 @@ button {
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-left: auto;
 }
 
 .toggle-button:hover {
   background-color: var(--blue-600);
+}
+
+.toggle-button:active {
+  transform: translateY(1px);
 }
 
 .save-button {
@@ -489,11 +501,20 @@ button {
   padding: 6px 12px;
   font-size: 14px;
   transition: all 0.2s ease;
-  margin-left: 10px;
 }
 
 .save-button:hover {
   background-color: var(--orange-600);
+}
+
+.save-button.active {
+  background-color: var(--orange-600);
+}
+
+.save-button:disabled {
+  background-color: var(--black-600);
+  color: var(--silver-500);
+  cursor: not-allowed;
 }
 
 .json-viewer-content {
@@ -913,22 +934,6 @@ pre.json-content {
   color: var(--orange-400);
   font-size: 14px;
   margin-left: 8px;
-}
-
-/* Save button states */
-.save-button.active {
-  background-color: var(--orange-600);
-  color: white;
-}
-
-.save-button.active:hover {
-  background-color: var(--orange-500);
-}
-
-.save-button:disabled {
-  background-color: var(--black-600);
-  color: var(--silver-500);
-  cursor: not-allowed;
 }
 
 /* Notification types */
