@@ -282,6 +282,12 @@ button {
   background: var(--black-700);
 }
 
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .header-content {
   display: flex;
   flex-direction: column;
@@ -740,22 +746,31 @@ pre.json-content {
 .diagram-controls {
   display: flex;
   gap: 8px;
-  margin-left: auto;
+  align-items: center;
+}
+
+.diagram-controls span {
+  color: var(--silver-300);
+  font-size: 14px;
 }
 
 .diagram-controls button {
   padding: 6px 12px;
+  font-size: 14px;
   background-color: var(--blue-700);
   color: var(--silver-100);
   border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 14px;
 }
 
 .diagram-controls button:hover {
   background-color: var(--blue-600);
+}
+
+.diagram-controls button:active {
+  transform: translateY(1px);
 }
 
 /* Hide scrollbars but keep scrolling functionality */
@@ -1769,4 +1784,120 @@ pre.code-block {
 .edge.highlighted marker {
   fill: var(--blue-400) !important;
 }
+}
+
+/* PDF Viewer styles */
+.pdf-viewer {
+  height: 100%;
+  width: 100%;
+  background: var(--black-800);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.pdf-viewer .rpv-core__viewer {
+  flex: 1;
+  background: var(--black-800);
+  border-radius: 4px;
+  overflow: auto;
+}
+
+.pdf-viewer .rpv-core__inner-pages {
+  background: var(--black-800);
+  padding: 16px;
+}
+
+.pdf-viewer .rpv-core__page {
+  background: var(--black-800);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  margin: 16px auto;
+}
+
+.pdf-viewer .rpv-core__toolbar {
+  background: var(--black-700);
+  border-bottom: 1px solid var(--black-600);
+  padding: 8px 16px;
+  margin-bottom: 8px;
+}
+
+.pdf-viewer .rpv-core__button {
+  color: var(--silver-100);
+  background: var(--blue-700);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0 4px;
+}
+
+.pdf-viewer .rpv-core__button:hover {
+  background: var(--blue-600);
+}
+
+.pdf-viewer .rpv-core__page-layer {
+  background: white;
+}
+
+.pdf-viewer .rpv-core__spinner {
+  border-color: var(--blue-400);
+}
+
+.pdf-viewer .rpv-core__textbox {
+  background: var(--black-600);
+  border: 1px solid var(--black-500);
+  color: var(--silver-100);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.pdf-viewer .rpv-core__menu {
+  background: var(--black-700);
+  border: 1px solid var(--black-600);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pdf-viewer .rpv-core__menu-item {
+  color: var(--silver-100);
+}
+
+.pdf-viewer .rpv-core__menu-item:hover {
+  background: var(--black-600);
+}
+
+.pdf-viewer .rpv-core__label {
+  color: var(--silver-300);
+}
+
+/* Scrollbar styles for PDF viewer */
+.pdf-viewer .rpv-core__viewer::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.pdf-viewer .rpv-core__viewer::-webkit-scrollbar-track {
+  background: var(--black-700);
+  border-radius: 6px;
+}
+
+.pdf-viewer .rpv-core__viewer::-webkit-scrollbar-thumb {
+  background: var(--blue-700);
+  border-radius: 6px;
+  border: 3px solid var(--black-700);
+}
+
+.pdf-viewer .rpv-core__viewer::-webkit-scrollbar-thumb:hover {
+  background: var(--blue-600);
+}
+
+/* Ensure the toggle button shows active state */
+.toggle-button.active {
+  background-color: var(--orange-400);
+}
+
+.toggle-button.active:hover {
+  background-color: var(--orange-500);
 }

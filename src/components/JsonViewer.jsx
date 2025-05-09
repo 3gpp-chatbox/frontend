@@ -13,6 +13,8 @@ import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
+import { Worker, Viewer } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/core/lib/styles/index.css';
 
 function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
   const [data, setData] = useState(null);
@@ -29,6 +31,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     message: "",
     type: "",
   });
+  const [showPdf, setShowPdf] = useState(false);
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
@@ -453,51 +456,64 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
+  // Add function to handle PDF viewer toggle
+  const handleDocumentViewerClick = () => {
+    setShowPdf(!showPdf);
+    if (isEditing) {
+      setNotification({
+        show: true,
+        message: "Please save or revert your changes first",
+        type: "warning",
+      });
+      return;
+    }
+  };
+
   return (
     <div className="section-container">
       <div className="section-header">
         <div className="header-content">
-          <span className="title">
-            Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
-            {isEditing && <span className="editing-indicator"> (Editing)</span>}
-          </span>
-          <div className="viewer-controls">
-            <button
-              className="toggle-button"
-              onClick={() => {
-                if (isEditing) {
-                  setNotification({
-                    show: true,
-                    message: "Please save or revert your changes first",
-                    type: "warning",
-                  });
-                  return;
-                }
-                setShowMermaid(!showMermaid);
-              }}
-              title={showMermaid ? "View JSON" : "View Mermaid"}
-            >
-              {showMermaid ? "Show JSON" : "Show Mermaid"}
-            </button>
-            <button
-              className="toggle-button"
-              onClick={() => {
-                // Document viewer logic will be implemented later
-                console.log("Document viewer clicked");
-              }}
-              title="View Document"
-            >
-              Document Viewer
-            </button>
-            {showMermaid && (
+          <div className="header-row">
+            <span className="title">
+              Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
+              {isEditing && <span className="editing-indicator"> (Editing)</span>}
+            </span>
+            <div className="viewer-controls">
               <button
-                className={`save-button ${isEditing ? "active" : ""}`}
-                onClick={handleSaveChanges}
-                disabled={!isEditing}
+                className="toggle-button"
+                onClick={() => {
+                  if (isEditing) {
+                    setNotification({
+                      show: true,
+                      message: "Please save or revert your changes first",
+                      type: "warning",
+                    });
+                    return;
+                  }
+                  setShowPdf(false);
+                  setShowMermaid(!showMermaid);
+                }}
+                title={showMermaid ? "View JSON" : "View Mermaid"}
               >
-                Save Changes
+                {showMermaid ? "Show JSON" : "Show Mermaid"}
               </button>
-            )}
+              <button
+                className={`toggle-button ${showPdf ? 'active' : ''}`}
+                onClick={handleDocumentViewerClick}
+                title="View Document"
+              >
+                Document Viewer
+              </button>
+              {showMermaid && !showPdf && (
+                <button
+                  className={`save-button ${isEditing ? "active" : ""}`}
+                  onClick={handleSaveChanges}
+                  disabled={!isEditing}
+                >
+                  Save Changes
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -507,42 +523,48 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         </div>
       )}
       <div className="json-viewer-content">
-        {selectedProcedure ? (
+        {showPdf ? (
+          <div className="pdf-viewer">
+            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+              <Viewer fileUrl="./src/data/TS 24.501.pdf" />
+            </Worker>
+          </div>
+        ) : selectedProcedure ? (
           data ? (
             <pre className="json-content">
               {showMermaid ? (
-              <div className="mermaid-editor">
-                <div
-                  ref={editorRef}
-                  className={`code-content ${isWrapped ? "wrapped" : ""}`}
-                  contentEditable={true}
-                  onInput={handleMermaidChange}
-                  onFocus={onEditorFocus}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const selection = window.getSelection();
-                      const range = selection.getRangeAt(0);
-                      const br = document.createElement('br');
-                      range.deleteContents();
-                      range.insertNode(br);
-                      range.setStartAfter(br);
-                      range.setEndAfter(br);
-                      selection.removeAllRanges();
-                      selection.addRange(range);
-                      handleMermaidChange(e);
-                    }
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: highlightMermaidLine(
-                      highlightMermaid(cleanMermaidCode(mermaidGraph)),
-                      highlightedElement?.id,
-                      highlightedElement?.type
-                    )
-                  }}
-                  spellCheck="false"
-                />
-              </div>
+                <div className="mermaid-editor">
+                  <div
+                    ref={editorRef}
+                    className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                    contentEditable={true}
+                    onInput={handleMermaidChange}
+                    onFocus={onEditorFocus}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const selection = window.getSelection();
+                        const range = selection.getRangeAt(0);
+                        const br = document.createElement('br');
+                        range.deleteContents();
+                        range.insertNode(br);
+                        range.setStartAfter(br);
+                        range.setEndAfter(br);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        handleMermaidChange(e);
+                      }
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: highlightMermaidLine(
+                        highlightMermaid(cleanMermaidCode(mermaidGraph)),
+                        highlightedElement?.id,
+                        highlightedElement?.type
+                      )
+                    }}
+                    spellCheck="false"
+                  />
+                </div>
               ) : (
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}

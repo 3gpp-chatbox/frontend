@@ -465,25 +465,30 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
   return (
     <div className="section-container">
       <div className="section-header">
-        <span>Flow Diagram</span>
-        <div className="diagram-controls">
-          <span>Zoom: {zoomLevel}%</span>
-          <button
-            onClick={() => {
-              const newScale = 1;
-              const newPosition = { x: 0, y: 0 };
-              setScale(newScale);
-              setZoomLevel(100);
-              setPosition(newPosition);
-              lastViewStateRef.current = {
-                scale: newScale,
-                position: newPosition,
-                zoomLevel: 100,
-              };
-            }}
-          >
-            Reset View
-          </button>
+        <div className="header-content">
+          <div className="header-row">
+            <span className="title">Flow Diagram</span>
+            <div className="diagram-controls">
+              <span>Zoom: {zoomLevel}%</span>
+              <button
+                className="toggle-button"
+                onClick={() => {
+                  const newScale = 1;
+                  const newPosition = { x: 0, y: 0 };
+                  setScale(newScale);
+                  setZoomLevel(100);
+                  setPosition(newPosition);
+                  lastViewStateRef.current = {
+                    scale: newScale,
+                    position: newPosition,
+                    zoomLevel: 100,
+                  };
+                }}
+              >
+                Reset View
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       <div
