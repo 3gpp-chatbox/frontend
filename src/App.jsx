@@ -45,7 +45,7 @@ function App() {
   return (
     <div className="container">
       <header className="header">
-        <h1>3GPP Procedure insights</h1>
+        3GPP Procedure Insights
       </header>
 
       <div className="grid-layout">

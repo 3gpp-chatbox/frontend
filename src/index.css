@@ -3,7 +3,7 @@
   --black-900: #000000;
   --black-800: #1a1a1a;
   --black-700: #2d2d2d;
-  --black-600: #333333;
+  --black-600: #9C9595;
   --black-500: #404040;
 
   /* Silver/Gray palette (Secondary) */
@@ -103,45 +103,40 @@ button {
 
 .header {
   /* position: fixed; */
-  top: 24px;
+  /* top: 24px;
   left: 24px;
   right: 24px;
-  z-index: 100;
+  z-index: 100; */
   /* margin-bottom: 24px; */
   background-color: var(--black-600);
-  padding: 4px;
-  border-radius: 8px;
   border: 1px solid var(--black-500);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  text-align: center;
+  text-align: left;
+  padding-left: 24px;
+  font-size: 18px;
+  border-bottom: 1px solid var(--silver-50);
 }
 
 /* Add a background overlay to prevent content showing through */
-.header::before {
-  /* content: '';
-  position: fixed;
-  top: 0;
-  left: 24px;
-  right: 24px;
-  height: calc(24px + 72px); /* top padding + header height */
+/* .header::before {
+ 
   background-color: var(--black-600);
   z-index: -1;
   border-radius: 8px;
-}
+} */
 
-.header h1 {
+/* .header h1 {
   font-size: 36px;
   font-weight: bold;
   color: var(--blue-500);
   margin: 0 0 12px 0;
-}
+} */
 
-.header p {
+/* .header p {
   color: var(--silver-300);
   font-size: 16px;
   margin: 0;
   line-height: 1.5;
-}
+} */
 
 .grid-layout {
   display: grid;
