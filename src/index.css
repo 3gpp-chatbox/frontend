@@ -1131,14 +1131,17 @@ pre.code-block {
 .editor-diagram-container {
   grid-column: span 12;
   display: flex;
-  gap: 8px;
+  gap: 0;
   margin: 0 20px;
   height: 100%;
+  position: relative;
 }
 
 .editor-panel {
-  flex: 1;
-  min-width: 0;
+  width: 50%;
+  min-width: 200px;
+  position: relative;
+  transition: width 0.1s ease;
   background: var(--black-700);
   border-radius: 8px;
   border: 1px solid var(--black-500);
@@ -1146,12 +1149,30 @@ pre.code-block {
 }
 
 .diagram-panel {
-  flex: 2;
-  min-width: 0;
+  width: 50%;
+  min-width: 200px;
+  position: relative;
+  transition: width 0.1s ease;
   background: var(--black-700);
   border-radius: 8px;
   border: 1px solid var(--black-500);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.resizer {
+  position: absolute;
+  right: -5px;
+  top: 0;
+  height: 100%;
+  width: 10px;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 100;
+}
+
+.resizer:hover,
+.resizer.dragging {
+  background: rgba(59, 130, 246, 0.5);
 }
 
 /* Code line styles */
