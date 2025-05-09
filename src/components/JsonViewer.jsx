@@ -13,6 +13,7 @@ import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
+import { highlightMermaidLine } from "../utils/ClickCodeHighlighter";
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 
@@ -38,6 +39,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   const isUserEditing = useRef(false);
   const editorRef = useRef(null);
   const cursorPosition = useRef(null);
+
+  // Add ref for the code content
+  const codeContentRef = useRef(null);
 
   // Add effect to update view when procedure data changes
   useEffect(() => {
@@ -330,70 +334,19 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     }
   };
 
-  const highlightMermaidLine = (code, elementId, elementType) => {
-    if (!code || !elementId) {
-      console.log("No code or elementId provided");
-      return code;
-    }
-    
-    console.log("Received element:", { id: elementId, type: elementType });
-    
-    // Extract the node label for node highlighting
-    const nodeMatch = elementId.match(/flowchart-([A-Z0-9]+)-/);
-    if (!nodeMatch && elementType === 'node') {
-      console.log("No node match found for elementId:", elementId);
-      return code;
-    }
-    
-    const nodeLabel = nodeMatch ? nodeMatch[1] : null;
-    console.log("Looking for node/edge:", { nodeLabel, elementId });
-    
-    // First split and process the raw code
-    const lines = code.replace(/<[^>]*>/g, '').split('\n');
-    const highlightedLines = lines.map(line => {
-      console.log("Checking raw line:", line);
-      
-      if (elementType === 'node' && nodeLabel) {
-        // Match node definitions with optional leading whitespace
-        const nodePattern = new RegExp(`^\\s*${nodeLabel}(\\[|\\(\\()`);
-        const matches = nodePattern.test(line);
-        console.log("Node pattern test:", { line, matches });
-        if (matches) {
-          console.log("Found matching node line:", line);
-          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
-        }
-      } else if (elementType === 'edge') {
-        // For edges, we now use the label text directly
-        // The elementId is now the label text from the edge label
-        // We need to escape special characters in the elementId for the regex
-        const escapedElementId = elementId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        
-        // Look for the edge label with quotes around it
-        // The edge label in the Mermaid code is wrapped in quotes, but the elementId doesn't have quotes
-        const edgePattern = new RegExp(`^\\s*.*-->\\|"${escapedElementId}"\\|.*`);
-        const matches = edgePattern.test(line);
-        console.log("Edge pattern test:", { line, matches, elementId, escapedElementId });
-        if (matches) {
-          console.log("Found matching edge line:", line);
-          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
-        }
-        
-        // If the first pattern didn't match, try without quotes
-        // This handles cases where the edge label might not have quotes
-        const edgePatternNoQuotes = new RegExp(`^\\s*.*-->\\|${escapedElementId}\\|.*`);
-        const matchesNoQuotes = edgePatternNoQuotes.test(line);
-        console.log("Edge pattern test (no quotes):", { line, matches: matchesNoQuotes });
-        if (matchesNoQuotes) {
-          console.log("Found matching edge line (no quotes):", line);
-          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
-        }
+  // Add effect to scroll to highlighted element
+  useEffect(() => {
+    if (highlightedElement && codeContentRef.current) {
+      // Find the highlighted element
+      const highlightedDiv = codeContentRef.current.querySelector('.orange-highlight');
+      if (highlightedDiv) {
+        // Scroll the element into view with some padding at the top
+        highlightedDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-      return highlightMermaid(line);
-    });
-    
-    return highlightedLines.join('\n');
-  };
+    }
+  }, [highlightedElement]);
 
+  
   const saveCursorPosition = () => {
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
@@ -535,7 +488,10 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
               {showMermaid ? (
                 <div className="mermaid-editor">
                   <div
-                    ref={editorRef}
+                    ref={(el) => {
+                      editorRef.current = el;
+                      codeContentRef.current = el;
+                    }}
                     className={`code-content ${isWrapped ? "wrapped" : ""}`}
                     contentEditable={true}
                     onInput={handleMermaidChange}
