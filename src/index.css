@@ -1138,7 +1138,7 @@ pre.code-block {
 }
 
 .editor-panel {
-  width: 50%;
+  width: 30%;
   min-width: 200px;
   position: relative;
   transition: width 0.1s ease;
@@ -1149,7 +1149,7 @@ pre.code-block {
 }
 
 .diagram-panel {
-  width: 50%;
+  width: 70%;
   min-width: 200px;
   position: relative;
   transition: width 0.1s ease;
