@@ -317,26 +317,23 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   };
 
   // Handle fold/unfold
-  const handleFold = (event) => {
-    const button = event.target;
-    if (!button.classList.contains("fold-button")) return;
+  const handleFold = useCallback((event) => {
+    const button = event.target.closest('.fold-button');
+    if (!button) return;
 
-    const line = button.closest(".code-line");
+    const line = button.closest('.code-line');
     if (!line) return;
 
     const level = parseInt(line.dataset.level);
+    const isFolded = button.textContent === '▼';
+    button.textContent = isFolded ? '▶' : '▼';
 
-    // Toggle fold state
-    const isFolded = button.textContent === "▼";
-    button.textContent = isFolded ? "▶" : "▼";
-
-    // Find the range to fold/unfold
     let current = line.nextElementSibling;
     while (current && parseInt(current.dataset.level) > level) {
-      current.style. display= isFolded ? "none" : "flex";
+      current.style.display = isFolded ? 'none' : 'flex';
       current = current.nextElementSibling;
     }
-  };
+  }, []);
 
   // Add effect to scroll to highlighted element
   useEffect(() => {
@@ -643,6 +640,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                     __html: highlightJson(jsonContent, highlightedElement)
                   }}
                   ref={codeContentRef}
+                  onClick={handleFold}
                 />
               )}
             </pre>
