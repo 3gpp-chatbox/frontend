@@ -13,11 +13,11 @@ import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
-import { highlightMermaidLine } from "../utils/ClickCodeHighlighter";
-import { highlightJsonLine } from "../utils/ClickCodeHighlighter";
+import { extractElementFromClick } from "../utils/ClickCodeHighlighter";
+import { highlightMermaidLine } from "../utils/ClickDiagramHighlighter";
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
-import ReactMarkdown from 'react-markdown';
+import InteractiveMarkdown from '../utils/InteractiveMarkdown';
 
 function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
   const [data, setData] = useState(null);
@@ -37,6 +37,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   const [showPdf, setShowPdf] = useState(false);
   const [showReference, setShowReference] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
+  const [selectedMarkdownElement, setSelectedMarkdownElement] = useState(null);
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
@@ -496,6 +497,33 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     }
   }, [showReference]);
 
+  // Add handler for clicking in Mermaid editor
+  const handleMermaidClick = (event) => {
+    // Only handle clicks on code lines
+    const clickedLine = event.target.closest('.code-line');
+    if (!clickedLine || !clickedLine.textContent) return;
+
+    const line = clickedLine.textContent.trim();
+    console.log('Clicked line:', line);
+
+    const element = extractElementFromClick(line);
+    console.log('Extracted element:', element);
+
+    if (element) {
+      onEditorFocus(element);
+    }
+  };
+
+  // Add handler for markdown element clicks
+  const handleMarkdownElementClick = (element) => {
+    setSelectedMarkdownElement(element);
+    console.log('Clicked markdown element:', element);
+    // You can add additional handling here, such as:
+    // - Updating the UI
+    // - Triggering a search
+    // - Updating related components
+  };
+
   return (
     <div className="section-container">
       <div className="section-header">
@@ -562,7 +590,10 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         ) : showReference ? (
           <div className="reference-viewer">
             <div className="markdown-content">
-              <ReactMarkdown>{markdownContent}</ReactMarkdown>
+              <InteractiveMarkdown 
+                content={markdownContent}
+                onElementClick={handleMarkdownElementClick}
+              />
             </div>
           </div>
         ) : selectedProcedure ? (
@@ -579,6 +610,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                     contentEditable={true}
                     onInput={handleMermaidChange}
                     onFocus={onEditorFocus}
+                    onClick={handleMermaidClick}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -609,9 +641,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}
                   dangerouslySetInnerHTML={{
                     __html: highlightJson(jsonContent, highlightedElement)
-
                   }}
-                  onClick={handleFold}
                   ref={codeContentRef}
                 />
               )}

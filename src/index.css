@@ -2067,3 +2067,94 @@ pre.code-block {
 .markdown-content::-webkit-scrollbar-thumb:hover {
   background: var(--blue-600);
 }
+
+/* Add these styles after the existing reference viewer styles */
+.markdown-content .line {
+  padding: 2px 8px;
+  white-space: pre-wrap;
+}
+
+.markdown-content .highlighted-context {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.markdown-content .highlighted-line {
+  background-color: rgba(249, 115, 22, 0.2);
+  border-left: 2px solid var(--orange-500);
+}
+
+/* Interactive Markdown styles */
+.interactive-markdown {
+  color: var(--silver-100);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.interactive-heading {
+  cursor: pointer;
+  transition: color 0.2s ease;
+  position: relative;
+  padding-left: 16px;
+}
+
+.interactive-heading::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 0;
+  background-color: var(--blue-400);
+  transition: height 0.2s ease;
+}
+
+.interactive-heading:hover {
+  color: var(--blue-300);
+}
+
+.interactive-heading:hover::before {
+  height: 80%;
+}
+
+.interactive-heading.active {
+  color: var(--blue-400);
+}
+
+.interactive-heading.active::before {
+  height: 100%;
+}
+
+.interactive-paragraph {
+  cursor: pointer;
+  padding: 8px 16px;
+  margin: 8px 0;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.interactive-paragraph:hover {
+  background-color: var(--black-700);
+}
+
+.interactive-list-item {
+  cursor: pointer;
+  padding: 4px 8px;
+  margin: 4px 0;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.interactive-list-item:hover {
+  background-color: var(--black-700);
+}
+
+/* Highlight styles for active elements */
+.highlight-section {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 2px solid var(--blue-400);
+}
+
+.highlight-paragraph {
+  background-color: rgba(59, 130, 246, 0.1);
+}
