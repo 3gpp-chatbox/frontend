@@ -1957,3 +1957,113 @@ pre.code-block {
 .button-container button {
   flex: 0 1 auto;
 }
+
+/* Reference Viewer styles */
+.reference-viewer {
+  height: 100%;
+  width: 100%;
+  background: var(--black-800);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.markdown-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  color: var(--silver-100);
+  font-size: 14px;
+  line-height: 1.6;
+  background-color: var(--black-800);
+}
+
+/* Markdown content styles */
+.markdown-content h1 {
+  color: var(--blue-300);
+  font-size: 24px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--blue-700);
+}
+
+.markdown-content h2 {
+  color: var(--blue-400);
+  font-size: 20px;
+  margin: 24px 0 16px;
+}
+
+.markdown-content h3, 
+.markdown-content h4, 
+.markdown-content h5 {
+  color: var(--blue-500);
+  margin: 20px 0 12px;
+}
+
+.markdown-content p {
+  margin: 12px 0;
+  color: var(--silver-200);
+}
+
+.markdown-content ul, 
+.markdown-content ol {
+  margin: 12px 0;
+  padding-left: 24px;
+  color: var(--silver-200);
+}
+
+.markdown-content li {
+  margin: 6px 0;
+}
+
+.markdown-content code {
+  background-color: var(--black-700);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.9em;
+  color: var(--orange-400);
+}
+
+.markdown-content pre {
+  background-color: var(--black-700);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--black-600);
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+  color: var(--silver-100);
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid var(--blue-700);
+  margin: 16px 0;
+  padding: 8px 16px;
+  background-color: var(--black-700);
+  color: var(--silver-300);
+}
+
+/* Add styles for scrollbar in markdown content */
+.markdown-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.markdown-content::-webkit-scrollbar-track {
+  background: var(--black-700);
+  border-radius: 4px;
+}
+
+.markdown-content::-webkit-scrollbar-thumb {
+  background: var(--blue-700);
+  border-radius: 4px;
+}
+
+.markdown-content::-webkit-scrollbar-thumb:hover {
+  background: var(--blue-600);
+}

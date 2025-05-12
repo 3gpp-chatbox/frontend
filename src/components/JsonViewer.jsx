@@ -17,6 +17,7 @@ import { highlightMermaidLine } from "../utils/ClickCodeHighlighter";
 import { highlightJsonLine } from "../utils/ClickCodeHighlighter";
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
+import ReactMarkdown from 'react-markdown';
 
 function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
   const [data, setData] = useState(null);
@@ -35,6 +36,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   });
   const [showPdf, setShowPdf] = useState(false);
   const [showReference, setShowReference] = useState(false);
+  const [markdownContent, setMarkdownContent] = useState("");
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
@@ -468,6 +470,32 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     setShowReference(false);
   };
 
+  // Add function to load markdown content
+  const loadMarkdownContent = async () => {
+    try {
+      const response = await fetch('/src/data/Registration procedure for mobility and periodic registration update_original_context_20250505_144017.md');
+      if (!response.ok) {
+        throw new Error('Failed to load markdown content');
+      }
+      const content = await response.text();
+      setMarkdownContent(content);
+    } catch (error) {
+      console.error('Error loading markdown content:', error);
+      setNotification({
+        show: true,
+        message: 'Failed to load reference content',
+        type: 'error'
+      });
+    }
+  };
+
+  // Load markdown content when Reference Viewer is shown
+  useEffect(() => {
+    if (showReference) {
+      loadMarkdownContent();
+    }
+  }, [showReference]);
+
   return (
     <div className="section-container">
       <div className="section-header">
@@ -533,7 +561,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
           </div>
         ) : showReference ? (
           <div className="reference-viewer">
-            <div className="placeholder-text">Reference Viewer Content</div>
+            <div className="markdown-content">
+              <ReactMarkdown>{markdownContent}</ReactMarkdown>
+            </div>
           </div>
         ) : selectedProcedure ? (
           data ? (
