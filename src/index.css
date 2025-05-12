@@ -484,37 +484,50 @@ button {
   font-size: 14px;
   background-color: var(--blue-700);
   color: var(--silver-100);
-  border: none;
+  border: 1px solid transparent;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: center;
 }
 
-.toggle-button:hover {
+.toggle-button:hover:not(.active) {
   background-color: var(--blue-600);
 }
 
-.toggle-button:active {
-  transform: translateY(1px);
+.toggle-button.active {
+  background-color: var(--orange-600);
+  border-color: var(--orange-700);
+  color: white;
+}
+
+.toggle-button.active:hover {
+  background-color: var(--orange-500);
 }
 
 .save-button {
-  background-color: var(--blue-700);
-  color: var(--silver-100);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
   padding: 6px 12px;
   font-size: 14px;
+  background-color: var(--blue-700);
+  color: var(--silver-100);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: center;
 }
 
-.save-button:hover {
-  background-color: var(--orange-600);
+.save-button:hover:not(.active) {
+  background-color: var(--blue-600);
 }
 
 .save-button.active {
   background-color: var(--orange-600);
+  border-color: var(--orange-700);
 }
 
 .save-button:disabled {
@@ -1928,4 +1941,19 @@ pre.code-block {
   display: inline-block;
   width: 100%;
   border-radius: 4px;
+}
+
+/* JsonViewer button container styles */
+.button-container {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--black-700);
+  border-bottom: 1px solid var(--blue-700);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.button-container button {
+  flex: 0 1 auto;
 }

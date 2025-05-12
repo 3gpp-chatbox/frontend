@@ -281,9 +281,10 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
           if (!edge.classList.contains("selected")) {
             const pathEl = edge.querySelector("path");
             if (pathEl) {
-              pathEl.style.strokeWidth = isHover ? "3px" : "";
+              pathEl.style.strokeWidth = isHover ? "10px" : "";
             }
-            edge.style.opacity = isHover ? "0.8" : "";
+            edge.style.opacity = isHover ? "1" : "";
+            edge.style.color = isHover ? "red" : "";
           }
         };
 
@@ -408,7 +409,7 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
   const styles = useMemo(
     () => `
     .node.selected rect {
-      stroke: #f97316 !important;
+      stroke:rgb(252, 106, 2) !important;
       stroke-width: 3px !important;
     }
 
@@ -420,9 +421,12 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
     .node:hover rect {
       filter: brightness(1.1);
     }
+    
+
 
     .edgePath:hover path {
       stroke-width: 4px !important;
+      stroke: rgb(252, 106, 2) !important;
     }
   `,
     [],

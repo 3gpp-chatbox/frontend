@@ -1,4 +1,5 @@
 import { highlightMermaid } from './MermaidHighlighter';
+import { highlightJson } from './jsonHighlighter';
 
 export const highlightMermaidLine = (code, elementId, elementType) => {
     if (!code || !elementId) {
@@ -78,4 +79,63 @@ export const highlightMermaidLine = (code, elementId, elementType) => {
     }
     
     return highlightedLines.join('\n');
-  };
+};
+
+export const highlightJsonLine = (code, elementId, elementType) => {
+    if (!code || !elementId) {
+      console.log("No JSON code or elementId provided");
+      return(code);
+    }
+    
+    console.log("Highlighting JSON for:", { elementId, elementType });
+    
+    try {
+      // Parse the JSON to work with the structure
+      const jsonData = JSON.parse(code);
+      const lines = code.split('\n');
+      let highlightedLines = [];
+      let inTargetBlock = false;
+      let bracketCount = 0;
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+        
+        // Track object/array nesting level
+        if (trimmedLine.includes('{') || trimmedLine.includes('[')) bracketCount++;
+        if (trimmedLine.includes('}') || trimmedLine.includes(']')) bracketCount--;
+        
+        // Check if this line contains our target
+        if (elementType === 'node') {
+          if (line.includes(`"id": "${elementId}"`) || 
+              (line.includes('"nodes"') && jsonData.nodes?.some(node => node.id === elementId))) {
+            inTargetBlock = true;
+          }
+        } else if (elementType === 'edge') {
+          if (line.includes(`"description": "${elementId}"`) || 
+              (line.includes('"edges"') && jsonData.edges?.some(edge => edge.description === elementId))) {
+            inTargetBlock = true;
+          }
+        }
+        
+        // Highlight the line if we're in the target block
+        if (inTargetBlock) {
+          highlightedLines.push(`<span class="orange-highlight">${highlightJson(line)}</span>`);
+        } else {
+          highlightedLines.push(highlightJson(line));
+        }
+        
+        // Check if we've reached the end of our target block
+        if (inTargetBlock && bracketCount === 0) {
+          inTargetBlock = false;
+        }
+      }
+      
+      return highlightedLines.join('\n');
+    } catch (error) {
+      console.error("Error highlighting JSON:", error);
+      return highlightJson(code);
+    }
+};
+
+

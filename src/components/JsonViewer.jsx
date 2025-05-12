@@ -14,6 +14,7 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
 import { highlightMermaidLine } from "../utils/ClickCodeHighlighter";
+import { highlightJsonLine } from "../utils/ClickCodeHighlighter";
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 
@@ -33,6 +34,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     type: "",
   });
   const [showPdf, setShowPdf] = useState(false);
+  const [showReference, setShowReference] = useState(false);
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
@@ -319,7 +321,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     const line = button.closest(".code-line");
     if (!line) return;
 
-    const lineNumber = parseInt(line.dataset.line);
     const level = parseInt(line.dataset.level);
 
     // Toggle fold state
@@ -411,7 +412,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
 
   // Add function to handle PDF viewer toggle
   const handleDocumentViewerClick = () => {
-    setShowPdf(!showPdf);
     if (isEditing) {
       setNotification({
         show: true,
@@ -420,6 +420,52 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
       });
       return;
     }
+    setShowPdf(!showPdf);
+    setShowReference(false);
+    setShowMermaid(false);
+  };
+
+  // Add function to handle Reference viewer toggle
+  const handleReferenceViewerClick = () => {
+    if (isEditing) {
+      setNotification({
+        show: true,
+        message: "Please save or revert your changes first",
+        type: "warning",
+      });
+      return;
+    }
+    setShowReference(!showReference);
+    setShowPdf(false);
+    setShowMermaid(false);
+  };
+
+  const handleMermaidViewerClick = () => {
+    if (isEditing) {
+      setNotification({
+        show: true,
+        message: "Please save or revert your changes first",
+        type: "warning",
+      });
+      return;
+    }
+    setShowMermaid(true);
+    setShowPdf(false);
+    setShowReference(false);
+  };
+
+  const handleJsonViewerClick = () => {
+    if (isEditing) {
+      setNotification({
+        show: true,
+        message: "Please save or revert your changes first",
+        type: "warning",
+      });
+      return;
+    }
+    setShowMermaid(false);
+    setShowPdf(false);
+    setShowReference(false);
   };
 
   return (
@@ -431,44 +477,47 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
               Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
               {isEditing && <span className="editing-indicator"> (Editing)</span>}
             </span>
-            <div className="viewer-controls">
-              <button
-                className="toggle-button"
-                onClick={() => {
-                  if (isEditing) {
-                    setNotification({
-                      show: true,
-                      message: "Please save or revert your changes first",
-                      type: "warning",
-                    });
-                    return;
-                  }
-                  setShowPdf(false);
-                  setShowMermaid(!showMermaid);
-                }}
-                title={showMermaid ? "View JSON" : "View Mermaid"}
-              >
-                {showMermaid ? "Show JSON" : "Show Mermaid"}
-              </button>
-              <button
-                className={`toggle-button ${showPdf ? 'active' : ''}`}
-                onClick={handleDocumentViewerClick}
-                title="View Document"
-              >
-                Document Viewer
-              </button>
-              {showMermaid && !showPdf && (
-                <button
-                  className={`save-button ${isEditing ? "active" : ""}`}
-                  onClick={handleSaveChanges}
-                  disabled={!isEditing}
-                >
-                  Save Changes
-                </button>
-              )}
-            </div>
           </div>
         </div>
+      </div>
+      <div className="button-container">
+        <button
+          className={`toggle-button ${showMermaid ? 'active' : ''}`}
+          onClick={handleMermaidViewerClick}
+          title="View Mermaid"
+        >
+          Show Mermaid
+        </button>
+        <button
+          className={`toggle-button ${!showMermaid && !showPdf && !showReference ? 'active' : ''}`}
+          onClick={handleJsonViewerClick}
+          title="View JSON"
+        >
+          Show JSON
+        </button>
+        <button
+          className={`toggle-button ${showPdf ? 'active' : ''}`}
+          onClick={handleDocumentViewerClick}
+          title="View Document"
+        >
+          Document Viewer
+        </button>
+        <button
+          className={`toggle-button ${showReference ? 'active' : ''}`}
+          onClick={handleReferenceViewerClick}
+          title="View References"
+        >
+          Reference Viewer
+        </button>
+        {showMermaid && !showPdf && !showReference && (
+          <button
+            className={`save-button ${isEditing ? "active" : ""}`}
+            onClick={handleSaveChanges}
+            disabled={!isEditing}
+          >
+            Save Changes
+          </button>
+        )}
       </div>
       {notification.show && (
         <div className={`notification ${notification.type}`}>
@@ -481,6 +530,10 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
             <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
               <Viewer fileUrl="./src/data/TS 24.501.pdf" />
             </Worker>
+          </div>
+        ) : showReference ? (
+          <div className="reference-viewer">
+            <div className="placeholder-text">Reference Viewer Content</div>
           </div>
         ) : selectedProcedure ? (
           data ? (
@@ -525,9 +578,11 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}
                   dangerouslySetInnerHTML={{
-                    __html: highlightJson(jsonContent),
+                    __html: highlightJson(jsonContent, highlightedElement)
+
                   }}
                   onClick={handleFold}
+                  ref={codeContentRef}
                 />
               )}
             </pre>
