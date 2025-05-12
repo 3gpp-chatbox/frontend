@@ -75,32 +75,26 @@ if (error) {
 }
 
 return (
-  <div className="section-container">
-    <div className="section-header">
-      <span>Procedures</span>
-    </div>
-    <div className="content-area">
-      {isLoading ? (
-        <div className="placeholder-text">Loading procedures...</div>
-      ) : procedureList.length === 0 ? (
-        <div className="placeholder-text">No procedures available</div>
-      ) : (
-        <div className="procedure-list">
-          {procedureList.map((procedure) => (
+  <div className="menu-bar">
+    <div className="menu-item"> 
+      <span className="menu-item-text">Procedures</span>
+      <div className="dropdown-content">
+        {isLoading ? (
+          <div className="placeholder-text">Loading procedures...</div>
+        ) : procedureList.length === 0 ? (
+          <div className="placeholder-text">No procedures available</div>
+        ) : (
+          procedureList.map((procedure) => (
             <div 
               key={procedure.id}
-              className={`procedure-item ${
-                selectedProcedure?.id === procedure.id ? "active" : ""
-              }`}
+              className="dropdown-item"
               onClick={() => handleProcedureClick(procedure)}
             >
-              <div className="procedure-header">
-                <span>{procedure.name}</span>
-              </div>
+              {procedure.name}
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   </div>
 );

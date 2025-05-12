@@ -76,10 +76,14 @@ function Description({ procedure }) {
   };
 
   return (
-    <div>
+    <div className="description-panel">
+              <div className="section-header">
+            <span>Details</span>
+            </div>
       {procedure ? (
         <>
-          <div className="detail-sections-container">
+          {/* <div className="detail-sections-container"> */}
+          <div>
             <div className="detail-section">
               <h3>Document Information</h3>
               <div className="detail-item">
@@ -95,8 +99,12 @@ function Description({ procedure }) {
               <div className="detail-item">
                 <text className="detail-label">Status:</text>
                 <text className="detail-value">{procedure.edited ? "Edited" : "Original"}</text>
+              </div>
+              <div className="detail-item">
                 <text className="detail-label">Model:</text>
                 <text className="detail-value">{procedure.model_name || "N/A"}</text>
+              </div>
+              <div className="detail-item">
                 <text className="detail-label">Method:</text>
                 <text className="detail-value">{procedure.extraction_method || "N/A"}</text>
               </div>
