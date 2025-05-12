@@ -507,6 +507,17 @@ button {
   background-color: var(--orange-500);
 }
 
+.toggle-button:disabled {
+  background-color: var(--black-600);
+  color: var(--silver-500);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.toggle-button:disabled:hover {
+  background-color: var(--black-600);
+}
+
 .save-button {
   padding: 6px 12px;
   font-size: 14px;

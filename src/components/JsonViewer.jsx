@@ -24,7 +24,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
   const [originalMermaidGraph, setOriginalMermaidGraph] = useState("");
-  const [showMermaid, setShowMermaid] = useState(true);
+  const [showMermaid, setShowMermaid] = useState(false);
   const [jsonContent, setJsonContent] = useState("");
   const [isWrapped, setIsWrapped] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -38,6 +38,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   const [showReference, setShowReference] = useState(false);
   const [markdownContent, setMarkdownContent] = useState("");
   const [selectedMarkdownElement, setSelectedMarkdownElement] = useState(null);
+  const [activeView, setActiveView] = useState(null);
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
@@ -410,36 +411,17 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
-  // Add function to handle PDF viewer toggle
-  const handleDocumentViewerClick = () => {
-    if (isEditing) {
-      setNotification({
-        show: true,
-        message: "Please save or revert your changes first",
-        type: "warning",
-      });
-      return;
+  // Add effect to show Mermaid when procedure is selected
+  useEffect(() => {
+    if (selectedProcedure) {
+      setShowMermaid(true);
+      setShowPdf(false);
+      setShowReference(false);
+      setActiveView('mermaid');
     }
-    setShowPdf(!showPdf);
-    setShowReference(false);
-    setShowMermaid(false);
-  };
+  }, [selectedProcedure]);
 
-  // Add function to handle Reference viewer toggle
-  const handleReferenceViewerClick = () => {
-    if (isEditing) {
-      setNotification({
-        show: true,
-        message: "Please save or revert your changes first",
-        type: "warning",
-      });
-      return;
-    }
-    setShowReference(!showReference);
-    setShowPdf(false);
-    setShowMermaid(false);
-  };
-
+  // Update the handler functions to use activeView
   const handleMermaidViewerClick = () => {
     if (isEditing) {
       setNotification({
@@ -452,6 +434,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     setShowMermaid(true);
     setShowPdf(false);
     setShowReference(false);
+    setActiveView('mermaid');
   };
 
   const handleJsonViewerClick = () => {
@@ -466,6 +449,37 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     setShowMermaid(false);
     setShowPdf(false);
     setShowReference(false);
+    setActiveView('json');
+  };
+
+  const handleDocumentViewerClick = () => {
+    if (isEditing) {
+      setNotification({
+        show: true,
+        message: "Please save or revert your changes first",
+        type: "warning",
+      });
+      return;
+    }
+    setShowPdf(true);
+    setShowReference(false);
+    setShowMermaid(false);
+    setActiveView('pdf');
+  };
+
+  const handleReferenceViewerClick = () => {
+    if (isEditing) {
+      setNotification({
+        show: true,
+        message: "Please save or revert your changes first",
+        type: "warning",
+      });
+      return;
+    }
+    setShowReference(true);
+    setShowPdf(false);
+    setShowMermaid(false);
+    setActiveView('reference');
   };
 
   // Add function to load markdown content
@@ -535,34 +549,38 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
       </div>
       <div className="button-container">
         <button
-          className={`toggle-button ${showMermaid ? 'active' : ''}`}
+          className={`toggle-button ${activeView === 'mermaid' ? 'active' : ''}`}
           onClick={handleMermaidViewerClick}
           title="View Mermaid"
+          disabled={!selectedProcedure}
         >
           Show Mermaid
         </button>
         <button
-          className={`toggle-button ${!showMermaid && !showPdf && !showReference ? 'active' : ''}`}
+          className={`toggle-button ${activeView === 'json' ? 'active' : ''}`}
           onClick={handleJsonViewerClick}
           title="View JSON"
+          disabled={!selectedProcedure}
         >
           Show JSON
         </button>
         <button
-          className={`toggle-button ${showPdf ? 'active' : ''}`}
+          className={`toggle-button ${activeView === 'pdf' ? 'active' : ''}`}
           onClick={handleDocumentViewerClick}
           title="View Document"
+          disabled={!selectedProcedure}
         >
           Document Viewer
         </button>
         <button
-          className={`toggle-button ${showReference ? 'active' : ''}`}
+          className={`toggle-button ${activeView === 'reference' ? 'active' : ''}`}
           onClick={handleReferenceViewerClick}
           title="View References"
+          disabled={!selectedProcedure}
         >
           Reference Viewer
         </button>
-        {showMermaid && !showPdf && !showReference && (
+        {activeView === 'mermaid' && !activeView === 'pdf' && !activeView === 'reference' && (
           <button
             className={`save-button ${isEditing ? "active" : ""}`}
             onClick={handleSaveChanges}
@@ -578,13 +596,13 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         </div>
       )}
       <div className="json-viewer-content">
-        {showPdf ? (
+        {activeView === 'pdf' ? (
           <div className="pdf-viewer">
             <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
               <Viewer fileUrl="./src/data/TS 24.501.pdf" />
             </Worker>
           </div>
-        ) : showReference ? (
+        ) : activeView === 'reference' ? (
           <div className="reference-viewer">
             <div className="markdown-content">
               <InteractiveMarkdown 
@@ -596,7 +614,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         ) : selectedProcedure ? (
           data ? (
             <pre className="json-content">
-              {showMermaid ? (
+              {activeView === 'mermaid' ? (
                 <div className="mermaid-editor">
                   <div
                     ref={(el) => {
