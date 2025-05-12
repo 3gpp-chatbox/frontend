@@ -1,15 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { fetchProcedure, insertProcedureGraphChanges } from "../API/api_calls";
+import { fetchProcedure } from "../API/api_calls";
 import {
   JsonToMermaid,
   defaultMermaidConfig,
 } from "../functions/jsonToMermaid";
-import {
-  validateMermaidCode,
-  convertMermaidToJson,
-} from "../functions/mermaidToJson";
-import { validateGraph } from "../functions/schema_validation";
 import ConfirmationDialog from "./ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
@@ -18,6 +13,7 @@ import { highlightMermaidLine } from "../utils/MermaidHighlighter";
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import InteractiveMarkdown from '../utils/InteractiveMarkdown';
+import { createSaveHandlers } from '../utils/SaveChanges';
 
 function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
   const [data, setData] = useState(null);
@@ -48,6 +44,30 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
 
   // Add ref for the code content
   const codeContentRef = useRef(null);
+
+  // Create save handlers
+  const {
+    handleSaveClick,
+    handleConfirmSaveClick,
+    handleRevertChangesClick,
+    handleContinueEditingClick
+  } = createSaveHandlers({
+    mermaidGraph,
+    selectedProcedure,
+    setShowConfirmation,
+    setNotification,
+    setOriginalMermaidGraph,
+    setData,
+    setOriginalData,
+    setJsonContent,
+    isUserEditing,
+    setIsEditing,
+    onProcedureUpdate,
+    onMermaidCodeChange,
+    originalMermaidGraph,
+    originalData,
+    setMermaidGraph
+  });
 
   // Add effect to update view when procedure data changes
   useEffect(() => {
@@ -178,163 +198,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
       onMermaidCodeChange(newCode);
     }
   };
-
-  const handleSaveChanges = () => {
-    try {
-      // Get current direction or default to LR
-      const directionMatch = mermaidGraph.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
-      if (!directionMatch) {
-        // If no direction specified, prepend LR direction
-        const lines = mermaidGraph.split('\n');
-        const firstLine = lines[0].trim();
-        if (!firstLine.startsWith('flowchart')) {
-          setMermaidGraph(`flowchart LR\n${mermaidGraph}`);
-        } else {
-          throw new Error('Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)');
-        }
-      }
-
-      setNotification({
-        show: true,
-        message: "Validating structure...",
-        type: "info",
-      });
-
-      // Convert to JSON and validate structure
-      const jsonData = convertMermaidToJson(mermaidGraph);
-      const validationResult = validateGraph(jsonData);
-
-      if (validationResult.valid) {
-        setNotification({
-          show: true,
-          message: "Structure validation successful",
-          type: "success",
-        });
-        setTimeout(() => {
-          setShowConfirmation(true);
-        }, 1000);
-      } else {
-        throw new Error(
-          `Structural validation failed: ${validationResult.error}`,
-        );
-      }
-    } catch (error) {
-      setNotification({
-        show: true,
-        message: error.message,
-        type: "error",
-      });
-    }
-  };
-
-  const handleConfirmSave = async () => {
-    setShowConfirmation(false);
-    setNotification({
-      show: true,
-      message: "Saving changes...",
-      type: "info",
-    });
-
-    try {
-      // First validate the Mermaid code
-      if (!validateMermaidCode(mermaidGraph)) {
-        throw new Error("Invalid Mermaid syntax");
-      }
-
-      // Convert to JSON and save
-      const graphData = convertMermaidToJson(mermaidGraph);
-      const result = await insertProcedureGraphChanges(selectedProcedure.id,{nodes:graphData.nodes,edges:graphData.edges});
-
-      if (!result) {
-        throw new Error("Failed to save changes");
-      }
-
-      // Update both Mermaid and JSON views
-      setOriginalMermaidGraph(mermaidGraph);
-      setData(result);
-      setOriginalData(result);
-      
-      // Only show the graph data in JSON view
-      const updatedGraphData = result.edited_graph || result.original_graph;
-      setJsonContent(JSON.stringify(updatedGraphData, null, 2));
-      
-      isUserEditing.current = false;
-      setIsEditing(false);
-
-      // Update parent component with new data
-      onProcedureUpdate(result);
-
-      setNotification({
-        show: true,
-        message: "Changes saved successfully",
-        type: "success",
-      });
-
-      // Update the diagram
-      onMermaidCodeChange(mermaidGraph);
-    } catch (error) {
-      setNotification({
-        show: true,
-        message: `Failed to save changes: ${error.message}`,
-        type: "error",
-      });
-    }
-  };
-
-  const handleContinueEditing = () => {
-    setShowConfirmation(false);
-  };
-
-  const handleRevertChanges = () => {
-    setMermaidGraph(originalMermaidGraph);
-    setData(originalData);
-    
-    // Only show the graph data in JSON view
-    const graphData = originalData.edited_graph || originalData.original_graph;
-    setJsonContent(JSON.stringify(graphData, null, 2));
-    
-    isUserEditing.current = false;
-    setIsEditing(false);
-    setShowConfirmation(false);
-    onMermaidCodeChange(originalMermaidGraph);
-    setNotification({
-      show: true,
-      message: "Changes reverted to original",
-      type: "info",
-    });
-  };
-
-  const cleanMermaidCode = (code) => {
-    return code
-      .split("\n")
-      .filter(
-        (line) => 
-          // Keep flowchart direction lines
-          (line.startsWith('flowchart') || line.startsWith('graph')) ||
-          // Filter out only init and class definitions
-          (!line.includes("%%{init:") && !line.includes("classDef"))
-      )
-      .join("\n");
-  };
-
-  // Handle fold/unfold
-  const handleFold = useCallback((event) => {
-    const button = event.target.closest('.fold-button');
-    if (!button) return;
-
-    const line = button.closest('.code-line');
-    if (!line) return;
-
-    const level = parseInt(line.dataset.level);
-    const isFolded = button.textContent === '▼';
-    button.textContent = isFolded ? '▶' : '▼';
-
-    let current = line.nextElementSibling;
-    while (current && parseInt(current.dataset.level) > level) {
-      current.style.display = isFolded ? 'none' : 'flex';
-      current = current.nextElementSibling;
-    }
-  }, []);
 
   // Add effect to scroll to highlighted element
   useEffect(() => {
@@ -535,6 +398,38 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     // - Updating related components
   };
 
+  const cleanMermaidCode = (code) => {
+    return code
+      .split("\n")
+      .filter(
+        (line) => 
+          // Keep flowchart direction lines
+          (line.startsWith('flowchart') || line.startsWith('graph')) ||
+          // Filter out only init and class definitions
+          (!line.includes("%%{init:") && !line.includes("classDef"))
+      )
+      .join("\n");
+  };
+
+  // Handle fold/unfold
+  const handleFold = useCallback((event) => {
+    const button = event.target.closest('.fold-button');
+    if (!button) return;
+
+    const line = button.closest('.code-line');
+    if (!line) return;
+
+    const level = parseInt(line.dataset.level);
+    const isFolded = button.textContent === '▼';
+    button.textContent = isFolded ? '▶' : '▼';
+
+    let current = line.nextElementSibling;
+    while (current && parseInt(current.dataset.level) > level) {
+      current.style.display = isFolded ? 'none' : 'flex';
+      current = current.nextElementSibling;
+    }
+  }, []);
+
   return (
     <div className="section-container">
       <div className="section-header">
@@ -580,10 +475,10 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         >
           Reference Viewer
         </button>
-        {activeView === 'mermaid' && !activeView === 'pdf' && !activeView === 'reference' && (
+        {activeView === 'mermaid' && (
           <button
             className={`save-button ${isEditing ? "active" : ""}`}
-            onClick={handleSaveChanges}
+            onClick={handleSaveClick}
             disabled={!isEditing}
           >
             Save Changes
@@ -689,9 +584,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         show={showConfirmation}
         title="Save Changes?"
         message="Are you sure you want to save the changes you made to the JSON code?"
-        onConfirm={handleConfirmSave}
-        onContinueEditing={handleContinueEditing}
-        onRevert={handleRevertChanges}
+        onConfirm={handleConfirmSaveClick}
+        onContinueEditing={handleContinueEditingClick}
+        onRevert={handleRevertChangesClick}
         showContinueEditing={true}
         showRevert={true}
       />
