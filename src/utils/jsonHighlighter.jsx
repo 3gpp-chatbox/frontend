@@ -1,4 +1,4 @@
-export const highlightJson = (json) => {
+export const highlightJson = (json, highlightedElement) => {
     if (!json) return "";
   
     // Parse and re-stringify to ensure proper formatting
@@ -13,19 +13,59 @@ export const highlightJson = (json) => {
     let result = [];
     let indentLevel = 0;
     let foldable = new Set(); // Track which lines can be folded
+    let inHighlightBlock = false;
+    let bracketCount = 0;
+    let currentObjectStart = -1;
+    let targetObjectStart = -1;
   
-    // First pass: identify foldable lines
+    // First pass: identify foldable lines and object boundaries
     lines.forEach((line, i) => {
       const trimmedLine = line.trim();
       if (trimmedLine.endsWith("{") || trimmedLine.endsWith("[")) {
         foldable.add(i);
+        if (trimmedLine.endsWith("{")) {
+          currentObjectStart = i;
+        }
+      }
+
+      // Check if this line contains our target identifier
+      if (highlightedElement) {
+        if (highlightedElement.type === 'node') {
+          const nodeMatch = highlightedElement.id.match(/flowchart-([A-Z0-9]+)-/);
+          const nodeId = nodeMatch ? nodeMatch[1] : null;
+          
+          if (nodeId && line.includes(`"id": "${nodeId}"`)) {
+            targetObjectStart = currentObjectStart;
+          }
+        } else if (highlightedElement.type === 'edge') {
+          if (line.includes(`"description": "${highlightedElement.id}"`)) {
+            targetObjectStart = currentObjectStart;
+          }
+        }
       }
     });
   
-    // Second pass: generate HTML with fold buttons
+    // Reset bracket count for second pass
+    bracketCount = 0;
+  
+    // Second pass: generate HTML with fold buttons and highlighting
     lines.forEach((line, i) => {
       const indent = line.match(/^\s*/)[0].length;
       indentLevel = Math.floor(indent / 2);
+      const trimmedLine = line.trim();
+  
+      // Track object/array nesting level
+      const openBrackets = (trimmedLine.match(/[{\[]/g) || []).length;
+      const closeBrackets = (trimmedLine.match(/[}\]]/g) || []).length;
+      
+      // Start highlighting if we're at the target object's opening bracket
+      if (i === targetObjectStart) {
+        inHighlightBlock = true;
+        bracketCount = 0;
+      }
+
+      // Update bracket count
+      bracketCount += openBrackets - closeBrackets;
   
       let lineHtml = line
         .replace(
@@ -54,15 +94,24 @@ export const highlightJson = (json) => {
         );
   
       // Add fold button if line is foldable
-      if (foldable.has(i)) {
-        const foldButton = `<button class="fold-button" data-line="${i}">▼</button>`;
+      const lineContent = foldable.has(i)
+        ? `<button class="fold-button" data-line="${i}">▼</button>${lineHtml}`
+        : lineHtml;
+  
+      // Wrap the line in a highlight span if we're in a highlight block
+      if (inHighlightBlock) {
         result.push(
-          `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${foldButton}${lineHtml}</div>`,
+          `<div class="code-line orange-highlight" data-line="${i}" data-level="${indentLevel}">${lineContent}</div>`,
         );
       } else {
         result.push(
-          `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${lineHtml}</div>`,
+          `<div class="code-line" data-line="${i}" data-level="${indentLevel}">${lineContent}</div>`,
         );
+      }
+  
+      // Check if we've reached the end of our highlight block
+      if (inHighlightBlock && bracketCount === 0 && closeBrackets > 0) {
+        inHighlightBlock = false;
       }
     });
   

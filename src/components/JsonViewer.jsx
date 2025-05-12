@@ -14,7 +14,7 @@ import ConfirmationDialog from "./ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
 import { extractElementFromClick } from "../utils/ClickCodeHighlighter";
-import { highlightMermaidLine } from "../utils/ClickDiagramHighlighter";
+import { highlightMermaidLine } from "../utils/MermaidHighlighter";
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import InteractiveMarkdown from '../utils/InteractiveMarkdown';
