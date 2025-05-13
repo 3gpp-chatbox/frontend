@@ -30,11 +30,16 @@ export const highlightJson = (json, highlightedElement) => {
 
       // Check if this line contains our target identifier
       if (highlightedElement) {
+        console.log("Checking element:", highlightedElement);
         if (highlightedElement.type === 'node') {
-          const nodeMatch = highlightedElement.id.match(/flowchart-([A-Z0-9]+)-/);
-          const nodeId = nodeMatch ? nodeMatch[1] : null;
+          // Use the node's text property for matching instead of the flowchart ID
+          const nodeText = highlightedElement.text;
+          console.log("Looking for node text:", nodeText);
+          console.log("Current line:", line);
           
-          if (nodeId && line.includes(`"id": "${nodeId}"`)) {
+          // Match against the node's text in the JSON
+          if (line.includes(`"id": "${nodeText}"`) || line.includes(`"text": "${nodeText}"`)) {
+            console.log("Found matching node in line!");
             targetObjectStart = currentObjectStart;
           }
         } else if (highlightedElement.type === 'edge') {
