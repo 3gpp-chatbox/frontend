@@ -3,12 +3,32 @@ import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
 import ProcedureList from "./components/ProcedureList";
 import Description from "./components/Descriptions";
+import { mapElementToReference } from "./utils/referenceMapper";
 
 function App() {
   const [mermaidCode, setMermaidCode] = useState(null);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
   const [procedureData, setProcedureData] = useState(null);
   const [highlightedElement, setHighlightedElement] = useState(null);
+  const [highlightedSection, setHighlightedSection] = useState(null);
+  const [markdownContent, setMarkdownContent] = useState("");
+
+  // Load markdown content when component mounts
+  useEffect(() => {
+    const loadMarkdownContent = async () => {
+      try {
+        const response = await fetch('/src/data/Registration procedure for mobility and periodic registration update_original_context_20250505_144017.md');
+        if (!response.ok) {
+          throw new Error('Failed to load markdown content');
+        }
+        const content = await response.text();
+        setMarkdownContent(content);
+      } catch (error) {
+        console.error('Error loading markdown content:', error);
+      }
+    };
+    loadMarkdownContent();
+  }, []);
 
   const handleProcedureSelect = (procedure) => {
     console.log("Selected procedure:", procedure);
@@ -21,6 +41,7 @@ function App() {
     setMermaidCode(newCode);
     if (newCode !== mermaidCode) {
       setHighlightedElement(null);
+      setHighlightedSection(null);
     }
   };
 
@@ -35,10 +56,20 @@ function App() {
   const handleElementClick = (element) => {
     console.log("Diagram element clicked:", element);
     setHighlightedElement(element);
+    
+    // Map the element to its reference section
+    if (element && markdownContent) {
+      const referenceSection = mapElementToReference(markdownContent, element);
+      console.log("Found reference section:", referenceSection);
+      setHighlightedSection(referenceSection);
+    } else {
+      setHighlightedSection(null);
+    }
   };
 
   const handleEditorFocus = () => {
     setHighlightedElement(null);
+    setHighlightedSection(null);
   };
 
   useEffect(() => {
@@ -128,6 +159,8 @@ function App() {
               selectedProcedure={selectedProcedure}
               onProcedureUpdate={handleProcedureUpdate}
               highlightedElement={highlightedElement}
+              highlightedSection={highlightedSection}
+              markdownContent={markdownContent}
               onEditorFocus={handleEditorFocus}
             />
             <div className="resizer"></div>
@@ -138,6 +171,7 @@ function App() {
             <FlowDiagram 
               mermaidCode={mermaidCode} 
               onElementClick={handleElementClick}
+              highlightedElement={highlightedElement}
             />
           </div>
         </div>

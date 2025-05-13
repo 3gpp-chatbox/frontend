@@ -5,63 +5,114 @@
 export const mapElementToReference = (content, element) => {
   if (!content || !element) return null;
 
-  let searchText = '';
-  if (element.type === 'node') {
-    searchText = element.text;
-  } else if (element.type === 'edge') {
-    searchText = element.label;
+  console.log("Mapping element to reference:", element);
+
+  let sectionRef = '';
+  let textRef = '';
+  
+  const id = element.id || '';
+  
+  // Extract section_ref and text_ref
+  const sectionMatch = id.match(/\[section_ref:\s*([^\]]+)\]/);
+  if (sectionMatch) {
+    sectionRef = sectionMatch[1].trim();
   }
 
-  if (!searchText) return null;
+  const textMatch = id.match(/\[text_ref:\s*([^\]]+)\]/);
+  if (textMatch) {
+    textRef = textMatch[1].trim().replace(/^\.\.\./, '').replace(/\.\.\.$/g, '');
+  }
 
-  // Clean up search text
-  searchText = searchText.toLowerCase().trim();
+  console.log("Extracted refs:", { sectionRef, textRef });
 
-  // Split content into lines to find the exact position
   const lines = content.split('\n');
   let foundIndex = -1;
   let contextStart = 0;
   let contextEnd = 0;
 
-  // Find the most relevant section
+  // First find the base section (without -a, -b, -c)
+  const baseSection = sectionRef.replace(/-[a-z]$/, '');
+  const subSection = sectionRef.match(/-([a-z])$/)?.[1];
+  
+  console.log("Looking for base section:", baseSection, "subsection:", subSection);
+
+  // Find the section start
+  let sectionStartIndex = -1;
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].toLowerCase();
-    
-    // Check for section headers that might contain our search text
-    if (line.includes(searchText) || 
-        (line.startsWith('#') && line.includes(searchText.replace(/[^a-z0-9\s]/g, '')))) {
-      foundIndex = i;
-      
-      // Find the context boundaries (start of the section)
-      for (let j = i; j >= 0; j--) {
-        if (lines[j].startsWith('#')) {
-          contextStart = j;
-          break;
-        }
-      }
-      
-      // Find the end of the section
-      for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].startsWith('#')) {
-          contextEnd = j - 1;
-          break;
-        }
-        if (j === lines.length - 1) {
-          contextEnd = j;
-        }
-      }
-      
+    const line = lines[i];
+    if (line.includes(baseSection)) {
+      sectionStartIndex = i;
+      console.log("Found base section at line:", i + 1, "Content:", line);
       break;
     }
   }
 
-  if (foundIndex === -1) return null;
+  if (sectionStartIndex !== -1) {
+    // Clean up text_ref for searching
+    const searchText = textRef
+      .replace(/\.\.\./g, '')
+      .toLowerCase()
+      .trim();
+    
+    console.log("Searching for text:", searchText);
 
-  return {
-    lineNumber: foundIndex + 1, // Convert to 1-based index
+    // Search within the section
+    let sectionEnd = lines.length;
+    for (let i = sectionStartIndex + 1; i < lines.length; i++) {
+      if (lines[i].match(/^#+\s/)) {
+        sectionEnd = i;
+        break;
+      }
+    }
+
+    // Look for the subsection and text
+    for (let i = sectionStartIndex; i < sectionEnd; i++) {
+      const line = lines[i].toLowerCase();
+      
+      // If we have a subsection, look for it specifically
+      if (subSection) {
+        if (line.includes(`${subSection})`)) {
+          foundIndex = i;
+          console.log("Found subsection at line:", i + 1, "Content:", lines[i]);
+          break;
+        }
+      }
+      // Otherwise look for the text
+      else if (line.includes(searchText)) {
+        foundIndex = i;
+        console.log("Found text at line:", i + 1, "Content:", lines[i]);
+        break;
+      }
+    }
+
+    // If we still haven't found the specific line, use section start
+    if (foundIndex === -1) {
+      foundIndex = sectionStartIndex;
+      console.log("Using section start as fallback");
+    }
+
+    // Set context boundaries
+    contextStart = sectionStartIndex;
+    contextEnd = sectionEnd - 1;
+  }
+
+  if (sectionStartIndex === -1) {
+    console.warn("Could not find section:", sectionRef);
+    return null;
+  }
+
+  const result = {
+    lineNumber: foundIndex + 1,
     contextStart: contextStart + 1,
     contextEnd: contextEnd + 1,
     matchedText: lines[foundIndex],
-    sectionContent: lines.slice(contextStart, contextEnd + 1).join('\n')
+    sectionContent: lines.slice(contextStart, contextEnd + 1).join('\n'),
+    refs: {
+      section: sectionRef,
+      text: textRef
+    }
   };
+
+  console.log("Mapping result:", result);
+  return result;
 }; 

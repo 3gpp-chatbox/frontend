@@ -15,7 +15,7 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import InteractiveMarkdown from '../utils/InteractiveMarkdown';
 import { createSaveHandlers } from '../utils/SaveChanges';
 
-function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
+function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, highlightedSection, markdownContent, onEditorFocus }) {
   const [data, setData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
@@ -32,9 +32,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   });
   const [showPdf, setShowPdf] = useState(false);
   const [showReference, setShowReference] = useState(false);
-  const [markdownContent, setMarkdownContent] = useState("");
   const [selectedMarkdownElement, setSelectedMarkdownElement] = useState(null);
   const [activeView, setActiveView] = useState(null);
+  const markdownRef = useRef(null);
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
@@ -345,32 +345,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     setActiveView('reference');
   };
 
-  // Add function to load markdown content
-  const loadMarkdownContent = async () => {
-    try {
-      const response = await fetch('/src/data/Registration procedure for mobility and periodic registration update_original_context_20250505_144017.md');
-      if (!response.ok) {
-        throw new Error('Failed to load markdown content');
-      }
-      const content = await response.text();
-      setMarkdownContent(content);
-    } catch (error) {
-      console.error('Error loading markdown content:', error);
-      setNotification({
-        show: true,
-        message: 'Failed to load reference content',
-        type: 'error'
-      });
-    }
-  };
-
-  // Load markdown content when Reference Viewer is shown
-  useEffect(() => {
-    if (showReference) {
-      loadMarkdownContent();
-    }
-  }, [showReference]);
-
   // Add handler for clicking in Mermaid editor
   const handleMermaidClick = (event) => {
     // Only handle clicks on code lines
@@ -385,6 +359,18 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
 
     if (element) {
       onEditorFocus(element);
+      // Map the element to its reference section
+      const referenceSection = mapElementToReference(markdownContent, element);
+      if (referenceSection) {
+        setHighlightedSection(referenceSection);
+        // Scroll to the highlighted section
+        if (markdownRef.current) {
+          const highlightedElement = markdownRef.current.querySelector('.highlighted-line');
+          if (highlightedElement) {
+            highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }
     }
   };
 
@@ -429,6 +415,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
       current = current.nextElementSibling;
     }
   }, []);
+
 
   return (
     <div className="section-container">
@@ -503,6 +490,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
               <InteractiveMarkdown 
                 content={markdownContent}
                 onElementClick={handleMarkdownElementClick}
+                highlightedSection={highlightedSection}
+                key={`${activeView}-${!!highlightedSection}`} // Force remount when view changes or highlighting updates
               />
             </div>
           </div>
@@ -605,6 +594,12 @@ JsonViewer.propTypes = {
     type: PropTypes.oneOf(['node', 'edge']),
     id: PropTypes.string,
   }),
+  highlightedSection: PropTypes.shape({
+    lineNumber: PropTypes.number.isRequired,
+    contextStart: PropTypes.number.isRequired,
+    contextEnd: PropTypes.number.isRequired,
+  }),
+  markdownContent: PropTypes.string.isRequired,
   onEditorFocus: PropTypes.func.isRequired,
 };
 

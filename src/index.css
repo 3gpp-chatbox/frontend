@@ -1026,6 +1026,7 @@ pre.json-content {
 }
 .json-key {
   color: var(--blue-400);
+  margin-left: 10px;
 }
 .json-punctuation {
   color: var(--silver-500);
@@ -2063,83 +2064,52 @@ pre.code-block {
 }
 
 .markdown-content {
-  height: 100%;
+  font-family: 'Consolas', 'Monaco', monospace;
+  padding: 1rem;
+  background-color: var(--black-700);
+  color: var(--silver-100);
   overflow-y: auto;
-  padding: 16px;
-  color: var(--silver-100);
-  font-size: 14px;
+  height: 100%;
   line-height: 1.6;
-  background-color: var(--black-800);
+  white-space: pre-wrap;
 }
 
-/* Markdown content styles */
-.markdown-content h1 {
-  color: var(--blue-300);
-  font-size: 24px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--blue-700);
-}
-
-.markdown-content h2 {
-  color: var(--blue-400);
-  font-size: 20px;
-  margin: 24px 0 16px;
-}
-
-.markdown-content h3, 
-.markdown-content h4, 
-.markdown-content h5 {
-  color: var(--blue-500);
-  margin: 20px 0 12px;
-}
-
-.markdown-content p {
-  margin: 12px 0;
-  color: var(--silver-200);
-}
-
-.markdown-content ul, 
-.markdown-content ol {
-  margin: 12px 0;
-  padding-left: 24px;
-  color: var(--silver-200);
-}
-
-.markdown-content li {
-  margin: 6px 0;
-}
-
-.markdown-content code {
-  background-color: var(--black-700);
-  padding: 2px 6px;
+.markdown-content .line {
+  padding: 2px 8px;
+  margin: 2px 0;
   border-radius: 4px;
-  font-family: "Consolas", "Monaco", "Courier New", monospace;
-  font-size: 0.9em;
-  color: var(--orange-400);
+  transition: all 0.2s ease;
+  position: relative;
+  line-height: 1.5;
 }
 
-.markdown-content pre {
-  background-color: var(--black-700);
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid var(--black-600);
-  overflow-x: auto;
-  margin: 16px 0;
+.markdown-content .highlighted-line {
+  background-color: rgba(249, 115, 22, 0.3);
+  border-left: 4px solid var(--orange-500);
+  margin-left: -4px;
+  padding-left: 12px;
+  position: relative;
+  z-index: 2;
 }
 
-.markdown-content pre code {
-  background-color: transparent;
-  padding: 0;
-  color: var(--silver-100);
+.markdown-content .highlighted-context {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 2px solid var(--blue-500);
+  margin-left: -2px;
+  padding-left: 10px;
 }
 
-.markdown-content blockquote {
-  border-left: 4px solid var(--blue-700);
-  margin: 16px 0;
-  padding: 8px 16px;
-  background-color: var(--black-700);
-  color: var(--silver-300);
+/* Add hover effect for better visibility */
+.markdown-content .line:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.markdown-content .highlighted-line:hover {
+  background-color: rgba(249, 115, 22, 0.4);
+}
+
+.markdown-content .highlighted-context:hover {
+  background-color: rgba(59, 130, 246, 0.2);
 }
 
 /* Add styles for scrollbar in markdown content */
@@ -2161,26 +2131,13 @@ pre.code-block {
   background: var(--blue-600);
 }
 
-/* Add these styles after the existing reference viewer styles */
-.markdown-content .line {
-  padding: 2px 8px;
-  white-space: pre-wrap;
-}
-
-.markdown-content .highlighted-context {
-  background-color: rgba(59, 130, 246, 0.1);
-}
-
-.markdown-content .highlighted-line {
-  background-color: rgba(249, 115, 22, 0.2);
-  border-left: 2px solid var(--orange-500);
-}
-
 /* Interactive Markdown styles */
 .interactive-markdown {
   color: var(--silver-100);
   font-size: 14px;
   line-height: 1.6;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .interactive-heading {
@@ -2250,4 +2207,42 @@ pre.code-block {
 
 .highlight-paragraph {
   background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Markdown line highlighting styles */
+.interactive-markdown .line {
+  padding: 4px 8px;
+  margin: 2px 0;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  transition: background-color 0.3s ease;
+}
+
+.interactive-markdown .highlighted-line {
+  background-color: rgba(249, 115, 22, 0.3) !important;
+  border-left: 4px solid var(--orange-500) !important;
+  margin-left: -4px !important;
+}
+
+.interactive-markdown .highlighted-context {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border-left: 2px solid var(--blue-500) !important;
+  margin-left: -2px !important;
+}
+
+.interactive-markdown {
+  font-family: 'Roboto Mono', monospace;
+  line-height: 1.5;
+  padding: 1rem;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.interactive-paragraph, .interactive-list-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.interactive-paragraph:hover, .interactive-list-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
 }
