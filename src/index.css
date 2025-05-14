@@ -629,11 +629,43 @@ pre.json-content {
 
 .json-content {
   height: 100%;
-  margin: 0;
   overflow-y: auto;
   background-color: var(--black-800);
   width: 100%;
   box-sizing: border-box;
+}
+
+.json-content .code-content {
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  padding: 16px;
+}
+
+.json-content .code-content.wrapped {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  overflow-x: hidden !important;
+}
+
+.json-content .code-line {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 2px 0;
+}
+
+.json-content .code-line > * {
+  flex: 0 1 auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Ensure proper wrapping for long lines */
+.json-content .code-line.wrapped {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
 .json-content code {
@@ -1201,19 +1233,20 @@ pre.json-content {
 
   /* Add these styles for diagram element highlighting */
   .node.highlighted rect,
-  .node.highlighted circle {
+  .node.highlighted circle,
+  .node.highlighted polygon {
+    stroke: #f97316 !important;
+    stroke-width: 3px !important;
     filter: brightness(1.2);
-    stroke: var(--blue-400) !important;
+  }
+
+  .edgePath.highlighted path {
+    stroke: #f97316 !important;
     stroke-width: 3px !important;
   }
 
-  .edge.highlighted path {
-    stroke: var(--blue-400) !important;
-    stroke-width: 4px !important;
-  }
-
-  .edge.highlighted marker {
-    fill: var(--blue-400) !important;
+  .edgePath.highlighted marker {
+    fill: #f97316 !important;
   }
 }
 

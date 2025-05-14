@@ -414,20 +414,27 @@ function JsonViewer({
     const element = {
       id: elementId,
       type: elementType,
-      text: elementText || elementId // Use text if provided, otherwise use id
+      text: elementText || elementId
     };
     setHighlightedElement(element);
     
     // Find corresponding section in reference view
     if (markdownContent) {
-      // Look for section headers that match the element ID or text
       const searchText = elementText || elementId;
       const sectionMatch = markdownContent.match(
         new RegExp(`(?:^|\n)#{2,3} .*${searchText}.*`, 'm')
       );
       
       if (sectionMatch) {
-        setHighlightedSection(searchText);
+        // Create a reference section object with both section and text refs
+        const referenceSection = {
+          refs: {
+            section: sectionMatch[0].trim(),
+            text: searchText
+          },
+          type: elementType
+        };
+        setHighlightedSection(referenceSection);
       }
     }
   }, [setHighlightedElement, setHighlightedSection, markdownContent]);
@@ -563,13 +570,26 @@ function JsonViewer({
                     onClick={(e) => {
                       const node = e.target.closest(".node");
                       const edge = e.target.closest(".edgePath");
+                      
+                      // Remove any existing highlights first
+                      const svg = e.target.closest("svg");
+                      if (svg) {
+                        svg.querySelectorAll(".node.highlighted, .edgePath.highlighted").forEach(el => {
+                          el.classList.remove("highlighted");
+                        });
+                      }
+                      
                       if (node) {
                         const nodeId = node.id.replace("flowchart-", "").split("-")[0];
                         const nodeText = node.querySelector(".nodeLabel")?.textContent;
+                        // Add highlight class to the clicked node
+                        node.classList.add("highlighted");
                         handleDiagramClick(nodeId, "node", nodeText);
                       } else if (edge) {
                         const edgeId = edge.querySelector("title")?.textContent;
                         if (edgeId) {
+                          // Add highlight class to the clicked edge
+                          edge.classList.add("highlighted");
                           handleDiagramClick(edgeId, "edge");
                         }
                       }
@@ -638,8 +658,8 @@ function JsonViewer({
 JsonViewer.propTypes = {
   onMermaidCodeChange: PropTypes.func.isRequired,
   selectedProcedure: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
+    id: PropTypes.string,
+    name: PropTypes.string,
   }),
   onProcedureUpdate: PropTypes.func.isRequired,
   highlightedElement: PropTypes.shape({
@@ -648,13 +668,21 @@ JsonViewer.propTypes = {
   }),
   setHighlightedElement: PropTypes.func.isRequired,
   highlightedSection: PropTypes.shape({
-    lineNumber: PropTypes.number.isRequired,
-    contextStart: PropTypes.number.isRequired,
-    contextEnd: PropTypes.number.isRequired,
+    refs: PropTypes.shape({
+      section: PropTypes.string,
+      text: PropTypes.string
+    }),
+    type: PropTypes.string
   }),
   markdownContent: PropTypes.string.isRequired,
   onEditorFocus: PropTypes.func.isRequired,
   setHighlightedSection: PropTypes.func.isRequired,
+};
+
+JsonViewer.defaultProps = {
+  selectedProcedure: null,
+  highlightedElement: null,
+  highlightedSection: null
 };
 
 export default JsonViewer;
