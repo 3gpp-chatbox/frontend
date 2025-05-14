@@ -321,6 +321,16 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     setShowReference(true);
     setShowMermaid(false);
     setActiveView('reference');
+    
+    // Force a re-render of the InteractiveMarkdown component
+    // by temporarily clearing and restoring the highlightedSection
+    if (highlightedSection) {
+      const currentSection = highlightedSection;
+      setHighlightedSection(null);
+      setTimeout(() => {
+        setHighlightedSection(currentSection);
+      }, 0);
+    }
   };
 
   // Add handler for clicking in Mermaid editor

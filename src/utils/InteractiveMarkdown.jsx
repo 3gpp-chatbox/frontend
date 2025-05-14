@@ -8,12 +8,24 @@ import PropTypes from 'prop-types';
 function InteractiveMarkdown({ content, highlightedSection }) {
   const markdownRef = useRef(null);
   const [lines, setLines] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Split content into lines when it changes
   useEffect(() => {
     if (!content) return;
     setLines(content.split('\n'));
   }, [content]);
+
+  // Handle initial mounting and highlighting
+  useEffect(() => {
+    if (!isInitialized && markdownRef.current && highlightedSection) {
+      setIsInitialized(true);
+      // Force a re-render of highlights after the component is fully mounted
+      setTimeout(() => {
+        applyHighlights(highlightedSection, markdownRef.current);
+      }, 100);
+    }
+  }, [isInitialized, highlightedSection]);
 
   // Handle highlighting
   useEffect(() => {
@@ -25,21 +37,25 @@ function InteractiveMarkdown({ content, highlightedSection }) {
       return;
     }
 
+    applyHighlights(highlightedSection, markdownRef.current);
+  }, [highlightedSection]);
+
+  const applyHighlights = (section, container) => {
     console.log("Applying highlights to content");
     
     // Clear existing highlights first
-    const existingHighlights = markdownRef.current.querySelectorAll('.highlighted-line, .highlighted-context');
+    const existingHighlights = container.querySelectorAll('.highlighted-line, .highlighted-context');
     existingHighlights.forEach(el => {
       el.classList.remove('highlighted-line', 'highlighted-context');
       el.style.backgroundColor = '';
     });
 
     // Get all line elements
-    const lineElements = markdownRef.current.querySelectorAll('.line');
+    const lineElements = container.querySelectorAll('.line');
     console.log(`Found ${lineElements.length} lines in content`);
 
     // Extract section_ref and text_ref from highlightedSection
-    const { refs } = highlightedSection;
+    const { refs } = section;
     if (!refs) {
       console.log("No refs found in highlightedSection");
       return;
@@ -110,7 +126,7 @@ function InteractiveMarkdown({ content, highlightedSection }) {
     } else {
       console.log("No matching section found");
     }
-  }, [highlightedSection]);
+  };
 
   return (
     <div className="interactive-markdown" ref={markdownRef}>
