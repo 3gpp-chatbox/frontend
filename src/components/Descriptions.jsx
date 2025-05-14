@@ -93,19 +93,19 @@ function Description({ procedure }) {
             <div className="detail-section">
               <h3>Graph Information</h3>
               <div className="detail-item">
-                <text className="detail-label">Status:</text>
-                <text className="detail-value">{procedure.edited ? "Edited" : "Original"}</text>
-                <text className="detail-label">Model:</text>
-                <text className="detail-value">{procedure.model_name || "N/A"}</text>
-                <text className="detail-label">Method:</text>
-                <text className="detail-value">{procedure.extraction_method || "N/A"}</text>
+                <span className="detail-label">Status:</span>
+                <span className="detail-value">{procedure.edited ? "Edited" : "Original"}</span>
+                <span className="detail-label">Model:</span>
+                <span className="detail-value">{procedure.model_name || "N/A"}</span>
+                <span className="detail-label">Method:</span>
+                <span className="detail-value">{procedure.extraction_method || "N/A"}</span>
               </div>
               {/*Accuracy format should be a percentage*/}
               <div className="detail-item">
-                <text className="detail-label">Accuracy:</text>
-                <text className="detail-value">
+                <span className="detail-label">Accuracy:</span>
+                <span className="detail-value">
                   {formatAccuracy(procedure.accuracy)}
-                </text>
+                </span>
                 <button 
                   className="view-original-btn" 
                   onClick={handleViewOriginalData}
