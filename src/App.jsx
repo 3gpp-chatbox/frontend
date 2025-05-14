@@ -55,15 +55,18 @@ function App() {
 
   const handleElementClick = (element) => {
     console.log("Diagram element clicked:", element);
-    setHighlightedElement(element);
     
-    // Map the element to its reference section
-    if (element && markdownContent) {
-      const referenceSection = mapElementToReference(markdownContent, element);
-      console.log("Found reference section:", referenceSection);
-      setHighlightedSection(referenceSection);
-    } else {
-      setHighlightedSection(null);
+    // Only update if we have a new element to highlight
+    // Don't clear highlighting when element is null (clicking empty space)
+    if (element) {
+      setHighlightedElement(element);
+      
+      // Map the element to its reference section
+      if (markdownContent) {
+        const referenceSection = mapElementToReference(markdownContent, element);
+        console.log("Found reference section:", referenceSection);
+        setHighlightedSection(referenceSection);
+      }
     }
   };
 
