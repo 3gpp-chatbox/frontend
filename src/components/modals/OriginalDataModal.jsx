@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { JsonToMermaid } from "../functions/jsonToMermaid";
-import ModalDiagram from "./ModalDiagram";
-import { highlightJson } from "../utils/jsonHighlighter";
-import { highlightMermaid } from "../utils/MermaidHighlighter";
+import { JsonToMermaid } from "../../functions/jsonToMermaid";
+import ModalDiagram from "../modals/ModalDiagram";
+import { highlightJson } from "../../utils/jsonHighlighter";
+import { highlightMermaid } from "../../utils/MermaidHighlighter";
 
 function OriginalDataModal({ isOpen, onClose, originalData }) {
   const [selectedView, setSelectedView] = useState("json");
