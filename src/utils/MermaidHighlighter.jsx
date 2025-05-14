@@ -1,6 +1,13 @@
-
-export const highlightMermaid = (code) => {
-  if (!code) return "";
+/**
+ * Highlights Mermaid code with syntax highlighting.
+ * @param {string} code - The Mermaid code to highlight
+ * @param {string} [elementId] - Optional element ID to highlight
+ * @returns {string} Highlighted HTML
+ */
+export const highlightMermaid = (code, elementId) => {
+  if (!code) {
+    return "";
+  }
 
   return code
     .split("\n")
@@ -51,17 +58,24 @@ export const highlightMermaid = (code) => {
     .join("\n");
 };
 
-export const highlightMermaidLine = (code, elementId, elementType) => {
+/**
+ * Highlights a specific line in Mermaid code.
+ * @param {string} code - The Mermaid code to highlight
+ * @param {string} [elementId] - Optional element ID to highlight
+ * @param {string} [type] - Optional element type
+ * @returns {string} Highlighted HTML
+ */
+export const highlightMermaidLine = (code, elementId, type) => {
   if (!code || !elementId) {
     console.log("No code or elementId provided");
     return code;
   }
   
-  console.log("Received element:", { id: elementId, type: elementType });
+  console.log("Received element:", { id: elementId, type: type });
   
   // Extract the node label for node highlighting
   const nodeMatch = elementId.match(/flowchart-([A-Z0-9]+)-/);
-  if (!nodeMatch && elementType === 'node') {
+  if (!nodeMatch && type === 'node') {
     console.log("No node match found for elementId:", elementId);
     return code;
   }
@@ -79,7 +93,7 @@ export const highlightMermaidLine = (code, elementId, elementType) => {
     const line = lines[lineIndex];
     let shouldHighlight = false;
     
-    if (elementType === 'node' && nodeLabel) {
+    if (type === 'node' && nodeLabel) {
       // Match node definitions with optional leading whitespace
       const nodePattern = new RegExp(`^\\s*${nodeLabel}(\\[|\\(\\()`);
       if (nodePattern.test(line)) {
@@ -87,17 +101,17 @@ export const highlightMermaidLine = (code, elementId, elementType) => {
         shouldHighlight = true;
         
         // Add the node definition line with orange highlight
-        highlightedLines.push(`<span class="orange-highlight">${highlightMermaid(line)}</span>`);
+        highlightedLines.push(`<span class="orange-highlight">${highlightMermaid(line, elementId)}</span>`);
         lineIndex++;
         
         // Look ahead for comments
         while (lineIndex < lines.length && lines[lineIndex].trim().startsWith('%%')) {
-          highlightedLines.push(`<span class="orange-highlight">${highlightMermaid(lines[lineIndex])}</span>`);
+          highlightedLines.push(`<span class="orange-highlight">${highlightMermaid(lines[lineIndex], elementId)}</span>`);
           lineIndex++;
         }
         continue;
       }
-    } else if (elementType === 'edge') {
+    } else if (type === 'edge') {
       const escapedElementId = elementId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const edgePattern = new RegExp(`^\\s*.*-->\\|"?${escapedElementId}"?\\|.*`);
       
@@ -106,12 +120,12 @@ export const highlightMermaidLine = (code, elementId, elementType) => {
         shouldHighlight = true;
         
         // Add the edge definition line with orange highlight
-        highlightedLines.push(`<span class="orange-highlight">${highlightMermaid(line)}</span>`);
+        highlightedLines.push(`<span class="orange-highlight">${highlightMermaid(line, elementId)}</span>`);
         lineIndex++;
         
         // Look ahead for comments
         while (lineIndex < lines.length && lines[lineIndex].trim().startsWith('%%')) {
-          highlightedLines.push(`<span class="orange-highlight">${highlightMermaid(lines[lineIndex])}</span>`);
+          highlightedLines.push(`<span class="orange-highlight">${highlightMermaid(lines[lineIndex], elementId)}</span>`);
           lineIndex++;
         }
         continue;
@@ -119,7 +133,7 @@ export const highlightMermaidLine = (code, elementId, elementType) => {
     }
     
     if (!shouldHighlight) {
-      highlightedLines.push(highlightMermaid(line));
+      highlightedLines.push(highlightMermaid(line, elementId));
     }
     lineIndex++;
   }

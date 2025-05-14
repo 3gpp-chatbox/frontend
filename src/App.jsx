@@ -243,6 +243,7 @@ function App() {
                   highlightedSection={highlightedSection}
                   markdownContent={markdownContent}
                   onEditorFocus={handleEditorFocus}
+                  setHighlightedSection={setHighlightedSection}
                 />
                 <div className="resizer"></div>
               </div>

@@ -5,12 +5,6 @@ import {
   JsonToMermaid,
   defaultMermaidConfig,
 } from "../functions/jsonToMermaid";
-import {
-  validateMermaidCode,
-  convertMermaidToJson,
-} from "../functions/mermaidToJson";
-import { validateGraph } from "../functions/schema_validation";
-import ConfirmationDialog from "./modals/ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
 import { FaSave } from "react-icons/fa";
@@ -18,6 +12,7 @@ import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
 import { highlightMermaidLine } from "../utils/MermaidHighlighter";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
 import { createSaveHandlers } from "../utils/SaveChanges";
+import ConfirmationDialog from "./modals/ConfirmationDialog";
 
 /**
  * Component for displaying and editing JSON data with multiple view modes.
@@ -59,7 +54,11 @@ function JsonViewer({
     message: "",
     type: "",
   });
-  const [activeView, setActiveView] = useState(null);
+  const [activeView, setActiveView] = useState("mermaid");
+  const [showMermaid, setShowMermaid] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 0, y: 0 });
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
@@ -94,18 +93,17 @@ function JsonViewer({
 
   // Add effect to update view when procedure data changes
   useEffect(() => {
-    if (data && !isUserEditing.current) {
+    if (data) {
       try {
         // Get the current graph data based on edited status
-        const graphData = data.edited ? data.edited_graph : data.original_graph;
+        const graphData = data.edited_graph || data.original_graph || data.graph;
 
         if (!graphData) {
-          console.error("No graph data available:", data);
-          setNotification({
-            show: true,
-            message: "No graph data available for this procedure",
-            type: "error",
-          });
+          console.warn("No graph data available in:", data);
+          setJsonContent("");
+          setMermaidGraph("");
+          setOriginalMermaidGraph("");
+          onMermaidCodeChange("");
           return;
         }
 
@@ -324,6 +322,72 @@ function JsonViewer({
     onMermaidCodeChange(updatedCode);
   };
 
+  const handleSaveChanges = () => {
+    handleSaveClick();
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    if (isDragging) {
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
+    }
+  }, [isDragging, dragStart]);
+
+  const handleMouseDown = useCallback(
+    (e) => {
+      if (e.target.closest(".node") || e.target.closest(".edgePath")) {
+        return; // Don't initiate drag if clicking on a node or edge
+      }
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    },
+    [position],
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Add event listeners for dragging
+  useEffect(() => {
+    const currentRef = codeContentRef.current;
+    if (currentRef) {
+      currentRef.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+
+      return () => {
+        currentRef?.removeEventListener("mousedown", handleMouseDown);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [handleMouseDown, handleMouseMove, handleMouseUp]);
+
+  /**
+   * Cleans and formats Mermaid code for rendering.
+   * @param {string} code - The Mermaid code to clean
+   * @returns {string} Cleaned Mermaid code
+   */
+  const cleanMermaidCode = (code) => {
+    if (!code) return "";
+    return code.trim();
+  };
+
+  /**
+   * Handles folding/unfolding of JSON content
+   * @param {Event} e - Click event
+   */
+  const handleFold = (e) => {
+    // Only handle clicks on the fold markers
+    if (!e.target.classList.contains('fold-marker')) return;
+    
+    const content = e.target.parentElement;
+    content.classList.toggle('folded');
+  };
+
   return (
     <div className="editor-panel">
       <div className="section-header">
@@ -450,6 +514,12 @@ function JsonViewer({
                         selection.addRange(range);
                         handleMermaidChange(e);
                       }
+                    }}
+                    style={{
+                      cursor: isDragging ? "grabbing" : "grab",
+                      transform: `translate(${position.x}px, ${position.y}px)`,
+                      position: "relative",
+                      userSelect: isDragging ? "none" : "text",
                     }}
                     dangerouslySetInnerHTML={{
                       __html: highlightMermaidLine(

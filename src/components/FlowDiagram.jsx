@@ -294,14 +294,6 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
                   continue;
                 }
                 if (foundEdge) {
-                  /* Uncomment when these fields are available
-                  if (line.startsWith('%% Section_Reference:')) {
-                    sectionRef = line.replace('%% Section_Reference:', '').trim();
-                  }
-                  else if (line.startsWith('%% Text_Reference:')) {
-                    textRef = line.replace('%% Text_Reference:', '').trim();
-                  }
-                  */
                   // Break if we've found all metadata or reached next element
                   if (line.match(/^[A-Z]+/)) break;
                 }
