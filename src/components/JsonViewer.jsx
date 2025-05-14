@@ -509,8 +509,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
           </div>
         </div>
       </div>
-      {showMermaid && (
-        <div className="code-settings-bar">
+      {showMermaid && selectedProcedure && (
           <div className="viewer-controls">
             <div className="viewer-controls-left">
               <span className="direction-label">Flow chart direction</span>
@@ -543,7 +542,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
               </button>
             </div>
           </div>
-        </div>
       )}
       {notification.show && (
         <div className={`notification ${notification.type}`}>

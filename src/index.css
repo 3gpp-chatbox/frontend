@@ -230,6 +230,7 @@ button {
   top: 100%;
   left: 0;
   min-width: 300px;
+  max-height: 600px; /* Set maximum height */
   background-color: var(--black-700);
   border: 1px solid var(--black-500);
   border-radius: 4px;
@@ -238,6 +239,33 @@ button {
   opacity: 0;
   transform: translateY(-10px);
   transition: all 0.3s ease;
+  overflow-y: auto; /* Enable vertical scrolling */
+}
+
+/* Custom scrollbar styles for dropdown content */
+.dropdown-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dropdown-content::-webkit-scrollbar-track {
+  background: var(--black-800);
+  border-radius: 4px;
+}
+
+.dropdown-content::-webkit-scrollbar-thumb {
+  background-color: var(--blue-600);
+  border-radius: 4px;
+  border: 2px solid var(--black-800);
+}
+
+.dropdown-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--blue-500);
+}
+
+/* Firefox scrollbar styles */
+.dropdown-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue-600) var(--black-800);
 }
 
 .menu-item:hover .dropdown-content {
@@ -719,20 +747,6 @@ pre.json-content {
   display: none; /* Chrome, Safari and Opera */
 }
 
-/* Viewer controls */
-.viewer-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 8px 16px;
-  background-color: var(--black-700);
-  border-top: 1px solid var(--black-500);
-}
-
-.viewer-controls.bottom-controls {
-  margin-top: auto;
-}
 
 .wrap-toggle {
   display: flex;
@@ -1648,4 +1662,168 @@ pre.json-content {
 /* Fold button rotation for modal */
 .modal-json-content .fold-button.expanded {
   transform: rotate(90deg);
+}
+
+/* Procedure List Styles */
+.procedure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: var(--silver-100);
+}
+
+.procedure-header:hover {
+  background-color: var(--black-500);
+}
+
+/* Add styles for expanded state */
+.procedure-header.expanded {
+  color: var(--blue-400);
+}
+
+.procedure-header.expanded .toggle-icon {
+  color: var(--blue-400);
+}
+
+.toggle-icon {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--blue-400);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.procedure-header:hover .toggle-icon {
+  color: var(--blue-300);
+}
+
+.entity-list {
+  background-color: var(--bg-color-secondary);
+  border-left: 2px solid var(--accent-color);
+  margin-left: 8px;
+}
+
+.entity-item {
+  padding: 6px 12px 6px 24px;
+  font-size: 0.8em;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+}
+
+.entity-item:hover {
+  background-color: var(--black-500);
+  color: var(--silver-100);
+}
+
+.code-settings-bar {
+  background-color: var(--black-700);
+  border-bottom: 1px solid var(--black-500);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.code-settings-bar.hidden {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+}
+
+.viewer-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* width: 100%; */
+  padding:8px 16px 8px 16px;
+}
+
+.viewer-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.direction-label {
+  color: var(--orange-400);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.direction-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.direction-button {
+  background-color: var(--black-600);
+  border: 1px solid var(--black-500);
+  color: var(--silver-300);
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.direction-button:hover {
+  background-color: var(--black-500);
+  border-color: var(--blue-500);
+  color: var(--silver-100);
+}
+
+.direction-button.active {
+  background-color: var(--blue-600);
+  border-color: var(--blue-500);
+  color: var(--silver-100);
+}
+
+.viewer-controls-right {
+  display: flex;
+  gap: 8px;
+}
+
+.save-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: var(--black-600);
+  color: var(--silver-300);
+  border: 1px solid var(--black-500);
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-button:hover:not(:disabled) {
+  background-color: var(--black-500);
+  color: var(--silver-100);
+  border-color: var(--blue-500);
+}
+
+.save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.save-button.active {
+  background-color: var(--blue-600);
+  border-color: var(--blue-500);
+  color: var(--silver-100);
 }
