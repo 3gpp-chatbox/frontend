@@ -240,6 +240,7 @@ function App() {
                   selectedProcedure={selectedProcedure}
                   onProcedureUpdate={handleProcedureUpdate}
                   highlightedElement={highlightedElement}
+                  setHighlightedElement={setHighlightedElement}
                   highlightedSection={highlightedSection}
                   markdownContent={markdownContent}
                   onEditorFocus={handleEditorFocus}

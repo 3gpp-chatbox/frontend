@@ -66,11 +66,10 @@ function InteractiveMarkdown({ content, highlightedSection }) {
 
     // Clear existing highlights first
     const existingHighlights = container.querySelectorAll(
-      ".highlighted-line, .highlighted-context",
+      ".highlighted-line, .highlighted-context, .highlighted-section"
     );
     existingHighlights.forEach((el) => {
-      el.classList.remove("highlighted-line", "highlighted-context");
-      el.style.backgroundColor = "";
+      el.classList.remove("highlighted-line", "highlighted-context", "highlighted-section");
     });
 
     // Get all line elements
@@ -120,7 +119,12 @@ function InteractiveMarkdown({ content, highlightedSection }) {
         end: sectionEndLine,
       });
 
-      // Look for specific text within the section first
+      // Add blue highlight to the entire section
+      for (let i = sectionStartLine; i <= sectionEndLine; i++) {
+        lineElements[i].classList.add("highlighted-section");
+      }
+
+      // Look for specific text within the section
       if (textRef) {
         const cleanTextRef = textRef
           .toLowerCase()
@@ -139,7 +143,9 @@ function InteractiveMarkdown({ content, highlightedSection }) {
             : lineContent.includes(cleanTextRef);
 
           if (isMatch) {
-            lineElements[i].classList.add("highlighted-line");
+            // Remove section highlight from this line and add orange highlight
+            lineElements[i].classList.remove("highlighted-section");
+            lineElements[i].classList.add("highlighted-line"); // Orange highlight for text match
             textMatchLine = i;
             console.log(
               "Found matching text at line:",
@@ -149,13 +155,6 @@ function InteractiveMarkdown({ content, highlightedSection }) {
             );
             break;
           }
-        }
-      }
-
-      // Add context highlighting to the section
-      for (let i = sectionStartLine; i <= sectionEndLine; i++) {
-        if (!lineElements[i].classList.contains("highlighted-line")) {
-          lineElements[i].classList.add("highlighted-context");
         }
       }
 

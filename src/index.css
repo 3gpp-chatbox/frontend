@@ -1854,3 +1854,150 @@ pre.json-content {
   border-color: var(--blue-500);
   color: var(--silver-100);
 }
+
+/* Reference viewer styles */
+.reference-viewer {
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+  background-color: var(--black-800);
+  color: var(--silver-100);
+}
+
+.markdown-content {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.markdown-content .line {
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.markdown-content .line:hover {
+  background-color: var(--black-700);
+}
+
+.markdown-content .highlighted-line {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.markdown-content .highlighted-context {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Hide scrollbars but maintain functionality */
+.reference-viewer {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.reference-viewer::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Add highlight styles for JSON viewer */
+.code-line.orange-highlight {
+  background-color: rgba(249, 115, 22, 0.2); /* var(--orange-300) with opacity */
+  border-radius: 4px;
+  margin: -2px -8px;
+  padding: 2px 8px;
+}
+
+.code-line.blue-highlight {
+  background-color: rgba(59, 130, 246, 0.1); /* var(--blue-500) with opacity */
+  border-radius: 4px;
+  margin: -2px -8px;
+  padding: 2px 8px;
+}
+
+/* Add transition for smooth highlighting */
+.code-line {
+  transition: background-color 0.2s ease;
+}
+
+/* Ensure highlighted lines are visible */
+.code-line.orange-highlight .json-key,
+.code-line.orange-highlight .json-string,
+.code-line.orange-highlight .json-number,
+.code-line.orange-highlight .json-boolean,
+.code-line.orange-highlight .json-null {
+  color: inherit;
+  opacity: 0.9;
+}
+
+.code-line.blue-highlight .json-key,
+.code-line.blue-highlight .json-string,
+.code-line.blue-highlight .json-number,
+.code-line.blue-highlight .json-boolean,
+.code-line.blue-highlight .json-null {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.interactive-markdown {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #f4f4f5;
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.interactive-markdown .line {
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  white-space: pre-wrap;
+}
+
+.interactive-markdown .line:hover {
+  background-color: rgba(60, 60, 67, 0.3);
+}
+
+/* Blue highlight for section */
+.interactive-markdown .highlighted-section {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 2px solid rgba(59, 130, 246, 0.4);
+}
+
+/* Orange highlight for matched text */
+.interactive-markdown .highlighted-line {
+  background-color: rgba(249, 115, 22, 0.2);
+  border-left: 3px solid #f97316;
+  font-weight: 500;
+  z-index: 1;
+  position: relative;
+}
+
+/* Subtle highlight for context */
+.interactive-markdown .highlighted-context {
+  background-color: rgba(75, 85, 99, 0.1);
+}
+
+.interactive-markdown pre {
+  margin: 0;
+  padding: 0;
+}
+
+/* Hide scrollbar but keep functionality */
+.interactive-markdown::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Ensure proper stacking of highlights */
+.interactive-markdown .highlighted-line {
+  z-index: 2;
+}
+
+.interactive-markdown .highlighted-section {
+  z-index: 1;
+}
+
+.interactive-markdown .line:hover {
+  z-index: 3;
+}

@@ -24,6 +24,7 @@ import ConfirmationDialog from "./modals/ConfirmationDialog";
  * @param {Object} props.selectedProcedure - Currently selected procedure
  * @param {Function} props.onProcedureUpdate - Callback for procedure updates
  * @param {Object} props.highlightedElement - Currently highlighted diagram element
+ * @param {Function} props.setHighlightedElement - Callback to set highlighted element
  * @param {Object} props.highlightedSection - Currently highlighted section
  * @param {string} props.markdownContent - Markdown content to display
  * @param {Function} props.onEditorFocus - Callback for editor focus events
@@ -35,6 +36,7 @@ function JsonViewer({
   selectedProcedure,
   onProcedureUpdate,
   highlightedElement,
+  setHighlightedElement,
   highlightedSection,
   markdownContent,
   onEditorFocus,
@@ -230,15 +232,20 @@ function JsonViewer({
   // Add effect to scroll to highlighted element
   useEffect(() => {
     if (highlightedElement && codeContentRef.current) {
-      // Find the highlighted element
-      const highlightedDiv =
-        codeContentRef.current.querySelector(".orange-highlight");
+      // Find the highlighted element in the current view
+      const highlightedDiv = codeContentRef.current.querySelector(
+        activeView === "json" ? ".orange-highlight" : ".highlighted-line"
+      );
+      
       if (highlightedDiv) {
-        // Scroll the element into view with some padding at the top
-        highlightedDiv.scrollIntoView({ behavior: "smooth", block: "center" });
+        // Scroll the element into view with smooth behavior
+        highlightedDiv.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
       }
     }
-  }, [highlightedElement]);
+  }, [highlightedElement, activeView]);
 
   const saveCursorPosition = () => {
     const selection = window.getSelection();
@@ -381,24 +388,61 @@ function JsonViewer({
    * @param {Event} e - Click event
    */
   const handleFold = (e) => {
-    // Only handle clicks on the fold markers
-    if (!e.target.classList.contains('fold-marker')) return;
+    // Only handle clicks on the fold buttons
+    if (!e.target.classList.contains('fold-button')) return;
     
-    const content = e.target.parentElement;
-    content.classList.toggle('folded');
+    const line = e.target.closest('.code-line');
+    if (!line) return;
+
+    const level = parseInt(line.dataset.level);
+
+    // Toggle fold state
+    const isFolded = e.target.textContent === "▼";
+    e.target.textContent = isFolded ? "▶" : "▼";
+
+    // Find the range to fold/unfold
+    let current = line.nextElementSibling;
+    while (current && parseInt(current.dataset.level) > level) {
+      current.style.display = isFolded ? "none" : "flex";
+      current = current.nextElementSibling;
+    }
   };
+
+  // Handle node/edge click in Mermaid view
+  const handleDiagramClick = useCallback((elementId, elementType, elementText = null) => {
+    // Update highlighted element
+    const element = {
+      id: elementId,
+      type: elementType,
+      text: elementText || elementId // Use text if provided, otherwise use id
+    };
+    setHighlightedElement(element);
+    
+    // Find corresponding section in reference view
+    if (markdownContent) {
+      // Look for section headers that match the element ID or text
+      const searchText = elementText || elementId;
+      const sectionMatch = markdownContent.match(
+        new RegExp(`(?:^|\n)#{2,3} .*${searchText}.*`, 'm')
+      );
+      
+      if (sectionMatch) {
+        setHighlightedSection(searchText);
+      }
+    }
+  }, [setHighlightedElement, setHighlightedSection, markdownContent]);
 
   return (
     <div className="editor-panel">
       <div className="section-header">
         <span>
-          {showMermaid ? "Mermaid" : "JSON"} Viewer
+          {activeView === "mermaid" ? "Mermaid" : activeView === "json" ? "JSON" : "Reference"} Viewer
           {isEditing && <span className="editing-indicator"> (Editing)</span>}
         </span>
         <div className="header-controls">
           <div className="view-tabs">
             <button
-              className={`tab-button ${showMermaid ? "active" : ""}`}
+              className={`tab-button ${activeView === "mermaid" ? "active" : ""}`}
               onClick={() => {
                 if (isEditing) {
                   setNotification({
@@ -408,13 +452,13 @@ function JsonViewer({
                   });
                   return;
                 }
-                setShowMermaid(true);
+                setActiveView("mermaid");
               }}
             >
               Mermaid
             </button>
             <button
-              className={`tab-button ${!showMermaid ? "active" : ""}`}
+              className={`tab-button ${activeView === "json" ? "active" : ""}`}
               onClick={() => {
                 if (isEditing) {
                   setNotification({
@@ -424,15 +468,31 @@ function JsonViewer({
                   });
                   return;
                 }
-                setShowMermaid(false);
+                setActiveView("json");
               }}
             >
               JSON
             </button>
+            <button
+              className={`tab-button ${activeView === "reference" ? "active" : ""}`}
+              onClick={() => {
+                if (isEditing) {
+                  setNotification({
+                    show: true,
+                    message: "Please save or revert your changes first",
+                    type: "warning",
+                  });
+                  return;
+                }
+                setActiveView("reference");
+              }}
+            >
+              Reference
+            </button>
           </div>
         </div>
       </div>
-      {showMermaid && selectedProcedure && (
+      {activeView === "mermaid" && selectedProcedure && (
         <div className="viewer-controls">
           <div className="viewer-controls-left">
             <span className="direction-label">Flow chart direction</span>
@@ -500,19 +560,18 @@ function JsonViewer({
                     contentEditable={true}
                     onInput={handleMermaidChange}
                     onFocus={onEditorFocus}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        const selection = window.getSelection();
-                        const range = selection.getRangeAt(0);
-                        const br = document.createElement("br");
-                        range.deleteContents();
-                        range.insertNode(br);
-                        range.setStartAfter(br);
-                        range.setEndAfter(br);
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                        handleMermaidChange(e);
+                    onClick={(e) => {
+                      const node = e.target.closest(".node");
+                      const edge = e.target.closest(".edgePath");
+                      if (node) {
+                        const nodeId = node.id.replace("flowchart-", "").split("-")[0];
+                        const nodeText = node.querySelector(".nodeLabel")?.textContent;
+                        handleDiagramClick(nodeId, "node", nodeText);
+                      } else if (edge) {
+                        const edgeId = edge.querySelector("title")?.textContent;
+                        if (edgeId) {
+                          handleDiagramClick(edgeId, "edge");
+                        }
                       }
                     }}
                     style={{
@@ -538,17 +597,14 @@ function JsonViewer({
                     __html: highlightJson(jsonContent, highlightedElement),
                   }}
                   ref={codeContentRef}
-                  onClick={handleFold}
                 />
               )}
             </pre>
           ) : (
-            <div className="placeholder-text">Loading procedure data...</div>
+            <div className="loading">Loading...</div>
           )
         ) : (
-          <div className="placeholder-text">
-            Please select a procedure from the list above
-          </div>
+          <div className="no-procedure">No procedure selected</div>
         )}
       </div>
       <div className="viewer-controls bottom-controls">
@@ -590,6 +646,7 @@ JsonViewer.propTypes = {
     type: PropTypes.oneOf(["node", "edge"]),
     id: PropTypes.string,
   }),
+  setHighlightedElement: PropTypes.func.isRequired,
   highlightedSection: PropTypes.shape({
     lineNumber: PropTypes.number.isRequired,
     contextStart: PropTypes.number.isRequired,
