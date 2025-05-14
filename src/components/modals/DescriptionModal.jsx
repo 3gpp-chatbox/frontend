@@ -26,64 +26,72 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content description-modal-content">
         <div className="modal-header">
-          <h3>Procedure Details</h3>
+          <h3>Procedure Graph Details</h3>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
-          <div className="modal-section">
-            <h4>Document Information</h4>
-            <div className="modal-json-content">
-              <div className="detail-item">
+        <div className="description-section">
+            <h4>Baseline Graph Information</h4>
+              <div className="detail-line">
+                <span className="detail-label">Entity:</span>
+                <span className="detail-value">
+                  -entity here-
+                </span>
+              </div>
+              <div className="detail-line">
+                <text className="detail-label">Status:</text>
+                {/* TODO: modify status */}
+                <text className="detail-value">{procedure.edited ? "Edited" : "Original"}</text>
+              </div>
+          </div>
+          <div className="description-section">
+            <h4>Reference Document Information</h4>
+              <div className="detail-line">
                 <span className="detail-label">Document:</span>
                 <span className="detail-value">
                   {procedure.document_name || "N/A"}
                 </span>
               </div>
-            </div>
-          </div>
-
-          <div className="modal-section">
-            <h4>Graph Information</h4>
-            <div className="modal-json-content">
-              <div className="detail-item">
-                <text className="detail-label">Status:</text>
-                <text className="detail-value">{procedure.edited ? "Edited" : "Original"}</text>
+              <div className="detail-line">
+                <span className="detail-label">Section:</span>
+                <span className="detail-value">
+                  -section number here-
+                </span>
               </div>
-              <div className="detail-item">
-                <text className="detail-label">Model:</text>
+          </div>
+          <div className="description-section">
+            <h4>Original Graph Extraction Information</h4>
+              <div className="detail-line">
+                <text className="detail-label">LLM Model:</text>
                 <text className="detail-value">{procedure.model_name || "N/A"}</text>
               </div>
-              <div className="detail-item">
-                <text className="detail-label">Method:</text>
+              <div className="detail-line">
+                <text className="detail-label">Accuracy Method:</text>
                 <text className="detail-value">{procedure.extraction_method || "N/A"}</text>
               </div>
-              <div className="detail-item">
+              <div className="detail-line">
                 <text className="detail-label">Accuracy:</text>
                 <text className="detail-value">
                   {formatAccuracy(procedure.accuracy)}
                 </text>
               </div>
-            </div>
           </div>
-
-          <div className="modal-section">
+          <div className="description-section">
             <h4>Timestamps</h4>
-            <div className="modal-json-content">
-              <div className="detail-item">
+              <div className="detail-line">
                 <span className="detail-label">Extracted:</span>
                 <span className="detail-value">
                   {formatDate(procedure.extracted_at)}
                 </span>
               </div>
-              <div className="detail-item">
+              <div className="detail-line">
                 <span className="detail-label">Last Edited:</span>
                 <span className="detail-value">
                   {formatDate(procedure.last_edit_at)}
                 </span>
               </div>
-            </div>
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import DescriptionModal from './DescriptionModal';
-import OriginalDataModal from './OriginalDataModal';
+import DescriptionModal from './modals/DescriptionModal';
+import OriginalDataModal from './modals/OriginalDataModal';
 import { fetchOriginalGraph } from "../API/api_calls";
+import { MdInfo, MdHistory } from 'react-icons/md';
 
 function ProcedureTitle({ selectedProcedure }) {
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
@@ -34,19 +35,30 @@ function ProcedureTitle({ selectedProcedure }) {
     <>
       <div className="procedure-title-bar">
         <div className="procedure-title-content">
-          <div className="menu-item">
-            <span className="menu-item-text">
-              {selectedProcedure ? selectedProcedure.name : 'Select a procedure'}
-            </span>
-            {selectedProcedure && (
-              <div className="dropdown-content">
-                <div className="dropdown-item" onClick={handleDetailsClick}>Details</div>
-                <div className="dropdown-item" onClick={handleOriginalGraphClick}>
-                  {isLoading ? 'Loading...' : 'Version History'}
-                </div>
-              </div>
-            )}
-          </div>
+          <span className="procedure-name">
+            {selectedProcedure ? selectedProcedure.name : 'Select a procedure'}
+          </span>
+          {selectedProcedure && (
+            <div className="procedure-actions">
+              <button 
+                className="action-button"
+                onClick={handleDetailsClick}
+                title="View Details"
+              >
+                <MdInfo className="action-icon" />
+                Details
+              </button>
+              <button 
+                className="action-button"
+                onClick={handleOriginalGraphClick}
+                disabled={isLoading}
+                title="View Version History"
+              >
+                <MdHistory className="action-icon" />
+                {isLoading ? 'Loading...' : 'Version History'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -59,7 +71,7 @@ function ProcedureTitle({ selectedProcedure }) {
         isOpen={isOriginalGraphModalOpen}
         onClose={() => {
           setIsOriginalGraphModalOpen(false);
-          setOriginalData(null); // Clear the data when closing
+          setOriginalData(null);
         }}
         originalData={originalData}
       />

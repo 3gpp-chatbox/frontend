@@ -10,7 +10,7 @@ import {
   convertMermaidToJson,
 } from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
-import ConfirmationDialog from "./ConfirmationDialog";
+import ConfirmationDialog from "./modals/ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
 import { FaSave } from "react-icons/fa";
@@ -539,6 +539,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                 title="Save Changes"
               >
                 <FaSave size={16} />
+                Save
               </button>
             </div>
           </div>
