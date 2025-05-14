@@ -171,6 +171,10 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
           const labelEl = node.querySelector(".label");
           let nodeText = "";
           let nodeDescription = "";
+          // Future fields - uncomment when available
+          let nodeType = "";
+          let sectionRef = "";
+          let textRef = "";
 
           if (labelEl) {
             // Remove any HTML tags and get clean text
@@ -179,7 +183,7 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
             nodeText = tempDiv.textContent.trim();
             nodeText = nodeText.replace(/^["']|["']$/g, "");
 
-            // Find the node's description from the Mermaid comments
+            // Find the node's metadata from the Mermaid comments
             const lines = cleanedCode.split('\n');
             let foundNode = false;
             for (let i = 0; i < lines.length; i++) {
@@ -188,9 +192,23 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
                 foundNode = true;
                 continue;
               }
-              if (foundNode && line.startsWith('%% Description:')) {
-                nodeDescription = line.replace('%% Description:', '').trim();
-                break;
+              if (foundNode) {
+                if (line.startsWith('%% Description:')) {
+                  nodeDescription = line.replace('%% Description:', '').trim();
+                }
+                /* Uncomment when these fields are available in the data
+                else if (line.startsWith('%% Type:')) {
+                  nodeType = line.replace('%% Type:', '').trim();
+                }
+                else if (line.startsWith('%% Section_Reference:')) {
+                  sectionRef = line.replace('%% Section_Reference:', '').trim();
+                }
+                else if (line.startsWith('%% Text_Reference:')) {
+                  textRef = line.replace('%% Text_Reference :', '').trim();
+                }
+                */
+                // Break if we've found all metadata or reached next node
+                if (line.match(/^[A-Z]+[\[\(]/)) break;
               }
             }
           }
@@ -206,6 +224,11 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
             id: nodeId,
             text: nodeText,
             description: nodeDescription,
+            /* Uncomment when these fields are available
+            node_type: nodeType,
+            section_ref: sectionRef,
+            text_ref: textRef,
+            */
             element: node,
           });
         });
@@ -223,15 +246,41 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
           const fromNode = parts[1];
           const toNode = parts[parts.length - 1];
 
-          // Get the edge label if it exists
+          // Get the edge label and metadata
           const edgeLabelGroup = newSvg.querySelector(`#${edgeId}-label`);
           let edgeLabel = "";
+          // Future fields - uncomment when available
+          let sectionRef = "";
+          let textRef = "";
 
           if (edgeLabelGroup) {
             const labelElement = edgeLabelGroup.querySelector(".edgeLabel");
             if (labelElement) {
               edgeLabel = labelElement.textContent.trim();
               edgeLabel = edgeLabel.replace(/^[|"'\s]+|[|"'\s]+$/g, "");
+
+              // Find edge metadata in comments
+              const lines = cleanedCode.split('\n');
+              let foundEdge = false;
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.includes(edgeLabel)) {
+                  foundEdge = true;
+                  continue;
+                }
+                if (foundEdge) {
+                  /* Uncomment when these fields are available
+                  if (line.startsWith('%% Section_Reference:')) {
+                    sectionRef = line.replace('%% Section_Reference:', '').trim();
+                  }
+                  else if (line.startsWith('%% Text_Reference:')) {
+                    textRef = line.replace('%% Text_Reference:', '').trim();
+                  }
+                  */
+                  // Break if we've found all metadata or reached next element
+                  if (line.match(/^[A-Z]+/)) break;
+                }
+              }
             }
           }
 
@@ -254,6 +303,10 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
             from: fromNode,
             to: toNode,
             label: edgeLabel,
+            /* Uncomment when these fields are available
+            section_ref: sectionRef,
+            text_ref: textRef,
+            */
             element: edge,
           });
         };

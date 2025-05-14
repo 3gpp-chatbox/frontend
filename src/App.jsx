@@ -63,7 +63,21 @@ function App() {
       
       // Map the element to its reference section
       if (markdownContent) {
-        // For nodes, use the description for reference mapping if available
+        /* When the new data structure is available, use section_ref and text_ref directly
+        if (element.section_ref) {
+          const referenceSection = {
+            refs: {
+              section: element.section_ref,
+              text: element.text_ref || ''
+            },
+            type: element.type
+          };
+          setHighlightedSection(referenceSection);
+          return;
+        }
+        */
+        
+        // Current implementation - fallback to using description
         const elementToMap = element.type === 'node' && element.description ? 
           { ...element, id: element.description } : 
           element;
