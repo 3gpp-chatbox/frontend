@@ -5,9 +5,16 @@ import {
   JsonToMermaid,
   defaultMermaidConfig,
 } from "../functions/jsonToMermaid";
-import ConfirmationDialog from "./ConfirmationDialog";
+import {
+  validateMermaidCode,
+  convertMermaidToJson,
+} from "../functions/mermaidToJson";
+import { validateGraph } from "../functions/schema_validation";
+import ConfirmationDialog from "./modals/ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
+import { FaSave } from "react-icons/fa";
+import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
 import { highlightMermaidLine } from "../utils/MermaidHighlighter";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
 import { createSaveHandlers } from "../utils/SaveChanges";
@@ -46,6 +53,7 @@ function JsonViewer({
   const [isWrapped, setIsWrapped] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [direction, setDirection] = useState("TD");
   const [notification, setNotification] = useState({
     show: false,
     message: "",
@@ -296,18 +304,8 @@ function JsonViewer({
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
-  // Add effect to show Mermaid when procedure is selected
-  useEffect(() => {
-    if (selectedProcedure) {
-      setActiveView("mermaid");
-    }
-  }, [selectedProcedure]);
-
-  /**
-   * Handles clicks in the Mermaid viewer.
-   * Switches to the Mermaid view and updates state accordingly.
-   */
-  const handleMermaidViewerClick = () => {
+  // Add function to update direction
+  const handleDirectionChange = (newDirection) => {
     if (isEditing) {
       setNotification({
         show: true,
@@ -316,136 +314,98 @@ function JsonViewer({
       });
       return;
     }
-    setActiveView("mermaid");
+    setDirection(newDirection);
+    // Update the Mermaid code with new direction
+    const updatedCode = mermaidGraph.replace(
+      /flowchart\s+(TD|TB|BT|LR|RL)/,
+      `flowchart ${newDirection}`,
+    );
+    setMermaidGraph(updatedCode);
+    onMermaidCodeChange(updatedCode);
   };
-
-  /**
-   * Handles clicks in the reference viewer.
-   * Switches to the reference view and updates state accordingly.
-   */
-  const handleReferenceViewerClick = () => {
-    if (isEditing) {
-      setNotification({
-        show: true,
-        message: "Please save or revert your changes first",
-        type: "warning",
-      });
-      return;
-    }
-    setActiveView("reference");
-
-    // Force a re-render of the InteractiveMarkdown component
-    if (highlightedSection) {
-      const currentSection = highlightedSection;
-      setHighlightedSection(null);
-      setTimeout(() => {
-        setHighlightedSection(currentSection);
-      }, 0);
-    }
-  };
-
-  /**
-   * Handles clicks in the JSON tree viewer.
-   * Switches to the JSON view and updates state accordingly.
-   */
-  const handleJsonViewerClick = () => {
-    if (isEditing) {
-      setNotification({
-        show: true,
-        message: "Please save or revert your changes first",
-        type: "warning",
-      });
-      return;
-    }
-    setActiveView("json");
-  };
-
-  const cleanMermaidCode = (code) => {
-    return code
-      .split("\n")
-      .filter(
-        (line) =>
-          // Keep flowchart direction lines
-          line.startsWith("flowchart") ||
-          line.startsWith("graph") ||
-          // Filter out only init and class definitions
-          (!line.includes("%%{init:") && !line.includes("classDef")),
-      )
-      .join("\n");
-  };
-
-  // Handle fold/unfold
-  const handleFold = useCallback((event) => {
-    const button = event.target.closest(".fold-button");
-    if (!button) return;
-
-    const line = button.closest(".code-line");
-    if (!line) return;
-
-    const level = parseInt(line.dataset.level);
-    const isFolded = button.textContent === "▼";
-    button.textContent = isFolded ? "▶" : "▼";
-
-    let current = line.nextElementSibling;
-    while (current && parseInt(current.dataset.level) > level) {
-      current.style.display = isFolded ? "none" : "flex";
-      current = current.nextElementSibling;
-    }
-  }, []);
 
   return (
-    <div className="section-container">
+    <div className="editor-panel">
       <div className="section-header">
-        <div className="header-content">
-          <div className="header-row">
-            <span className="title">
-              Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
-              {isEditing && (
-                <span className="editing-indicator"> (Editing)</span>
-              )}
-            </span>
+        <span>
+          {showMermaid ? "Mermaid" : "JSON"} Viewer
+          {isEditing && <span className="editing-indicator"> (Editing)</span>}
+        </span>
+        <div className="header-controls">
+          <div className="view-tabs">
+            <button
+              className={`tab-button ${showMermaid ? "active" : ""}`}
+              onClick={() => {
+                if (isEditing) {
+                  setNotification({
+                    show: true,
+                    message: "Please save or revert your changes first",
+                    type: "warning",
+                  });
+                  return;
+                }
+                setShowMermaid(true);
+              }}
+            >
+              Mermaid
+            </button>
+            <button
+              className={`tab-button ${!showMermaid ? "active" : ""}`}
+              onClick={() => {
+                if (isEditing) {
+                  setNotification({
+                    show: true,
+                    message: "Please save or revert your changes first",
+                    type: "warning",
+                  });
+                  return;
+                }
+                setShowMermaid(false);
+              }}
+            >
+              JSON
+            </button>
           </div>
         </div>
       </div>
-      <div className="button-container">
-        <button
-          className={`toggle-button ${
-            activeView === "mermaid" ? "active" : ""
-          }`}
-          onClick={handleMermaidViewerClick}
-          title="View Mermaid"
-          disabled={!selectedProcedure}
-        >
-          Show Mermaid
-        </button>
-        <button
-          className={`toggle-button ${activeView === "json" ? "active" : ""}`}
-          onClick={handleJsonViewerClick}
-          title="View JSON"
-          disabled={!selectedProcedure}
-        >
-          Show JSON
-        </button>
-        <button
-          className={`toggle-button ${
-            activeView === "reference" ? "active" : ""
-          }`}
-          onClick={handleReferenceViewerClick}
-          title="View Reference"
-          disabled={!selectedProcedure}
-        >
-          Show Reference
-        </button>
-        {activeView === "mermaid" && (
-          <button
-            className="save-button"
-            onClick={handleSaveClick}
-            disabled={!isEditing}
-          >
-            Save Changes
-          </button>
-        )}
-      </div>
+      {showMermaid && selectedProcedure && (
+        <div className="viewer-controls">
+          <div className="viewer-controls-left">
+            <span className="direction-label">Flow chart direction</span>
+            <div className="direction-tabs">
+              <button
+                className={`direction-button ${
+                  direction === "TD" ? "active" : ""
+                }`}
+                onClick={() => handleDirectionChange("TD")}
+                title="Top to Bottom"
+              >
+                <BiVerticalTop size={20} />
+              </button>
+              <button
+                className={`direction-button ${
+                  direction === "LR" ? "active" : ""
+                }`}
+                onClick={() => handleDirectionChange("LR")}
+                title="Left to Right"
+              >
+                <BiHorizontalLeft size={20} />
+              </button>
+            </div>
+          </div>
+          <div className="viewer-controls-right">
+            <button
+              className={`save-button ${isEditing ? "active" : ""}`}
+              onClick={handleSaveChanges}
+              disabled={!isEditing}
+              title="Save Changes"
+            >
+              <FaSave size={16} />
+              Save
+            </button>
+          </div>
+        </div>
+      )}
       {notification.show && (
         <div className={`notification ${notification.type}`}>
           {notification.message}

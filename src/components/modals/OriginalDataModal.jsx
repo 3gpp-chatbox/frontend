@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { JsonToMermaid } from "../functions/jsonToMermaid";
-import ModalDiagram from "./ModalDiagram";
-import { highlightJson } from "../utils/jsonHighlighter";
-import { highlightMermaid } from "../utils/MermaidHighlighter";
+import { JsonToMermaid } from "../../functions/jsonToMermaid";
+import ModalDiagram from "../modals/ModalDiagram";
+import { highlightJson } from "../../utils/jsonHighlighter";
+import { highlightMermaid } from "../../utils/MermaidHighlighter";
 
 function OriginalDataModal({ isOpen, onClose, originalData }) {
   const [selectedView, setSelectedView] = useState("json");
@@ -53,7 +53,7 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
       initialWidth: rect.width,
       initialHeight: rect.height,
       initialLeft: rect.left,
-      initialTop: rect.top
+      initialTop: rect.top,
     });
   }, []);
 
@@ -76,33 +76,38 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
         let newY = position.y;
 
         // Handle corner resizing
-        if (resizeDirection === 'nw' || resizeDirection === 'ne' || resizeDirection === 'sw' || resizeDirection === 'se') {
+        if (
+          resizeDirection === "nw" ||
+          resizeDirection === "ne" ||
+          resizeDirection === "sw" ||
+          resizeDirection === "se"
+        ) {
           // Handle width
-          if (resizeDirection.includes('e')) {
+          if (resizeDirection.includes("e")) {
             newWidth = Math.max(400, dragStart.initialWidth + deltaX);
-          } else if (resizeDirection.includes('w')) {
+          } else if (resizeDirection.includes("w")) {
             newWidth = Math.max(400, dragStart.initialWidth - deltaX);
             newX = dragStart.initialLeft + deltaX;
           }
 
           // Handle height
-          if (resizeDirection.includes('s')) {
+          if (resizeDirection.includes("s")) {
             newHeight = Math.max(200, dragStart.initialHeight + deltaY);
-          } else if (resizeDirection.includes('n')) {
+          } else if (resizeDirection.includes("n")) {
             newHeight = Math.max(200, dragStart.initialHeight - deltaY);
             newY = dragStart.initialTop + deltaY;
           }
-        } 
+        }
         // Handle edge resizing
         else {
-          if (resizeDirection === 'e') {
+          if (resizeDirection === "e") {
             newWidth = Math.max(400, dragStart.initialWidth + deltaX);
-          } else if (resizeDirection === 'w') {
+          } else if (resizeDirection === "w") {
             newWidth = Math.max(400, dragStart.initialWidth - deltaX);
             newX = dragStart.initialLeft + deltaX;
-          } else if (resizeDirection === 's') {
+          } else if (resizeDirection === "s") {
             newHeight = Math.max(200, dragStart.initialHeight + deltaY);
-          } else if (resizeDirection === 'n') {
+          } else if (resizeDirection === "n") {
             newHeight = Math.max(200, dragStart.initialHeight - deltaY);
             newY = dragStart.initialTop + deltaY;
           }
@@ -118,11 +123,11 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
 
         setSize({
           width: newWidth,
-          height: newHeight
+          height: newHeight,
         });
         setPosition({
           x: newX,
-          y: newY
+          y: newY,
         });
       }
     },
@@ -196,11 +201,12 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
     return code
       .split("\n")
       .filter(
-        (line) => 
+        (line) =>
           // Keep flowchart direction lines
-          (line.startsWith('flowchart') || line.startsWith('graph')) ||
+          line.startsWith("flowchart") ||
+          line.startsWith("graph") ||
           // Filter out only init and class definitions
-          (!line.includes("%%{init:") && !line.includes("classDef"))
+          (!line.includes("%%{init:") && !line.includes("classDef")),
       )
       .join("\n");
   };
@@ -265,7 +271,7 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
                   contentEditable={false}
                   spellCheck="false"
                   dangerouslySetInnerHTML={{
-                    __html: highlightMermaid(cleanMermaidCode(mermaidCode))
+                    __html: highlightMermaid(cleanMermaidCode(mermaidCode)),
                   }}
                 />
               </div>
@@ -332,19 +338,44 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
           height: size.height,
           transform: `translate(${position.x}px, ${position.y}px)`,
           cursor: isDragging ? "grabbing" : "default",
-          transition: isDragging || isResizing ? "none" : "transform 0.1s ease-out",
+          transition:
+            isDragging || isResizing ? "none" : "transform 0.1s ease-out",
         }}
         onMouseDown={handleMouseDown}
       >
         {/* Resize handles */}
-        <div className="resize-handle e" onMouseDown={(e) => handleResizeStart(e, 'e')} />
-        <div className="resize-handle w" onMouseDown={(e) => handleResizeStart(e, 'w')} />
-        <div className="resize-handle n" onMouseDown={(e) => handleResizeStart(e, 'n')} />
-        <div className="resize-handle s" onMouseDown={(e) => handleResizeStart(e, 's')} />
-        <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, 'se')} />
-        <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, 'sw')} />
-        <div className="resize-handle ne" onMouseDown={(e) => handleResizeStart(e, 'ne')} />
-        <div className="resize-handle nw" onMouseDown={(e) => handleResizeStart(e, 'nw')} />
+        <div
+          className="resize-handle e"
+          onMouseDown={(e) => handleResizeStart(e, "e")}
+        />
+        <div
+          className="resize-handle w"
+          onMouseDown={(e) => handleResizeStart(e, "w")}
+        />
+        <div
+          className="resize-handle n"
+          onMouseDown={(e) => handleResizeStart(e, "n")}
+        />
+        <div
+          className="resize-handle s"
+          onMouseDown={(e) => handleResizeStart(e, "s")}
+        />
+        <div
+          className="resize-handle se"
+          onMouseDown={(e) => handleResizeStart(e, "se")}
+        />
+        <div
+          className="resize-handle sw"
+          onMouseDown={(e) => handleResizeStart(e, "sw")}
+        />
+        <div
+          className="resize-handle ne"
+          onMouseDown={(e) => handleResizeStart(e, "ne")}
+        />
+        <div
+          className="resize-handle nw"
+          onMouseDown={(e) => handleResizeStart(e, "nw")}
+        />
 
         <div
           className="modal-header"
