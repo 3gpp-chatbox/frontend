@@ -63,8 +63,16 @@ function App() {
       
       // Map the element to its reference section
       if (markdownContent) {
-        const referenceSection = mapElementToReference(markdownContent, element);
+        // For nodes, use the description for reference mapping if available
+        const elementToMap = element.type === 'node' && element.description ? 
+          { ...element, id: element.description } : 
+          element;
+        
+        const referenceSection = mapElementToReference(markdownContent, elementToMap);
         console.log("Found reference section:", referenceSection);
+        if (referenceSection) {
+          referenceSection.type = element.type; // Add element type for better matching
+        }
         setHighlightedSection(referenceSection);
       }
     }

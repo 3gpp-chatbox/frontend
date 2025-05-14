@@ -170,15 +170,29 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
           // Extract the actual node text from the label
           const labelEl = node.querySelector(".label");
           let nodeText = "";
+          let nodeDescription = "";
 
           if (labelEl) {
             // Remove any HTML tags and get clean text
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = labelEl.innerHTML;
             nodeText = tempDiv.textContent.trim();
-
-            // Remove quotes if present
             nodeText = nodeText.replace(/^["']|["']$/g, "");
+
+            // Find the node's description from the Mermaid comments
+            const lines = cleanedCode.split('\n');
+            let foundNode = false;
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (line.includes(nodeText)) {
+                foundNode = true;
+                continue;
+              }
+              if (foundNode && line.startsWith('%% Description:')) {
+                nodeDescription = line.replace('%% Description:', '').trim();
+                break;
+              }
+            }
           }
 
           // Add visual feedback for clicked node
@@ -191,6 +205,7 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
             type: "node",
             id: nodeId,
             text: nodeText,
+            description: nodeDescription,
             element: node,
           });
         });

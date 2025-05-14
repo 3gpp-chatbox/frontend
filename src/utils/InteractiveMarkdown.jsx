@@ -97,12 +97,22 @@ function InteractiveMarkdown({ content, highlightedSection }) {
       // Look for specific text within the section first
       if (textRef) {
         const cleanTextRef = textRef.toLowerCase().replace(/\.\.\./g, '').trim();
+        console.log("Looking for text:", cleanTextRef, "type:", section.type);
+        
         for (let i = sectionStartLine; i <= sectionEndLine; i++) {
           const lineContent = lineElements[i].textContent.toLowerCase();
-          if (lineContent.includes(cleanTextRef)) {
+          
+          // For nodes, we need to be more flexible in matching since the node text might be part of a longer line
+          // For edges, we want to match the exact text
+          const isNode = section.type === 'node';
+          const isMatch = isNode ? 
+            lineContent.includes(cleanTextRef) : 
+            lineContent.includes(cleanTextRef);
+            
+          if (isMatch) {
             lineElements[i].classList.add('highlighted-line');
             textMatchLine = i;
-            console.log("Found matching text at line:", i + 1);
+            console.log("Found matching text at line:", i + 1, "for", isNode ? "node" : "edge");
             break;
           }
         }
