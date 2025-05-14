@@ -1,9 +1,19 @@
-import React, { useEffect, useRef, useState } from 'react';
-import PropTypes from 'prop-types';
+import { useEffect, useRef, useState } from "react";
+import PropTypes from "prop-types";
 
 /**
  * A component that renders markdown content with interactive elements.
- * Renders the markdown file directly with line-by-line highlighting support.
+ * Provides line-by-line highlighting support and section navigation.
+ *
+ * @component
+ * @param {Object} props - Component properties
+ * @param {string} props.content - The markdown content to render
+ * @param {Object} [props.highlightedSection] - Section to highlight
+ * @param {Object} props.highlightedSection.refs - Reference information
+ * @param {string} props.highlightedSection.refs.section - Section reference
+ * @param {string} props.highlightedSection.refs.text - Text reference
+ * @param {string} [props.highlightedSection.type] - Type of highlight ('node' or 'edge')
+ * @returns {JSX.Element} The rendered markdown with highlighting
  */
 function InteractiveMarkdown({ content, highlightedSection }) {
   const markdownRef = useRef(null);
@@ -13,7 +23,7 @@ function InteractiveMarkdown({ content, highlightedSection }) {
   // Split content into lines when it changes
   useEffect(() => {
     if (!content) return;
-    setLines(content.split('\n'));
+    setLines(content.split("\n"));
   }, [content]);
 
   // Handle initial mounting and highlighting
@@ -32,7 +42,7 @@ function InteractiveMarkdown({ content, highlightedSection }) {
     if (!highlightedSection || !markdownRef.current) {
       console.log("Skipping highlight effect:", {
         hasHighlightedSection: !!highlightedSection,
-        hasMarkdownRef: !!markdownRef.current
+        hasMarkdownRef: !!markdownRef.current,
       });
       return;
     }
@@ -40,18 +50,31 @@ function InteractiveMarkdown({ content, highlightedSection }) {
     applyHighlights(highlightedSection, markdownRef.current);
   }, [highlightedSection]);
 
+  /**
+   * Applies highlighting to the specified section and text in the content.
+   * Handles both primary highlighting for specific text and context highlighting for sections.
+   *
+   * @param {Object} section - Section information for highlighting
+   * @param {Object} section.refs - Reference information
+   * @param {string} section.refs.section - Section reference
+   * @param {string} section.refs.text - Text reference
+   * @param {string} [section.type] - Type of highlight ('node' or 'edge')
+   * @param {HTMLElement} container - Container element with the content
+   */
   const applyHighlights = (section, container) => {
     console.log("Applying highlights to content");
-    
+
     // Clear existing highlights first
-    const existingHighlights = container.querySelectorAll('.highlighted-line, .highlighted-context');
-    existingHighlights.forEach(el => {
-      el.classList.remove('highlighted-line', 'highlighted-context');
-      el.style.backgroundColor = '';
+    const existingHighlights = container.querySelectorAll(
+      ".highlighted-line, .highlighted-context",
+    );
+    existingHighlights.forEach((el) => {
+      el.classList.remove("highlighted-line", "highlighted-context");
+      el.style.backgroundColor = "";
     });
 
     // Get all line elements
-    const lineElements = container.querySelectorAll('.line');
+    const lineElements = container.querySelectorAll(".line");
     console.log(`Found ${lineElements.length} lines in content`);
 
     // Extract section_ref and text_ref from highlightedSection
@@ -72,12 +95,12 @@ function InteractiveMarkdown({ content, highlightedSection }) {
     // First pass: Find the section boundaries
     for (let i = 0; i < lineElements.length; i++) {
       const lineContent = lineElements[i].textContent.toLowerCase();
-      
+
       // Check for section header
       if (lineContent.includes(sectionRef?.toLowerCase())) {
         sectionStartLine = i;
         foundHighlight = true;
-        
+
         // Find section end (next section header or end of content)
         for (let j = i + 1; j < lineElements.length; j++) {
           if (lineElements[j].textContent.match(/^#+\s/)) {
@@ -92,27 +115,38 @@ function InteractiveMarkdown({ content, highlightedSection }) {
 
     // If we found the section, highlight it and look for specific text
     if (foundHighlight) {
-      console.log("Found section boundaries:", { start: sectionStartLine, end: sectionEndLine });
-      
+      console.log("Found section boundaries:", {
+        start: sectionStartLine,
+        end: sectionEndLine,
+      });
+
       // Look for specific text within the section first
       if (textRef) {
-        const cleanTextRef = textRef.toLowerCase().replace(/\.\.\./g, '').trim();
+        const cleanTextRef = textRef
+          .toLowerCase()
+          .replace(/\.\.\./g, "")
+          .trim();
         console.log("Looking for text:", cleanTextRef, "type:", section.type);
-        
+
         for (let i = sectionStartLine; i <= sectionEndLine; i++) {
           const lineContent = lineElements[i].textContent.toLowerCase();
-          
+
           // For nodes, we need to be more flexible in matching since the node text might be part of a longer line
           // For edges, we want to match the exact text
-          const isNode = section.type === 'node';
-          const isMatch = isNode ? 
-            lineContent.includes(cleanTextRef) : 
-            lineContent.includes(cleanTextRef);
-            
+          const isNode = section.type === "node";
+          const isMatch = isNode
+            ? lineContent.includes(cleanTextRef)
+            : lineContent.includes(cleanTextRef);
+
           if (isMatch) {
-            lineElements[i].classList.add('highlighted-line');
+            lineElements[i].classList.add("highlighted-line");
             textMatchLine = i;
-            console.log("Found matching text at line:", i + 1, "for", isNode ? "node" : "edge");
+            console.log(
+              "Found matching text at line:",
+              i + 1,
+              "for",
+              isNode ? "node" : "edge",
+            );
             break;
           }
         }
@@ -120,17 +154,23 @@ function InteractiveMarkdown({ content, highlightedSection }) {
 
       // Add context highlighting to the section
       for (let i = sectionStartLine; i <= sectionEndLine; i++) {
-        if (!lineElements[i].classList.contains('highlighted-line')) {
-          lineElements[i].classList.add('highlighted-context');
+        if (!lineElements[i].classList.contains("highlighted-line")) {
+          lineElements[i].classList.add("highlighted-context");
         }
       }
 
       // Scroll to the text match if found, otherwise to section header
       setTimeout(() => {
-        const targetLine = textMatchLine !== null ? lineElements[textMatchLine] : lineElements[sectionStartLine];
+        const targetLine =
+          textMatchLine !== null
+            ? lineElements[textMatchLine]
+            : lineElements[sectionStartLine];
         if (targetLine) {
-          targetLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          console.log("Scrolled to", textMatchLine !== null ? "text match" : "section header");
+          targetLine.scrollIntoView({ behavior: "smooth", block: "center" });
+          console.log(
+            "Scrolled to",
+            textMatchLine !== null ? "text match" : "section header",
+          );
         }
       }, 100);
     } else {
@@ -142,11 +182,7 @@ function InteractiveMarkdown({ content, highlightedSection }) {
     <div className="interactive-markdown" ref={markdownRef}>
       <pre className="markdown-content">
         {lines.map((line, index) => (
-          <div 
-            key={index}
-            className="line"
-            data-line={index + 1}
-          >
+          <div key={index} className="line" data-line={index + 1}>
             {line}
           </div>
         ))}
@@ -162,9 +198,9 @@ InteractiveMarkdown.propTypes = {
   highlightedSection: PropTypes.shape({
     refs: PropTypes.shape({
       section: PropTypes.string,
-      text: PropTypes.string
-    })
-  })
+      text: PropTypes.string,
+    }),
+  }),
 };
 
-export default InteractiveMarkdown; 
+export default InteractiveMarkdown;

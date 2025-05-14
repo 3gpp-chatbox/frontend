@@ -1,17 +1,35 @@
 /**
+ * Utility module for mapping diagram elements to their corresponding sections in the reference content.
+ * @module referenceMapper
+ */
+
+/**
  * Maps diagram elements (nodes/edges) to sections in the reference content.
- * Returns the position to scroll to and the text to highlight.
+ * Extracts section and text references from element IDs and finds their positions in the content.
+ *
+ * @param {string} content - The markdown content to search in
+ * @param {Object} element - The diagram element to map
+ * @param {string} element.id - Element identifier containing section_ref and text_ref
+ * @returns {Object|null} Reference section information or null if not found
+ * @property {number} lineNumber - Line number where the reference was found
+ * @property {number} contextStart - Starting line number for the section context
+ * @property {number} contextEnd - Ending line number for the section context
+ * @property {string} matchedText - The matched text content
+ * @property {string} sectionContent - The entire section content
+ * @property {Object} refs - Reference identifiers
+ * @property {string} refs.section - Section reference
+ * @property {string} refs.text - Text reference
  */
 export const mapElementToReference = (content, element) => {
   if (!content || !element) return null;
 
   console.log("Mapping element to reference:", element);
 
-  let sectionRef = '';
-  let textRef = '';
-  
-  const id = element.id || '';
-  
+  let sectionRef = "";
+  let textRef = "";
+
+  const id = element.id || "";
+
   // Extract section_ref and text_ref
   const sectionMatch = id.match(/\[section_ref:\s*([^\]]+)\]/);
   if (sectionMatch) {
@@ -20,21 +38,29 @@ export const mapElementToReference = (content, element) => {
 
   const textMatch = id.match(/\[text_ref:\s*([^\]]+)\]/);
   if (textMatch) {
-    textRef = textMatch[1].trim().replace(/^\.\.\./, '').replace(/\.\.\.$/g, '');
+    textRef = textMatch[1]
+      .trim()
+      .replace(/^\.\.\./, "")
+      .replace(/\.\.\.$/g, "");
   }
 
   console.log("Extracted refs:", { sectionRef, textRef });
 
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   let foundIndex = -1;
   let contextStart = 0;
   let contextEnd = 0;
 
   // First find the base section (without -a, -b, -c)
-  const baseSection = sectionRef.replace(/-[a-z]$/, '');
+  const baseSection = sectionRef.replace(/-[a-z]$/, "");
   const subSection = sectionRef.match(/-([a-z])$/)?.[1];
-  
-  console.log("Looking for base section:", baseSection, "subsection:", subSection);
+
+  console.log(
+    "Looking for base section:",
+    baseSection,
+    "subsection:",
+    subSection,
+  );
 
   // Find the section start
   let sectionStartIndex = -1;
@@ -60,10 +86,10 @@ export const mapElementToReference = (content, element) => {
     // First try to find the text_ref if it exists
     if (textRef) {
       const searchText = textRef
-        .replace(/\.\.\./g, '')
+        .replace(/\.\.\./g, "")
         .toLowerCase()
         .trim();
-      
+
       console.log("Searching for text:", searchText);
 
       // Look for the text within the section
@@ -110,13 +136,13 @@ export const mapElementToReference = (content, element) => {
     contextStart: contextStart + 1,
     contextEnd: contextEnd + 1,
     matchedText: lines[foundIndex],
-    sectionContent: lines.slice(contextStart, contextEnd + 1).join('\n'),
+    sectionContent: lines.slice(contextStart, contextEnd + 1).join("\n"),
     refs: {
       section: sectionRef,
-      text: textRef
-    }
+      text: textRef,
+    },
   };
 
   console.log("Mapping result:", result);
   return result;
-}; 
+};

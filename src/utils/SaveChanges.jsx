@@ -1,18 +1,32 @@
-import { validateMermaidCode, convertMermaidToJson } from "../functions/mermaidToJson";
+import {
+  validateMermaidCode,
+  convertMermaidToJson,
+} from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import { insertProcedureGraphChanges } from "../API/api_calls";
 
+/**
+ * @module SaveChanges
+ * Utility module for managing save and revert functionality in editors.
+ */
+
 // Base save functions
-export const handleSaveChanges = (mermaidGraph, setNotification, setShowConfirmation) => {
+export const handleSaveChanges = (
+  mermaidGraph,
+  setNotification,
+  setShowConfirmation,
+) => {
   try {
     // Get current direction or default to LR
     const directionMatch = mermaidGraph.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
     if (!directionMatch) {
       // If no direction specified, prepend LR direction
-      const lines = mermaidGraph.split('\n');
+      const lines = mermaidGraph.split("\n");
       const firstLine = lines[0].trim();
-      if (!firstLine.startsWith('flowchart')) {
-        throw new Error('Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)');
+      if (!firstLine.startsWith("flowchart")) {
+        throw new Error(
+          "Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)",
+        );
       }
     }
 
@@ -61,7 +75,7 @@ export const handleConfirmSave = async ({
   isUserEditing,
   setIsEditing,
   onProcedureUpdate,
-  onMermaidCodeChange
+  onMermaidCodeChange,
 }) => {
   setShowConfirmation(false);
   setNotification({
@@ -80,7 +94,7 @@ export const handleConfirmSave = async ({
     const graphData = convertMermaidToJson(mermaidGraph);
     const result = await insertProcedureGraphChanges(selectedProcedure.id, {
       nodes: graphData.nodes,
-      edges: graphData.edges
+      edges: graphData.edges,
     });
 
     if (!result) {
@@ -91,11 +105,11 @@ export const handleConfirmSave = async ({
     setOriginalMermaidGraph(mermaidGraph);
     setData(result);
     setOriginalData(result);
-    
+
     // Only show the graph data in JSON view
     const updatedGraphData = result.edited_graph || result.original_graph;
     setJsonContent(JSON.stringify(updatedGraphData, null, 2));
-    
+
     isUserEditing.current = false;
     setIsEditing(false);
 
@@ -127,15 +141,15 @@ export const handleRevertChanges = ({
   setIsEditing,
   setShowConfirmation,
   onMermaidCodeChange,
-  setNotification
+  setNotification,
 }) => {
   setMermaidGraph(originalMermaidGraph);
   setData(originalData);
-  
+
   // Only show the graph data in JSON view
   const graphData = originalData.edited_graph || originalData.original_graph;
   setJsonContent(JSON.stringify(graphData, null, 2));
-  
+
   isUserEditing.current = false;
   setIsEditing(false);
   setShowConfirmation(false);
@@ -151,7 +165,18 @@ export const handleContinueEditing = (setShowConfirmation) => {
   setShowConfirmation(false);
 };
 
-// Click handler wrappers
+/**
+ * Creates save and revert handlers for managing editor state.
+ *
+ * @param {Object} options - Configuration options
+ * @param {Function} options.setIsEditing - Function to update editing state
+ * @param {Function} options.setData - Function to update data state
+ * @param {Function} options.setMermaidCode - Function to update Mermaid code
+ * @param {Function} options.onProcedureUpdate - Callback for procedure updates
+ * @param {Object} options.selectedProcedure - Currently selected procedure
+ * @param {Function} options.setNotification - Function to show notifications
+ * @returns {Object} Object containing save and revert handler functions
+ */
 export const createSaveHandlers = ({
   mermaidGraph,
   selectedProcedure,
@@ -167,7 +192,7 @@ export const createSaveHandlers = ({
   onMermaidCodeChange,
   originalMermaidGraph,
   originalData,
-  setMermaidGraph
+  setMermaidGraph,
 }) => {
   const handleSaveClick = () => {
     handleSaveChanges(mermaidGraph, setNotification, setShowConfirmation);
@@ -186,7 +211,7 @@ export const createSaveHandlers = ({
       isUserEditing,
       setIsEditing,
       onProcedureUpdate,
-      onMermaidCodeChange
+      onMermaidCodeChange,
     });
   };
 
@@ -201,7 +226,7 @@ export const createSaveHandlers = ({
       setIsEditing,
       setShowConfirmation,
       onMermaidCodeChange,
-      setNotification
+      setNotification,
     });
   };
 
@@ -213,6 +238,6 @@ export const createSaveHandlers = ({
     handleSaveClick,
     handleConfirmSaveClick,
     handleRevertChangesClick,
-    handleContinueEditingClick
+    handleContinueEditingClick,
   };
-}; 
+};
