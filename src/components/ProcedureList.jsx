@@ -6,103 +6,143 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
   const [procedureList, setProcedureList] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedProcedure, setExpandedProcedure] = useState(null);
 
- // Fetch available procedures on mount
- useEffect(() => {
-  const loadProcedures = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const data = await fetchProcedures();
-      console.log("Received procedures data:", data); 
+  // Fetch available procedures on mount
+  useEffect(() => {
+    const loadProcedures = async () => {
+      setIsLoading(true);
+      setError(null);
       
-      if (Array.isArray(data)) {
-        setProcedureList(data);
+      try {
+        const data = await fetchProcedures();
+        console.log("Received procedures data:", data); 
+        
+        if (Array.isArray(data)) {
+          // Group procedures by procedure_name
+          const groupedProcedures = data.reduce((acc, procedure) => {
+            const existingProcedure = acc.find(p => p.procedure_name === procedure.procedure_name);
+            if (existingProcedure) {
+              existingProcedure.entities.push({
+                id: `${procedure.procedure_id}_${procedure.entity.toLowerCase()}`,
+                name: `${procedure.entity}-${procedure.procedure_name}`,
+                entity: procedure.entity
+              });
+            } else {
+              acc.push({
+                procedure_id: procedure.procedure_id,
+                procedure_name: procedure.procedure_name,
+                entities: [{
+                  id: `${procedure.procedure_id}_${procedure.entity.toLowerCase()}`,
+                  name: `${procedure.entity}-${procedure.procedure_name}`,
+                  entity: procedure.entity
+                }]
+              });
+            }
+            return acc;
+          }, []);
+          
+          setProcedureList(groupedProcedures);
+        } else {
+          console.error("Expected array of procedures, got:", data);
+          setError("Invalid data format received from server");
+        }
+      } catch (err) {
+        console.error("Error fetching procedures:", err);
+        setError("Failed to load procedures: " + (err.message || "Unknown error"));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProcedures();
+  }, []);
+
+  const handleProcedureClick = async (procedure, entity) => {
+    try {
+      // Fetch procedure-entity specific data
+      const procedureData = await fetchProcedure(procedure.procedure_id, entity.entity);
+      
+      if (procedureData) {
+        const mermaidDiagram = JsonToMermaid(
+          procedureData.graph,
+          defaultMermaidConfig
+        );
+        // todo: modify this
+        // Pass all procedure data to the parent component
+        onProcedureSelect({
+          ...procedureData,           // Include all API response data
+          name: entity.name,          // Use entity-specific name
+          procedure_name: procedure.procedure_name, // Keep original procedure name 
+          mermaidDiagram,            // Add generated Mermaid diagram
+        });
       } else {
-        console.error("Expected array of procedures, got:", data);
-        setError("Invalid data format received from server");
+        setError(`No data available for ${entity.name}`);
       }
     } catch (err) {
-      console.error("Error fetching procedures:", err);
-      setError("Failed to load procedures: " + (err.message || "Unknown error"));
-    } finally {
-      setIsLoading(false);
+      console.error("Error fetching procedure data:", err);
+      setError(`Failed to load data for ${entity.name}`);
     }
   };
 
-  loadProcedures();
-}, []);
+  const toggleProcedure = (procedureId) => {
+    setExpandedProcedure(expandedProcedure === procedureId ? null : procedureId);
+  };
 
-const handleProcedureClick = async (procedure) => {
-  try {
-    const procedureData = await fetchProcedure(procedure.id);
-    
-    if (procedureData) {
-      const mermaidDiagram = JsonToMermaid(
-        procedureData.edited_graph || procedureData.original_graph,
-        defaultMermaidConfig
-      );
-      
-      // Pass all procedure data to the parent component
-      onProcedureSelect({
-        ...procedureData,           // Include all API response data
-        name: procedure.name,       // Ensure name is included
-        id: procedure.id,           // Ensure ID is included
-        mermaidDiagram,            // Add generated Mermaid diagram
-        jsonData: procedureData.edited_graph || procedureData.original_graph
-      });
-    } else {
-      setError(`No data available for ${procedure.name}`);
-    }
-  } catch (err) {
-    console.error("Error fetching procedure data:", err);
-    setError(`Failed to load data for ${procedure.name}`);
-  }
-};
-
-if (error) {
-  return (
-    <div className="section-container">
-      <div className="section-header">
-        <span>Procedures</span>
+  if (error) {
+    return (
+      <div className="section-container">
+        <div className="section-header">
+          <span>Procedures</span>
+        </div>
+        <div className="content-area error-message">
+          {error}
+        </div>
       </div>
-      <div className="content-area error-message">
-        {error}
+    );
+  }
+
+  return (
+    <div className="menu-bar">
+      <div className="menu-item"> 
+        <span className="menu-item-text">Procedures</span>
+        <div className="dropdown-content">
+          {isLoading ? (
+            <div className="placeholder-text">Loading procedures...</div>
+          ) : procedureList.length === 0 ? (
+            <div className="placeholder-text">No procedures available</div>
+          ) : (
+            procedureList.map((procedure) => (
+              <div key={procedure.procedure_id}>
+                <div 
+                  className={`dropdown-item procedure-header ${expandedProcedure === procedure.procedure_id ? 'expanded' : ''}`}
+                  onClick={() => toggleProcedure(procedure.procedure_id)}
+                >
+                  <span>{procedure.procedure_name}</span>
+                  <span className="toggle-icon">
+                    {expandedProcedure === procedure.procedure_id ? '−' : '+'}
+                  </span>
+                </div>
+                {expandedProcedure === procedure.procedure_id && (
+                  <div className="entity-list">
+                    {procedure.entities.map((entity) => (
+                      <div
+                        key={entity.id}
+                        className="dropdown-item entity-item"
+                        onClick={() => handleProcedureClick(procedure, entity)}
+                      >
+                        {entity.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-return (
-  <div className="section-container">
-    <div className="section-header">
-      <span>Procedures</span>
-    </div>
-    <div className="content-area">
-      {isLoading ? (
-        <div className="placeholder-text">Loading procedures...</div>
-      ) : procedureList.length === 0 ? (
-        <div className="placeholder-text">No procedures available</div>
-      ) : (
-        <div className="procedure-list">
-          {procedureList.map((procedure) => (
-            <div 
-              key={procedure.id}
-              className={`procedure-item ${
-                selectedProcedure?.id === procedure.id ? "active" : ""
-              }`}
-              onClick={() => handleProcedureClick(procedure)}
-            >
-              <div className="procedure-header">
-                <span>{procedure.name}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  </div>
-);
-}
 export default ProcedureList;

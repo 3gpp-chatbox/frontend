@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import mermaid from "mermaid";
+import { MdRefresh } from 'react-icons/md';
 
 
 // Initialize mermaid with optimized settings
@@ -468,6 +469,7 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
         <div className="diagram-controls">
           <span>Zoom: {zoomLevel}%</span>
           <button
+            className="reset-button"
             onClick={() => {
               const newScale = 1;
               const newPosition = { x: 0, y: 0 };
@@ -481,6 +483,7 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
               };
             }}
           >
+            <MdRefresh className="reset-icon" />
             Reset View
           </button>
         </div>

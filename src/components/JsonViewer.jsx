@@ -10,9 +10,11 @@ import {
   convertMermaidToJson,
 } from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
-import ConfirmationDialog from "./ConfirmationDialog";
+import ConfirmationDialog from "./modals/ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
+import { FaSave } from "react-icons/fa";
+import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
 
 function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
   const [data, setData] = useState(null);
@@ -24,6 +26,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   const [isWrapped, setIsWrapped] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [direction, setDirection] = useState('TD');
   const [notification, setNotification] = useState({
     show: false,
     message: "",
@@ -445,42 +448,101 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
+  // Add function to update direction
+  const handleDirectionChange = (newDirection) => {
+    if (isEditing) {
+      setNotification({
+        show: true,
+        message: "Please save or revert your changes first",
+        type: "warning",
+      });
+      return;
+    }
+    setDirection(newDirection);
+    // Update the Mermaid code with new direction
+    const updatedCode = mermaidGraph.replace(/flowchart\s+(TD|TB|BT|LR|RL)/, `flowchart ${newDirection}`);
+    setMermaidGraph(updatedCode);
+    onMermaidCodeChange(updatedCode);
+  };
+
   return (
-    <div className="section-container">
+    <div className="editor-panel">
       <div className="section-header">
         <span>
-          Code View {selectedProcedure ? `- ${selectedProcedure.name}` : ""}
+          {showMermaid ? 'Mermaid' : 'JSON'} Viewer
           {isEditing && <span className="editing-indicator"> (Editing)</span>}
         </span>
-        <div className="viewer-controls">
-          <button
-            className="toggle-button"
-            onClick={() => {
-              if (isEditing) {
-                setNotification({
-                  show: true,
-                  message: "Please save or revert your changes first",
-                  type: "warning",
-                });
-                return;
-              }
-              setShowMermaid(!showMermaid);
-            }}
-            title={showMermaid ? "View JSON" : "View Mermaid"}
-          >
-            {showMermaid ? "Show JSON" : "Show Mermaid"}
-          </button>
-          {showMermaid && (
+        <div className="header-controls">
+          <div className="view-tabs">
             <button
-              className={`save-button ${isEditing ? "active" : ""}`}
-              onClick={handleSaveChanges}
-              disabled={!isEditing}
+              className={`tab-button ${showMermaid ? 'active' : ''}`}
+              onClick={() => {
+                if (isEditing) {
+                  setNotification({
+                    show: true,
+                    message: "Please save or revert your changes first",
+                    type: "warning",
+                  });
+                  return;
+                }
+                setShowMermaid(true);
+              }}
             >
-              Save Changes
+              Mermaid
             </button>
-          )}
+            <button
+              className={`tab-button ${!showMermaid ? 'active' : ''}`}
+              onClick={() => {
+                if (isEditing) {
+                  setNotification({
+                    show: true,
+                    message: "Please save or revert your changes first",
+                    type: "warning",
+                  });
+                  return;
+                }
+                setShowMermaid(false);
+              }}
+            >
+              JSON
+            </button>
+          </div>
         </div>
       </div>
+      {showMermaid && selectedProcedure && (
+          <div className="viewer-controls">
+            <div className="viewer-controls-left">
+              <span className="direction-label">Flow chart direction</span>
+              <div className="direction-tabs">
+                <button
+                  className={`direction-button ${direction === 'TD' ? 'active' : ''}`}
+                  onClick={() => handleDirectionChange('TD')}
+                  title="Top to Bottom"
+                >
+                  <BiVerticalTop size={20} />
+                </button>
+                <button
+                  className={`direction-button ${direction === 'LR' ? 'active' : ''}`}
+                  onClick={() => handleDirectionChange('LR')}
+                  title="Left to Right"
+                >
+                  <BiHorizontalLeft size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="viewer-controls-right">
+              <button
+                className={`save-button ${isEditing ? "active" : ""}`}
+                onClick={handleSaveChanges}
+                disabled={!isEditing}
+                title="Save Changes"
+              >
+                <FaSave size={16} />
+                Save
+              </button>
+            </div>
+          </div>
+      )}
       {notification.show && (
         <div className={`notification ${notification.type}`}>
           {notification.message}
@@ -491,38 +553,38 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
           data ? (
             <pre className="json-content">
               {showMermaid ? (
-              <div className="mermaid-editor">
-                <div
-                  ref={editorRef}
-                  className={`code-content ${isWrapped ? "wrapped" : ""}`}
-                  contentEditable={true}
-                  onInput={handleMermaidChange}
-                  onFocus={onEditorFocus}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const selection = window.getSelection();
-                      const range = selection.getRangeAt(0);
-                      const br = document.createElement('br');
-                      range.deleteContents();
-                      range.insertNode(br);
-                      range.setStartAfter(br);
-                      range.setEndAfter(br);
-                      selection.removeAllRanges();
-                      selection.addRange(range);
-                      handleMermaidChange(e);
-                    }
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: highlightMermaidLine(
-                      highlightMermaid(cleanMermaidCode(mermaidGraph)),
-                      highlightedElement?.id,
-                      highlightedElement?.type
-                    )
-                  }}
-                  spellCheck="false"
-                />
-              </div>
+                <div className="mermaid-editor">
+                  <div
+                    ref={editorRef}
+                    className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                    contentEditable={true}
+                    onInput={handleMermaidChange}
+                    onFocus={onEditorFocus}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const selection = window.getSelection();
+                        const range = selection.getRangeAt(0);
+                        const br = document.createElement('br');
+                        range.deleteContents();
+                        range.insertNode(br);
+                        range.setStartAfter(br);
+                        range.setEndAfter(br);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        handleMermaidChange(e);
+                      }
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: highlightMermaidLine(
+                        highlightMermaid(cleanMermaidCode(mermaidGraph)),
+                        highlightedElement?.id,
+                        highlightedElement?.type
+                      )
+                    }}
+                    spellCheck="false"
+                  />
+                </div>
               ) : (
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}

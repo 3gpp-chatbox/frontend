@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
 import ProcedureList from "./components/ProcedureList";
-import Description from "./components/Descriptions";
+// import Description from "./components/Descriptions";
+import ProcedureTitle from "./components/procedureTitle";
 
 function App() {
   const [mermaidCode, setMermaidCode] = useState(null);
@@ -44,46 +46,55 @@ function App() {
 
   return (
     <div className="container">
-      <header className="header">
-        <h1>3GPP Flow Editor</h1>
-      </header>
-
+      <div className="title-bar-container">    
+      {/* title bar */}
+        <header className="title">
+          3GPP Procedure Insights
+        </header>
+        <ProcedureList
+          selectedProcedure={selectedProcedure}
+          onProcedureSelect={handleProcedureSelect}
+        />
+      </div>
+      {/* grid layout */}
       <div className="grid-layout">
-        {/* Procedures Panel */}
-        <div className="col-3">
-          <ProcedureList
-            selectedProcedure={selectedProcedure}
-            onProcedureSelect={handleProcedureSelect}
-          />
-        </div>
-        <div className="description-panel">
-          <Description 
-            procedure={procedureData} 
-            onProcedureUpdate={handleProcedureUpdate}
-            onMermaidCodeChange={handleMermaidCodeChange}
-          />
-        </div>
+        {/* procedure title bar */}
+        <ProcedureTitle selectedProcedure={selectedProcedure} />
 
-        {/* Editor and Diagram Container */}
-        <div className="editor-diagram-container">
-          {/* JSON/Mermaid Editor Panel */}
-          <div className="editor-panel">
-            <JsonViewer
-              onMermaidCodeChange={handleMermaidCodeChange}
-              selectedProcedure={selectedProcedure}
-              onProcedureUpdate={handleProcedureUpdate}
-              highlightedElement={highlightedElement}
-              onEditorFocus={handleEditorFocus}
-            />
-          </div>
-
-          {/* Flow Diagram Panel */}
-          <div className="diagram-panel">
-            <FlowDiagram 
-              mermaidCode={mermaidCode} 
-              onElementClick={handleElementClick}
-            />
-          </div>
+        {/* procedure Container */}
+        <div className="procedure-container">
+          <PanelGroup direction="horizontal">
+            <Panel defaultSize={50} minSize={30}>
+              <div className="procedure-container-left">
+                {/* description panel */}
+                  {/* <Description 
+                    procedure={procedureData} 
+                    onProcedureUpdate={handleProcedureUpdate}
+                    onMermaidCodeChange={handleMermaidCodeChange}
+                  /> */}
+                {/* JSON/Mermaid Editor Panel */}
+                <JsonViewer
+                  onMermaidCodeChange={handleMermaidCodeChange}
+                  selectedProcedure={selectedProcedure}
+                  onProcedureUpdate={handleProcedureUpdate}
+                  highlightedElement={highlightedElement}
+                  onEditorFocus={handleEditorFocus}
+                />
+              </div>
+            </Panel>
+            <PanelResizeHandle className="resize-handle" />
+            <Panel defaultSize={50} minSize={30}>
+              <div className="procedure-container-right">
+                {/* Flow Diagram Panel */}
+                <div className="diagram-panel">
+                  <FlowDiagram 
+                    mermaidCode={mermaidCode} 
+                    onElementClick={handleElementClick}
+                  />
+                </div>
+              </div>
+            </Panel>
+          </PanelGroup>
         </div>
       </div>
     </div>
