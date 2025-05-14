@@ -10,8 +10,6 @@ import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid } from "../utils/MermaidHighlighter";
 import { extractElementFromClick } from "../utils/ClickCodeHighlighter";
 import { highlightMermaidLine } from "../utils/MermaidHighlighter";
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import '@react-pdf-viewer/core/lib/styles/index.css';
 import InteractiveMarkdown from '../utils/InteractiveMarkdown';
 import { createSaveHandlers } from '../utils/SaveChanges';
 
@@ -30,7 +28,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     message: "",
     type: "",
   });
-  const [showPdf, setShowPdf] = useState(false);
   const [showReference, setShowReference] = useState(false);
   const [selectedMarkdownElement, setSelectedMarkdownElement] = useState(null);
   const [activeView, setActiveView] = useState(null);
@@ -278,7 +275,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
   useEffect(() => {
     if (selectedProcedure) {
       setShowMermaid(true);
-      setShowPdf(false);
       setShowReference(false);
       setActiveView('mermaid');
     }
@@ -295,7 +291,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
       return;
     }
     setShowMermaid(true);
-    setShowPdf(false);
     setShowReference(false);
     setActiveView('mermaid');
   };
@@ -310,24 +305,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
       return;
     }
     setShowMermaid(false);
-    setShowPdf(false);
     setShowReference(false);
     setActiveView('json');
-  };
-
-  const handleDocumentViewerClick = () => {
-    if (isEditing) {
-      setNotification({
-        show: true,
-        message: "Please save or revert your changes first",
-        type: "warning",
-      });
-      return;
-    }
-    setShowPdf(true);
-    setShowReference(false);
-    setShowMermaid(false);
-    setActiveView('pdf');
   };
 
   const handleReferenceViewerClick = () => {
@@ -340,7 +319,6 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
       return;
     }
     setShowReference(true);
-    setShowPdf(false);
     setShowMermaid(false);
     setActiveView('reference');
   };
@@ -447,24 +425,16 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
           Show JSON
         </button>
         <button
-          className={`toggle-button ${activeView === 'pdf' ? 'active' : ''}`}
-          onClick={handleDocumentViewerClick}
-          title="View Document"
-          disabled={!selectedProcedure}
-        >
-          Document Viewer
-        </button>
-        <button
           className={`toggle-button ${activeView === 'reference' ? 'active' : ''}`}
           onClick={handleReferenceViewerClick}
-          title="View References"
+          title="View Reference"
           disabled={!selectedProcedure}
         >
-          Reference Viewer
+          Show Reference
         </button>
         {activeView === 'mermaid' && (
           <button
-            className={`save-button ${isEditing ? "active" : ""}`}
+            className="save-button"
             onClick={handleSaveClick}
             disabled={!isEditing}
           >
@@ -478,13 +448,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         </div>
       )}
       <div className="json-viewer-content">
-        {activeView === 'pdf' ? (
-          <div className="pdf-viewer">
-            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
-              <Viewer fileUrl="./src/data/TS 24.501.pdf" />
-            </Worker>
-          </div>
-        ) : activeView === 'reference' ? (
+        {activeView === 'reference' ? (
           <div className="reference-viewer">
             <div className="markdown-content">
               <InteractiveMarkdown 

@@ -51,6 +51,7 @@ function InteractiveMarkdown({ content, highlightedSection }) {
     let foundHighlight = false;
     let sectionStartLine = null;
     let sectionEndLine = null;
+    let textMatchLine = null;
 
     // First pass: Find the section boundaries
     for (let i = 0; i < lineElements.length; i++) {
@@ -77,35 +78,33 @@ function InteractiveMarkdown({ content, highlightedSection }) {
     if (foundHighlight) {
       console.log("Found section boundaries:", { start: sectionStartLine, end: sectionEndLine });
       
-      // Highlight the section header
-      lineElements[sectionStartLine].classList.add('highlighted-line');
-
-      // Look for specific text within the section
+      // Look for specific text within the section first
       if (textRef) {
         const cleanTextRef = textRef.toLowerCase().replace(/\.\.\./g, '').trim();
         for (let i = sectionStartLine; i <= sectionEndLine; i++) {
           const lineContent = lineElements[i].textContent.toLowerCase();
           if (lineContent.includes(cleanTextRef)) {
             lineElements[i].classList.add('highlighted-line');
+            textMatchLine = i;
             console.log("Found matching text at line:", i + 1);
-          } else {
-            // Add context highlighting to other lines in the section
-            lineElements[i].classList.add('highlighted-context');
+            break;
           }
         }
-      } else {
-        // If no specific text, highlight the entire section as context
-        for (let i = sectionStartLine; i <= sectionEndLine; i++) {
+      }
+
+      // Add context highlighting to the section
+      for (let i = sectionStartLine; i <= sectionEndLine; i++) {
+        if (!lineElements[i].classList.contains('highlighted-line')) {
           lineElements[i].classList.add('highlighted-context');
         }
       }
 
-      // Scroll to the first highlighted line
+      // Scroll to the text match if found, otherwise to section header
       setTimeout(() => {
-        const highlightedLine = lineElements[sectionStartLine];
-        if (highlightedLine) {
-          highlightedLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          console.log("Scrolled to highlighted line");
+        const targetLine = textMatchLine !== null ? lineElements[textMatchLine] : lineElements[sectionStartLine];
+        if (targetLine) {
+          targetLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          console.log("Scrolled to", textMatchLine !== null ? "text match" : "section header");
         }
       }, 100);
     } else {

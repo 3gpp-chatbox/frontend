@@ -48,15 +48,7 @@ export const mapElementToReference = (content, element) => {
   }
 
   if (sectionStartIndex !== -1) {
-    // Clean up text_ref for searching
-    const searchText = textRef
-      .replace(/\.\.\./g, '')
-      .toLowerCase()
-      .trim();
-    
-    console.log("Searching for text:", searchText);
-
-    // Search within the section
+    // Find section end
     let sectionEnd = lines.length;
     for (let i = sectionStartIndex + 1; i < lines.length; i++) {
       if (lines[i].match(/^#+\s/)) {
@@ -65,27 +57,39 @@ export const mapElementToReference = (content, element) => {
       }
     }
 
-    // Look for the subsection and text
-    for (let i = sectionStartIndex; i < sectionEnd; i++) {
-      const line = lines[i].toLowerCase();
+    // First try to find the text_ref if it exists
+    if (textRef) {
+      const searchText = textRef
+        .replace(/\.\.\./g, '')
+        .toLowerCase()
+        .trim();
       
-      // If we have a subsection, look for it specifically
-      if (subSection) {
+      console.log("Searching for text:", searchText);
+
+      // Look for the text within the section
+      for (let i = sectionStartIndex; i < sectionEnd; i++) {
+        const line = lines[i].toLowerCase();
+        if (line.includes(searchText)) {
+          foundIndex = i;
+          console.log("Found text at line:", i + 1, "Content:", lines[i]);
+          break;
+        }
+      }
+    }
+
+    // If text wasn't found or didn't exist, look for subsection
+    if (foundIndex === -1 && subSection) {
+      for (let i = sectionStartIndex; i < sectionEnd; i++) {
+        const line = lines[i].toLowerCase();
         if (line.includes(`${subSection})`)) {
           foundIndex = i;
           console.log("Found subsection at line:", i + 1, "Content:", lines[i]);
           break;
         }
       }
-      // Otherwise look for the text
-      else if (line.includes(searchText)) {
-        foundIndex = i;
-        console.log("Found text at line:", i + 1, "Content:", lines[i]);
-        break;
-      }
     }
 
-    // If we still haven't found the specific line, use section start
+    // If we still haven't found anything, use section start
     if (foundIndex === -1) {
       foundIndex = sectionStartIndex;
       console.log("Using section start as fallback");
