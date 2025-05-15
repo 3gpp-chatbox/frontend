@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import mermaid from "mermaid";
-import { MdRefresh } from 'react-icons/md';
-
+import { MdRefresh } from "react-icons/md";
 
 // Initialize mermaid with optimized settings
 mermaid.initialize({
@@ -31,6 +30,7 @@ mermaid.initialize({
     titleColor: "#f4f4f5",
     edgeLabelBackground: "#1a1a1a",
     textColor: "#f4f4f5",
+    fontSize: "18px",
   },
 });
 
@@ -39,61 +39,18 @@ const MIN_SCALE = 0.1;
 const MAX_SCALE = 10;
 const ZOOM_SPEED = 0.1;
 
-// Clean up mermaid code by removing extra whitespace and ensuring proper formatting
-const cleanMermaidCode = (code, direction = 'TD') => {
-  if (!code) return "";
-
-  // Split into lines and filter out empty lines
-  let lines = code
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  // Extract style definitions
-  const styleLines = lines.filter(line => line.startsWith('classDef'));
-  
-  // Extract existing direction if present
-  let flowDirection = direction;
-  lines.forEach(line => {
-    const match = line.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
-    if (match) {
-      flowDirection = match[1];
-    }
-  });
-  
-  // Remove flowchart declarations but keep style definitions
-  lines = lines.filter((line) => {
-    const isFlowchart =
-      line.startsWith("flowchart") || line.startsWith("graph");
-    return !isFlowchart;
-  });
-  
-  // Add flowchart declaration with preserved direction and styles at the start
-  lines.unshift(`flowchart ${flowDirection}`);
-  if (styleLines.length > 0) {
-    lines.splice(1, 0, ...styleLines);
-  }
-
-  // Clean up class definitions and other special lines
-  lines = lines.map((line) => {
-    // Handle class definitions
-    if (line.startsWith("classDef")) {
-      return line.replace(/\s+/g, " ");
-    }
-
-    // Handle node definitions and connections
-    if (line.includes("-->") || line.includes("---")) {
-      return line.replace(/\s+/g, " ").trim();
-    }
-
-    return line;
-  });
-
-  // Join lines with proper spacing
-  return lines.join("\n");
-};
-
-function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
+/**
+ * Component for rendering and interacting with Mermaid flow diagrams.
+ * Provides zoom, pan, and click interactions with diagram elements.
+ *
+ * @component
+ * @param {Object} props - Component properties
+ * @param {string} props.mermaidCode - The Mermaid diagram code to render
+ * @param {string} [props.direction='TD'] - Diagram direction ('TD', 'TB', 'BT', 'LR', 'RL')
+ * @param {Function} props.onElementClick - Callback for element click events
+ * @returns {JSX.Element} The rendered flow diagram
+ */
+function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
   const mermaidRef = useRef(null);
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -108,6 +65,74 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
     zoomLevel: 100,
   });
 
+  /**
+   * Cleans and formats Mermaid code for rendering.
+   * Removes extra whitespace and ensures proper formatting.
+   *
+   * @param {string} code - Raw Mermaid code
+   * @param {string} [direction='TD'] - Diagram direction
+   * @returns {string} Cleaned Mermaid code
+   */
+  const cleanMermaidCode = (code, direction = "TD") => {
+    if (!code) return "";
+
+    // Split into lines and filter out empty lines
+    let lines = code
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    // Extract style definitions
+    const styleLines = lines.filter((line) => line.startsWith("classDef"));
+
+    // Extract existing direction if present
+    let flowDirection = direction;
+    lines.forEach((line) => {
+      const match = line.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
+      if (match) {
+        flowDirection = match[1];
+      }
+    });
+
+    // Remove flowchart declarations but keep style definitions
+    lines = lines.filter((line) => {
+      const isFlowchart =
+        line.startsWith("flowchart") || line.startsWith("graph");
+      return !isFlowchart;
+    });
+
+    // Add flowchart declaration with preserved direction and styles at the start
+    lines.unshift(`flowchart ${flowDirection}`);
+    if (styleLines.length > 0) {
+      lines.splice(1, 0, ...styleLines);
+    }
+
+    // Clean up class definitions and other special lines
+    lines = lines.map((line) => {
+      // Handle class definitions
+      if (line.startsWith("classDef")) {
+        return line.replace(/\s+/g, " ");
+      }
+
+      // Handle node definitions and connections
+      if (line.includes("-->") || line.includes("---")) {
+        return line.replace(/\s+/g, " ").trim();
+      }
+
+      return line;
+    });
+
+    // Join lines with proper spacing
+    return lines.join("\n");
+  };
+
+  /**
+   * Renders the Mermaid diagram and sets up interaction handlers.
+   * Handles node and edge click events, visual feedback, and error states.
+   *
+   * @async
+   * @function
+   */
   const renderDiagram = useCallback(async () => {
     if (!mermaidRef.current || !mermaidCode) {
       setError(null);
@@ -116,44 +141,44 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
 
     try {
       const cleanedCode = cleanMermaidCode(mermaidCode, direction);
-      mermaidRef.current.innerHTML = '';
+      mermaidRef.current.innerHTML = "";
       setError(null);
-      
+
       const { svg } = await mermaid.render("mermaid-diagram", cleanedCode);
-      
+
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = svg;
       const newSvg = tempDiv.querySelector("svg");
-      
+
       // First, let's add a debug log to see what elements we're finding
       console.log("Setting up click handlers for elements:", {
-        nodes: newSvg.querySelectorAll('.node').length,
-        edges: newSvg.querySelectorAll('.edge').length,
-        edgePaths: newSvg.querySelectorAll('.edge path').length,
-        edgeLabels: newSvg.querySelectorAll('.edgeLabel').length
+        nodes: newSvg.querySelectorAll(".node").length,
+        edges: newSvg.querySelectorAll(".edge").length,
+        edgePaths: newSvg.querySelectorAll(".edge path").length,
+        edgeLabels: newSvg.querySelectorAll(".edgeLabel").length,
       });
-      
+
       // First set up node click handlers
-      newSvg.querySelectorAll('.node').forEach(element => {
-        element.style.cursor = 'pointer';
-        element.addEventListener('click', (e) => {
+      newSvg.querySelectorAll(".node").forEach((element) => {
+        element.style.cursor = "pointer";
+        element.addEventListener("click", (e) => {
           e.stopPropagation();
-          onElementClick?.({ type: 'node', id: element.id });
+          onElementClick?.({ type: "node", id: element.id });
         });
       });
 
       // Handle edge labels - we need to find the corresponding edge
-      newSvg.querySelectorAll('.edgeLabel').forEach(edgeLabel => {
-        edgeLabel.style.cursor = 'pointer';
-        
-        edgeLabel.addEventListener('click', (e) => {
+      newSvg.querySelectorAll(".edgeLabel").forEach((edgeLabel) => {
+        edgeLabel.style.cursor = "pointer";
+
+        edgeLabel.addEventListener("click", (e) => {
           e.stopPropagation();
           console.log("Edge label clicked:", edgeLabel.textContent);
           const edgeLabelText = edgeLabel.textContent.trim();
-          onElementClick?.({ type: 'edge', id: edgeLabelText });
+          onElementClick?.({ type: "edge", id: edgeLabelText });
         });
       });
-      
+
       // Set fixed dimensions for SVG
       newSvg.style.width = "100%";
       newSvg.style.height = "100%";
@@ -170,15 +195,47 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
           // Extract the actual node text from the label
           const labelEl = node.querySelector(".label");
           let nodeText = "";
+          let nodeDescription = "";
+          /*// Future fields - uncomment when available
+          let nodeType = "";
+          let sectionRef = "";
+          let textRef = "";*/
 
           if (labelEl) {
             // Remove any HTML tags and get clean text
             const tempDiv = document.createElement("div");
             tempDiv.innerHTML = labelEl.innerHTML;
             nodeText = tempDiv.textContent.trim();
-
-            // Remove quotes if present
             nodeText = nodeText.replace(/^["']|["']$/g, "");
+
+            // Find the node's metadata from the Mermaid comments
+            const lines = cleanedCode.split("\n");
+            let foundNode = false;
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (line.includes(nodeText)) {
+                foundNode = true;
+                continue;
+              }
+              if (foundNode) {
+                if (line.startsWith("%% Description:")) {
+                  nodeDescription = line.replace("%% Description:", "").trim();
+                }
+                /* Uncomment when these fields are available in the data
+                else if (line.startsWith('%% Type:')) {
+                  nodeType = line.replace('%% Type:', '').trim();
+                }
+                else if (line.startsWith('%% Section_Reference:')) {
+                  sectionRef = line.replace('%% Section_Reference:', '').trim();
+                }
+                else if (line.startsWith('%% Text_Reference:')) {
+                  textRef = line.replace('%% Text_Reference :', '').trim();
+                }
+                */
+                // Break if we've found all metadata or reached next node
+                if (line.match(/^[A-Z]+[\[\(]/)) break;
+              }
+            }
           }
 
           // Add visual feedback for clicked node
@@ -191,6 +248,12 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
             type: "node",
             id: nodeId,
             text: nodeText,
+            description: nodeDescription,
+            /* Uncomment when these fields are available
+            node_type: nodeType,
+            section_ref: sectionRef,
+            text_ref: textRef,
+            */
             element: node,
           });
         });
@@ -208,15 +271,33 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
           const fromNode = parts[1];
           const toNode = parts[parts.length - 1];
 
-          // Get the edge label if it exists
+          // Get the edge label and metadata
           const edgeLabelGroup = newSvg.querySelector(`#${edgeId}-label`);
           let edgeLabel = "";
+          // Future fields - uncomment when available
+          let sectionRef = "";
+          let textRef = "";
 
           if (edgeLabelGroup) {
             const labelElement = edgeLabelGroup.querySelector(".edgeLabel");
             if (labelElement) {
               edgeLabel = labelElement.textContent.trim();
               edgeLabel = edgeLabel.replace(/^[|"'\s]+|[|"'\s]+$/g, "");
+
+              // Find edge metadata in comments
+              const lines = cleanedCode.split("\n");
+              let foundEdge = false;
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.includes(edgeLabel)) {
+                  foundEdge = true;
+                  continue;
+                }
+                if (foundEdge) {
+                  // Break if we've found all metadata or reached next element
+                  if (line.match(/^[A-Z]+/)) break;
+                }
+              }
             }
           }
 
@@ -239,6 +320,10 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
             from: fromNode,
             to: toNode,
             label: edgeLabel,
+            /* Uncomment when these fields are available
+            section_ref: sectionRef,
+            text_ref: textRef,
+            */
             element: edge,
           });
         };
@@ -281,9 +366,10 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
           if (!edge.classList.contains("selected")) {
             const pathEl = edge.querySelector("path");
             if (pathEl) {
-              pathEl.style.strokeWidth = isHover ? "3px" : "";
+              pathEl.style.strokeWidth = isHover ? "10px" : "";
             }
-            edge.style.opacity = isHover ? "0.8" : "";
+            edge.style.opacity = isHover ? "1" : "";
+            edge.style.color = isHover ? "red" : "";
           }
         };
 
@@ -341,7 +427,11 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
     };
   }, [renderDiagram]);
 
-  // Handle zooming
+  /**
+   * Handles mouse wheel events for zooming.
+   *
+   * @param {WheelEvent} e - Wheel event
+   */
   const handleWheel = useCallback(
     (e) => {
       e.preventDefault();
@@ -356,7 +446,11 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
     [scale],
   );
 
-  // Handle dragging
+  /**
+   * Handles mouse down events for dragging.
+   *
+   * @param {MouseEvent} e - Mouse event
+   */
   const handleMouseDown = useCallback(
     (e) => {
       if (e.target.closest(".node") || e.target.closest(".edgePath")) {
@@ -368,6 +462,11 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
     [position],
   );
 
+  /**
+   * Handles mouse move events during dragging.
+   *
+   * @param {MouseEvent} e - Mouse event
+   */
   const handleMouseMove = useCallback(
     (e) => {
       if (isDragging) {
@@ -380,6 +479,9 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
     [isDragging, dragStart],
   );
 
+  /**
+   * Handles mouse up events to end dragging.
+   */
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
   }, []);
@@ -408,7 +510,7 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
   const styles = useMemo(
     () => `
     .node.selected rect {
-      stroke: #f97316 !important;
+      stroke:rgb(252, 106, 2) !important;
       stroke-width: 3px !important;
     }
 
@@ -421,8 +523,11 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
       filter: brightness(1.1);
     }
 
+
+
     .edgePath:hover path {
       stroke-width: 4px !important;
+      stroke: rgb(252, 106, 2) !important;
     }
   `,
     [],
@@ -520,7 +625,7 @@ function FlowDiagram({ mermaidCode, direction = 'TD', onElementClick }) {
 
 FlowDiagram.propTypes = {
   mermaidCode: PropTypes.string,
-  direction: PropTypes.oneOf(['TD', 'TB', 'BT', 'LR', 'RL']),
+  direction: PropTypes.oneOf(["TD", "TB", "BT", "LR", "RL"]),
   onElementClick: PropTypes.func,
 };
 

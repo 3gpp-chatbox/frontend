@@ -3,10 +3,10 @@
   --black-900: #000000;
   --black-800: #1a1a1a;
   --black-700: #2d2d2d;
-  --black-600: #9C9595;
+  --black-600: #9c9595;
   --black-500: #404040;
   --black-100: #585353;
-  --black-200: #9C9595;
+  --black-200: #9c9595;
 
   /* Silver/Gray palette (Secondary) */
   --silver-50: #fafafa;
@@ -100,7 +100,7 @@ button {
   font-size: 20px;
   color: var(--orange-500);
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   margin-bottom: 10px;
 }
 
@@ -197,6 +197,19 @@ button {
   align-items: center;
   font-size: 18px;
   justify-content: space-between;
+  align-items: center;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header-content .title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--silver-100);
 }
 
 .menu-item:hover {
@@ -213,7 +226,7 @@ button {
 }
 
 .menu-item-text::after {
-  content: '▼';
+  content: "▼";
   font-size: 12px;
   margin-left: 8px;
   transition: transform 0.3s ease;
@@ -321,7 +334,7 @@ button {
 
 /* Add a subtle hover effect for the menu item */
 .menu-item::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   left: 0;
@@ -378,7 +391,6 @@ button {
   margin-right: 20px;
 }
 
-
 .detail-item {
   margin-bottom: 8px;
   padding: 4px 0;
@@ -387,8 +399,7 @@ button {
   font-size: 0.8em;
 }
 
-Custom scrollbar for horizontal scroll
-.description-panel::-webkit-scrollbar {
+Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   height: 8px;
 }
 
@@ -437,6 +448,9 @@ Custom scrollbar for horizontal scroll
   overflow-y: auto;
   min-height: 0;
   background-color: var(--black-800);
+  height: calc(100% - 48px); /* Subtract header height */
+  display: flex;
+  flex-direction: column;
 }
 
 .content-area.diagram-container {
@@ -444,7 +458,7 @@ Custom scrollbar for horizontal scroll
   padding: 0;
   overflow: hidden;
   position: relative;
-  height: calc(100% - 48px);
+  height: calc(100% - 48px); /* Subtract header height */
   touch-action: none;
 }
 
@@ -454,7 +468,49 @@ Custom scrollbar for horizontal scroll
   flex: 1;
   min-height: 0;
   position: relative;
-  /* gap: 20px; */
+  height: calc(100vh - 160px); /* Adjust for title bar and padding */
+}
+
+.procedure-container-left,
+.procedure-container-right {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-panel {
+  background: var(--black-700);
+  border: 1px solid var(--black-500);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  overflow: auto;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.diagram-panel {
+  background: var(--black-700);
+  border-radius: 8px;
+  border: 1px solid var(--black-500);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  height: 100%;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure PanelGroup takes full height */
+[data-panel-group] {
+  height: 100%;
+}
+
+[data-panel] {
+  height: 100%;
 }
 
 .resize-handle {
@@ -470,46 +526,6 @@ Custom scrollbar for horizontal scroll
   background-color: var(--blue-500);
 }
 
-.procedure-container-left {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-.procedure-container-right {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* .description-panel {
-  background: var(--black-700);
-  border: 1px solid var(--black-500);
-  box-shadow: 0 4px 6px #000000;
-  height: 40%;
-  padding: 8px 16px;
-} */
-
-.editor-panel {
-  background: var(--black-700);
-  border: 1px solid var(--black-500);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  overflow: auto;
-}
-
-.diagram-panel {
-  background: var(--black-700);
-  border-radius: 8px;
-  border: 1px solid var(--black-500);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  height: 100%;
-  overflow: auto;
-}
-
 /* Code line styles */
 .code-line {
   display: flex;
@@ -517,7 +533,7 @@ Custom scrollbar for horizontal scroll
   min-height: 24px;
   position: relative;
   padding: 2px 4px 2px 24px;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: "Consolas", "Monaco", monospace;
   white-space: pre;
   line-height: 1.5;
 }
@@ -578,7 +594,7 @@ Custom scrollbar for horizontal scroll
 
 /* JsonViewer Styles */
 .json-viewer-content {
-  height: calc(1000px - 48px); /* 1000px minus header height */
+  height: 100%;
   background-color: var(--black-800);
   position: relative;
   display: flex;
@@ -602,11 +618,45 @@ pre.json-content {
 
 .json-content {
   height: 100%;
-  margin: 0;
   overflow-y: auto;
   background-color: var(--black-800);
   width: 100%;
   box-sizing: border-box;
+  flex: 1;
+}
+
+.json-content .code-content {
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  padding: 16px;
+}
+
+.json-content .code-content.wrapped {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  max-width: 100%;
+}
+
+.json-content .code-line {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 2px 0;
+}
+
+.json-content .code-line > * {
+  flex: 0 1 auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Ensure proper wrapping for long lines */
+.json-content .code-line.wrapped {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
 }
 
 .json-content code {
@@ -674,7 +724,7 @@ pre.json-content {
   min-height: 24px;
   position: relative;
   padding: 2px 4px 2px 24px;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: "Consolas", "Monaco", monospace;
   white-space: pre;
   line-height: 1.5;
 }
@@ -746,7 +796,6 @@ pre.json-content {
 .code-content::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
-
 
 .wrap-toggle {
   display: flex;
@@ -937,7 +986,7 @@ pre.json-content {
 .detail-line .detail-value {
   color: var(--silver-100);
 }
-.detail-line .detail-value{
+.detail-line .detail-value {
   color: var(--orange-300);
 }
 .description-modal-content {
@@ -1109,85 +1158,101 @@ pre.json-content {
   border-radius: 6px;
   padding: 20px;
   overflow: auto;
-/* mermaid code styles */
+}
+
+/* Mermaid code styles */
 .modal-mermaid-content {
   background-color: var(--black-700);
   padding: 1rem;
   border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: "Consolas", "Monaco", monospace;
 }
 
-.modal-mermaid-content .flowchart {
+.modal-mermaid-content .flowchart,
+.flowchart {
   color: var(--blue-500); /* Electric blue for flowchart declarations */
 }
 
-.modal-mermaid-content .node-id {
+.modal-mermaid-content .node-id,
+.node-id {
   color: var(--blue-300); /* Light blue for node IDs */
 }
 
-.modal-mermaid-content .node-text {
+.modal-mermaid-content .node-text,
+.node-text {
   color: var(--orange-400); /* Orange for node text */
 }
 
-.modal-mermaid-content .arrow {
+.modal-mermaid-content .arrow,
+.arrow {
   color: var(--blue-400); /* Mid blue for arrows */
 }
 
-.modal-mermaid-content .comment {
+.modal-mermaid-content .comment,
+.comment {
   color: var(--silver-500); /* Gray for comments */
   font-style: italic;
 }
 
-.modal-mermaid-content .type {
+.modal-mermaid-content .type,
+.type {
   color: var(--orange-500); /* Orange for types */
 }
 
-.modal-mermaid-content .description {
+.modal-mermaid-content .description,
+.description {
   color: var(--silver-300); /* Light gray for descriptions */
 }
 
 .mermaid-editor {
   position: relative;
+  background-color: var(--black-800);
+  color: var(--silver-100);
+  font-family: "Consolas", "Monaco", monospace;
+  line-height: 1.5;
 }
 
 .mermaid-editor .code-content {
-  font-family: 'Consolas', 'Monaco', monospace;
-  background-color: var(--black-700);
-  color: var(--silver-100);
-  padding: 1rem;
-  border-radius: 4px;
+  padding: 16px;
+  white-space: pre;
   overflow-x: auto;
 }
 
-/* Add these styles */
-.highlighted-line {
-  background-color: var(--blue-600);
+.mermaid-editor .code-content.wrapped {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Mermaid line highlighting */
+.mermaid-line {
+  padding: 2px 4px;
   border-radius: 4px;
-  /* margin: -2px -8px;
-  padding: 2px 8px; */
+  transition: background-color 0.2s ease;
+  display: block;
 }
 
-.node:hover, .edge:hover {
-  opacity: 0.8;
-  cursor: pointer;
+.mermaid-line:hover {
+  background-color: var(--black-700);
 }
 
-/* Add these styles for diagram element highlighting */
-.node.highlighted rect,
-.node.highlighted circle {
-  filter: brightness(1.2);
-  stroke: var(--blue-400) !important;
-  stroke-width: 3px !important;
+.orange-highlight {
+  background-color: rgba(249, 115, 22, 0.2) !important;
+  border-left: 3px solid #f97316 !important;
+  border-radius: 4px;
+  margin: 0 -8px;
+  padding: 2px 8px 2px 16px;
+  display: block;
 }
 
-.edge.highlighted path {
-  stroke: var(--blue-400) !important;
-  stroke-width: 4px !important;
-}
-
-.edge.highlighted marker {
-  fill: var(--blue-400) !important;
-}
+/* Ensure highlighted elements are visible */
+.orange-highlight .node-id,
+.orange-highlight .node-text,
+.orange-highlight .arrow,
+.orange-highlight .comment,
+.orange-highlight .description,
+.orange-highlight .type {
+  color: #f97316 !important;
+  opacity: 0.9;
 }
 
 /* View Tabs Styles */
@@ -1305,7 +1370,7 @@ pre.json-content {
 .save-button:hover:not(:disabled) {
   background-color: var(--black-500);
   color: var(--silver-200);
-  border-color: var(--blue-600);
+  border-color: var(--blue-500);
 }
 
 .save-button.active {
@@ -1327,7 +1392,7 @@ pre.json-content {
 /* Mermaid syntax highlighting */
 .mermaid-editor {
   color: var(--silver-100);
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: "Consolas", "Monaco", monospace;
   line-height: 1.5;
 }
 
@@ -1369,7 +1434,7 @@ pre.json-content {
   background-color: var(--black-800);
   padding: 16px;
   border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: "Consolas", "Monaco", monospace;
   line-height: 1.5;
   white-space: pre;
   overflow-x: auto;
@@ -1605,7 +1670,7 @@ pre.json-content {
   min-height: 24px;
   position: relative;
   padding: 2px 4px 2px 24px;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: "Consolas", "Monaco", monospace;
   white-space: pre;
   line-height: 1.5;
 }
@@ -1746,7 +1811,7 @@ pre.json-content {
   justify-content: space-between;
   align-items: center;
   /* width: 100%; */
-  padding:8px 16px 8px 16px;
+  padding: 8px 16px 8px 16px;
 }
 
 .viewer-controls-left {
@@ -1826,4 +1891,250 @@ pre.json-content {
   background-color: var(--blue-600);
   border-color: var(--blue-500);
   color: var(--silver-100);
+}
+
+/* Reference viewer styles */
+.reference-viewer {
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+  background-color: var(--black-800);
+  color: var(--silver-100);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.markdown-content {
+  line-height: 1.6;
+  font-size: 14px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Headers in markdown */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  color: var(--blue-300);
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-content h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--black-500);
+  padding-bottom: 0.3em;
+}
+
+.markdown-content h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--black-500);
+  padding-bottom: 0.3em;
+}
+
+.markdown-content h3 {
+  font-size: 1.25em;
+}
+
+/* Paragraphs and lists */
+.markdown-content p,
+.markdown-content ul,
+.markdown-content ol {
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 2em;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+}
+
+/* Code blocks */
+.markdown-content pre,
+.markdown-content code {
+  font-family: "Consolas", "Monaco", monospace;
+  background-color: var(--black-700);
+  border-radius: 4px;
+  padding: 0.2em 0.4em;
+  font-size: 0.9em;
+}
+
+.markdown-content pre {
+  padding: 16px;
+  overflow: auto;
+  margin: 16px 0;
+}
+
+/* Highlighting styles */
+.markdown-content .line {
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.markdown-content .line:hover {
+  background-color: var(--black-700);
+}
+
+/* Blue highlight for sections */
+.markdown-content .highlighted-section {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 2px solid rgba(59, 130, 246, 0.4);
+  margin: 4px 0;
+  padding-left: 16px;
+}
+
+/* Orange highlight for matched text */
+.markdown-content .highlighted-line {
+  background-color: rgba(249, 115, 22, 0.2);
+  border-left: 3px solid #f97316;
+  font-weight: 500;
+  position: relative;
+  z-index: 2;
+}
+
+/* Ensure proper stacking of highlights */
+.markdown-content .highlighted-line {
+  z-index: 2;
+}
+
+.markdown-content .highlighted-section {
+  z-index: 1;
+}
+
+.markdown-content .line:hover {
+  z-index: 3;
+}
+
+/* Hide scrollbars but maintain functionality */
+.reference-viewer {
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue-600) var(--black-800);
+}
+
+.reference-viewer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.reference-viewer::-webkit-scrollbar-track {
+  background: var(--black-800);
+}
+
+.reference-viewer::-webkit-scrollbar-thumb {
+  background-color: var(--blue-600);
+  border-radius: 4px;
+}
+
+.reference-viewer::-webkit-scrollbar-thumb:hover {
+  background-color: var(--blue-500);
+}
+
+/* Add highlight styles for JSON viewer */
+.code-line.orange-highlight {
+  background-color: rgba(249, 115, 22, 0.2); /* var(--orange-300) with opacity */
+  border-radius: 4px;
+  margin: -2px -8px;
+  padding: 2px 8px;
+}
+
+.code-line.blue-highlight {
+  background-color: rgba(59, 130, 246, 0.1); /* var(--blue-500) with opacity */
+  border-radius: 4px;
+  margin: -2px -8px;
+  padding: 2px 8px;
+}
+
+/* Add transition for smooth highlighting */
+.code-line {
+  transition: background-color 0.2s ease;
+}
+
+/* Ensure highlighted lines are visible */
+.code-line.orange-highlight .json-key,
+.code-line.orange-highlight .json-string,
+.code-line.orange-highlight .json-number,
+.code-line.orange-highlight .json-boolean,
+.code-line.orange-highlight .json-null {
+  color: inherit;
+  opacity: 0.9;
+}
+
+.code-line.blue-highlight .json-key,
+.code-line.blue-highlight .json-string,
+.code-line.blue-highlight .json-number,
+.code-line.blue-highlight .json-boolean,
+.code-line.blue-highlight .json-null {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.interactive-markdown {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #f4f4f5;
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.interactive-markdown .line {
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  white-space: pre-wrap;
+}
+
+.interactive-markdown .line:hover {
+  background-color: rgba(60, 60, 67, 0.3);
+}
+
+/* Blue highlight for section */
+.interactive-markdown .highlighted-section {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 2px solid rgba(59, 130, 246, 0.4);
+}
+
+/* Orange highlight for matched text */
+.interactive-markdown .highlighted-line {
+  background-color: rgba(249, 115, 22, 0.2);
+  border-left: 3px solid #f97316;
+  font-weight: 500;
+  z-index: 1;
+  position: relative;
+}
+
+/* Subtle highlight for context */
+.interactive-markdown .highlighted-context {
+  background-color: rgba(75, 85, 99, 0.1);
+}
+
+.interactive-markdown pre {
+  margin: 0;
+  padding: 0;
+}
+
+/* Hide scrollbar but keep functionality */
+.interactive-markdown::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Ensure proper stacking of highlights */
+.interactive-markdown .highlighted-line {
+  z-index: 2;
+}
+
+.interactive-markdown .highlighted-section {
+  z-index: 1;
+}
+
+.interactive-markdown .line:hover {
+  z-index: 3;
 }
