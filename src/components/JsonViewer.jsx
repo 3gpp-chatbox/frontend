@@ -6,7 +6,7 @@ import {
   defaultMermaidConfig,
 } from "../functions/jsonToMermaid";
 import { highlightJson } from "../utils/jsonHighlighter";
-import { highlightMermaid } from "../utils/MermaidHighlighter";
+import { highlightMermaid, highlightMermaidElement } from "../utils/MermaidHighlighter";
 import { FaSave } from "react-icons/fa";
 import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
 import { highlightMermaidLine } from "../utils/MermaidHighlighter";
@@ -380,8 +380,46 @@ function JsonViewer({
    */
   const cleanMermaidCode = (code) => {
     if (!code) return "";
-    return code.trim();
+    
+    // Split into lines and filter out classDef lines
+    const lines = code.split('\n')
+      .filter(line => !line.trim().startsWith('classDef'))
+      .join('\n');
+    
+    return lines.trim();
   };
+
+  // Add effect to update highlighting when highlightedElement changes
+  useEffect(() => {
+    if (activeView === "mermaid" && highlightedElement && codeContentRef.current) {
+      const svg = codeContentRef.current.querySelector("svg");
+      if (svg) {
+        // Clear existing highlights
+        svg.querySelectorAll(".node.highlighted, .edgePath.highlighted").forEach(el => {
+          el.classList.remove("highlighted");
+        });
+
+        // Apply new highlight
+        if (highlightedElement.type === "node") {
+          // Look for node with the correct ID pattern
+          const nodeId = `flowchart-${highlightedElement.id}`;
+          const node = svg.querySelector(`#${nodeId}`);
+          if (node) {
+            node.classList.add("highlighted");
+          }
+        } else if (highlightedElement.type === "edge") {
+          // Look for edge with ID containing the edge ID
+          const edges = svg.querySelectorAll('.edgePath');
+          for (const edge of edges) {
+            if (edge.id.includes(highlightedElement.id)) {
+              edge.classList.add("highlighted");
+              break;
+            }
+          }
+        }
+      }
+    }
+  }, [activeView, highlightedElement]);
 
   /**
    * Handles folding/unfolding of JSON content
@@ -571,26 +609,31 @@ function JsonViewer({
                       const node = e.target.closest(".node");
                       const edge = e.target.closest(".edgePath");
                       
-                      // Remove any existing highlights first
-                      const svg = e.target.closest("svg");
-                      if (svg) {
-                        svg.querySelectorAll(".node.highlighted, .edgePath.highlighted").forEach(el => {
-                          el.classList.remove("highlighted");
-                        });
-                      }
-                      
-                      if (node) {
-                        const nodeId = node.id.replace("flowchart-", "").split("-")[0];
-                        const nodeText = node.querySelector(".nodeLabel")?.textContent;
-                        // Add highlight class to the clicked node
-                        node.classList.add("highlighted");
-                        handleDiagramClick(nodeId, "node", nodeText);
-                      } else if (edge) {
-                        const edgeId = edge.querySelector("title")?.textContent;
-                        if (edgeId) {
-                          // Add highlight class to the clicked edge
-                          edge.classList.add("highlighted");
-                          handleDiagramClick(edgeId, "edge");
+                      if (node || edge) {
+                        // Remove any existing highlights first
+                        const svg = e.target.closest("svg");
+                        if (svg) {
+                          svg.querySelectorAll(".node.highlighted, .edgePath.highlighted").forEach(el => {
+                            el.classList.remove("highlighted");
+                          });
+                        }
+                        
+                        if (node) {
+                          // Extract the actual node ID from the flowchart-prefixed ID
+                          const nodeId = node.id.replace(/^flowchart-/, '').split('-')[0];
+                          const nodeText = node.querySelector(".label, .nodeLabel")?.textContent;
+                          // Add highlight class to the clicked node
+                          node.classList.add("highlighted");
+                          handleDiagramClick(nodeId, "node", nodeText);
+                        } else if (edge) {
+                          // Extract edge ID from the path or title
+                          const edgeId = edge.id?.split('-').slice(-1)[0] || 
+                                       edge.querySelector("title")?.textContent;
+                          if (edgeId) {
+                            // Add highlight class to the clicked edge
+                            edge.classList.add("highlighted");
+                            handleDiagramClick(edgeId, "edge");
+                          }
                         }
                       }
                     }}
@@ -601,10 +644,9 @@ function JsonViewer({
                       userSelect: isDragging ? "none" : "text",
                     }}
                     dangerouslySetInnerHTML={{
-                      __html: highlightMermaidLine(
+                      __html: highlightMermaidElement(
                         highlightMermaid(cleanMermaidCode(mermaidGraph)),
-                        highlightedElement?.id,
-                        highlightedElement?.type,
+                        highlightedElement
                       ),
                     }}
                     spellCheck="false"

@@ -1206,38 +1206,87 @@ pre.json-content {
 
   .mermaid-editor {
     position: relative;
+    background-color: var(--black-800);
+    color: var(--silver-100);
+    font-family: "Consolas", "Monaco", monospace;
+    line-height: 1.5;
   }
 
   .mermaid-editor .code-content {
-    font-family: "Consolas", "Monaco", monospace;
-    background-color: var(--black-700);
-    color: var(--silver-100);
-    padding: 1rem;
-    border-radius: 4px;
+    padding: 16px;
+    white-space: pre;
     overflow-x: auto;
   }
 
-  /* Add these styles */
-  .highlighted-line {
-    background-color: var(--blue-600);
+  .mermaid-editor .code-content.wrapped {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  /* Mermaid line highlighting */
+  .mermaid-line {
+    padding: 2px 4px;
     border-radius: 4px;
-    /* margin: -2px -8px;
-  padding: 2px 8px; */
+    transition: background-color 0.2s ease;
   }
 
-  .node:hover,
-  .edge:hover {
-    opacity: 0.8;
-    cursor: pointer;
+  .mermaid-line:hover {
+    background-color: var(--black-700);
   }
 
-  /* Add these styles for diagram element highlighting */
+  .highlighted-line {
+    background-color: rgba(249, 115, 22, 0.2);
+    border-left: 3px solid #f97316;
+    border-radius: 4px;
+    margin: -2px -8px;
+    padding: 2px 8px;
+  }
+
+  /* Mermaid syntax highlighting */
+  .mermaid-editor .flowchart {
+    color: var(--blue-400);
+    font-weight: 500;
+  }
+
+  .mermaid-editor .node-id {
+    color: var(--orange-400);
+    font-weight: 500;
+  }
+
+  .mermaid-editor .node-text {
+    color: var(--silver-100);
+  }
+
+  .mermaid-editor .arrow {
+    color: var(--blue-300);
+    font-weight: 500;
+  }
+
+  .mermaid-editor .comment {
+    color: var(--silver-500);
+    font-style: italic;
+  }
+
+  /* Ensure highlighted elements are visible */
+  .highlighted-line .node-id,
+  .highlighted-line .node-text,
+  .highlighted-line .arrow {
+    color: inherit;
+    opacity: 0.9;
+  }
+
+  /* Mermaid diagram highlighting */
   .node.highlighted rect,
   .node.highlighted circle,
   .node.highlighted polygon {
     stroke: #f97316 !important;
     stroke-width: 3px !important;
     filter: brightness(1.2);
+  }
+
+  .node.highlighted .label {
+    fill: #f97316 !important;
+    font-weight: bold;
   }
 
   .edgePath.highlighted path {
@@ -1247,6 +1296,40 @@ pre.json-content {
 
   .edgePath.highlighted marker {
     fill: #f97316 !important;
+  }
+
+  /* Hover effects */
+  .node:hover rect,
+  .node:hover circle,
+  .node:hover polygon {
+    stroke: #f97316 !important;
+    stroke-width: 2px !important;
+    cursor: pointer;
+  }
+
+  .edgePath:hover path {
+    stroke: #f97316 !important;
+    stroke-width: 2px !important;
+    cursor: pointer;
+  }
+
+  .edgePath:hover marker {
+    fill: #f97316 !important;
+  }
+
+  /* Ensure SVG elements are visible and interactive */
+  svg.mermaid {
+    width: 100% !important;
+    height: auto !important;
+    cursor: default;
+  }
+
+  .node, .edgePath {
+    pointer-events: all;
+  }
+
+  .node .label, .edgeLabel {
+    pointer-events: none;
   }
 }
 
@@ -1365,7 +1448,7 @@ pre.json-content {
 .save-button:hover:not(:disabled) {
   background-color: var(--black-500);
   color: var(--silver-200);
-  border-color: var(--blue-600);
+  border-color: var(--blue-500);
 }
 
 .save-button.active {
@@ -1895,40 +1978,139 @@ pre.json-content {
   padding: 16px;
   background-color: var(--black-800);
   color: var(--silver-100);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .markdown-content {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   line-height: 1.6;
   font-size: 14px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.markdown-content .line {
-  padding: 2px 4px;
+/* Headers in markdown */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  color: var(--blue-300);
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-content h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--black-500);
+  padding-bottom: 0.3em;
+}
+
+.markdown-content h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--black-500);
+  padding-bottom: 0.3em;
+}
+
+.markdown-content h3 {
+  font-size: 1.25em;
+}
+
+/* Paragraphs and lists */
+.markdown-content p,
+.markdown-content ul,
+.markdown-content ol {
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 2em;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+}
+
+/* Code blocks */
+.markdown-content pre,
+.markdown-content code {
+  font-family: "Consolas", "Monaco", monospace;
+  background-color: var(--black-700);
   border-radius: 4px;
-  transition: background-color 0.2s ease;
+  padding: 0.2em 0.4em;
+  font-size: 0.9em;
+}
+
+.markdown-content pre {
+  padding: 16px;
+  overflow: auto;
+  margin: 16px 0;
+}
+
+/* Highlighting styles */
+.markdown-content .line {
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .markdown-content .line:hover {
   background-color: var(--black-700);
 }
 
-.markdown-content .highlighted-line {
-  background-color: rgba(59, 130, 246, 0.2);
+/* Blue highlight for sections */
+.markdown-content .highlighted-section {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 2px solid rgba(59, 130, 246, 0.4);
+  margin: 4px 0;
+  padding-left: 16px;
 }
 
-.markdown-content .highlighted-context {
-  background-color: rgba(59, 130, 246, 0.05);
+/* Orange highlight for matched text */
+.markdown-content .highlighted-line {
+  background-color: rgba(249, 115, 22, 0.2);
+  border-left: 3px solid #f97316;
+  font-weight: 500;
+  position: relative;
+  z-index: 2;
+}
+
+/* Ensure proper stacking of highlights */
+.markdown-content .highlighted-line {
+  z-index: 2;
+}
+
+.markdown-content .highlighted-section {
+  z-index: 1;
+}
+
+.markdown-content .line:hover {
+  z-index: 3;
 }
 
 /* Hide scrollbars but maintain functionality */
 .reference-viewer {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue-600) var(--black-800);
 }
 
 .reference-viewer::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  width: 8px;
+}
+
+.reference-viewer::-webkit-scrollbar-track {
+  background: var(--black-800);
+}
+
+.reference-viewer::-webkit-scrollbar-thumb {
+  background-color: var(--blue-600);
+  border-radius: 4px;
+}
+
+.reference-viewer::-webkit-scrollbar-thumb:hover {
+  background-color: var(--blue-500);
 }
 
 /* Add highlight styles for JSON viewer */

@@ -1,3 +1,60 @@
+export const highlightMermaidElement = (mermaidCode, highlightedElement) => {
+  if (!mermaidCode || !highlightedElement) return mermaidCode;
+
+  const lines = mermaidCode.split('\n');
+  const result = [];
+  let inHighlightBlock = false;
+  let bracketCount = 0;
+  let currentSubgraphStart = -1;
+  let targetSubgraphStart = -1;
+
+  // First pass: identify subgraph boundaries and target location
+  lines.forEach((line, i) => {
+    const trimmedLine = line.trim();
+    
+    // Track subgraph boundaries
+    if (trimmedLine.startsWith('subgraph')) {
+      currentSubgraphStart = i;
+    }
+
+    // Check if this line contains our target identifier
+    if (highlightedElement) {
+      if (highlightedElement.type === 'node') {
+        // Match node definition lines
+        const nodeText = highlightedElement.text || highlightedElement.id;
+        if (line.includes(`${nodeText}[`) || line.includes(`${nodeText}(`)) {
+          targetSubgraphStart = currentSubgraphStart;
+          inHighlightBlock = true;
+        }
+      } else if (highlightedElement.type === 'edge') {
+        // Match edge definition lines
+        if (line.includes(highlightedElement.id)) {
+          targetSubgraphStart = currentSubgraphStart;
+          inHighlightBlock = true;
+        }
+      }
+    }
+
+    // Track bracket nesting
+    const openBrackets = (trimmedLine.match(/[{[]/g) || []).length;
+    const closeBrackets = (trimmedLine.match(/[}\]]/g) || []).length;
+    bracketCount += openBrackets - closeBrackets;
+
+    // Add highlighting class to the line if it's part of the target
+    if (inHighlightBlock) {
+      result.push(`<div class="highlighted-line">${line}</div>`);
+      
+      // Check if we've reached the end of our highlight block
+      if (bracketCount === 0 && closeBrackets > 0) {
+        inHighlightBlock = false;
+      }
+    } else {
+      result.push(`<div class="mermaid-line">${line}</div>`);
+    }
+  });
+
+  return result.join('\n');
+};
 
 export const highlightMermaid = (code) => {
   if (!code) return "";
