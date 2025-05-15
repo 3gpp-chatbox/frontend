@@ -38,7 +38,7 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
               <div className="detail-line">
                 <span className="detail-label">Entity:</span>
                 <span className="detail-value">
-                  -entity here-
+                {procedure.entity || "N/A"}
                 </span>
               </div>
               <div className="detail-line">
