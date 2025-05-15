@@ -55,7 +55,7 @@ export const highlightMermaidElement = (mermaidCode, highlightedElement) => {
     } else if (inHighlightBlock && !trimmedLine.startsWith('%%')) {
       // Only end the highlight block if we've found both Type and Description
       // or if we've hit a non-metadata line
-      if (metadataCount >= 2) {
+      if (metadataCount >= 1) {
         inHighlightBlock = false;
         metadataCount = 0;
       }
