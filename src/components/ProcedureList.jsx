@@ -23,20 +23,24 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
           const groupedProcedures = data.reduce((acc, procedure) => {
             const existingProcedure = acc.find(p => p.procedure_name === procedure.procedure_name);
             if (existingProcedure) {
-              existingProcedure.entities.push({
-                id: `${procedure.procedure_id}_${procedure.entity.toLowerCase()}`,
-                name: `${procedure.entity}-${procedure.procedure_name}`,
-                entity: procedure.entity
+              // Add entities from the list
+              procedure.entity.forEach(entityName => {
+                existingProcedure.entities.push({
+                  id: `${procedure.procedure_id}_${entityName.toLowerCase()}`,
+                  name: `${entityName}-${procedure.procedure_name}`,
+                  entity: entityName
+                });
               });
             } else {
+              // Create new procedure entry with entities from the list
               acc.push({
                 procedure_id: procedure.procedure_id,
                 procedure_name: procedure.procedure_name,
-                entities: [{
-                  id: `${procedure.procedure_id}_${procedure.entity.toLowerCase()}`,
-                  name: `${procedure.entity}-${procedure.procedure_name}`,
-                  entity: procedure.entity
-                }]
+                entities: procedure.entity.map(entityName => ({
+                  id: `${procedure.procedure_id}_${entityName.toLowerCase()}`,
+                  name: `${entityName}-${procedure.procedure_name}`,
+                  entity: entityName
+                }))
               });
             }
             return acc;
@@ -68,7 +72,6 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
           procedureData.graph,
           defaultMermaidConfig
         );
-        // todo: modify this
         // Pass all procedure data to the parent component
         onProcedureSelect({
           ...procedureData,           // Include all API response data
