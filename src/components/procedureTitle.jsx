@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import DescriptionModal from './modals/DescriptionModal';
 import OriginalDataModal from './modals/OriginalDataModal';
+import VersionHistory from './modals/VersionHistory';
 import { fetchOriginalGraph } from "../API/api_calls";
 import { MdInfo, MdHistory } from 'react-icons/md';
 
@@ -9,6 +11,7 @@ function ProcedureTitle({ selectedProcedure }) {
   const [isOriginalGraphModalOpen, setIsOriginalGraphModalOpen] = useState(false);
   const [originalData, setOriginalData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
 
   const handleDetailsClick = () => {
     setIsDescriptionModalOpen(true);
@@ -31,6 +34,14 @@ function ProcedureTitle({ selectedProcedure }) {
     }
   };
 
+  const handleVersionHistoryClick = () => {
+    setShowVersionHistory(true);
+  };
+
+  const handleCloseVersionHistory = () => {
+    setShowVersionHistory(false);
+  };
+
   return (
     <>
       <div className="procedure-title-bar">
@@ -50,7 +61,7 @@ function ProcedureTitle({ selectedProcedure }) {
               </button>
               <button 
                 className="action-button"
-                onClick={handleOriginalGraphClick}
+                onClick={handleVersionHistoryClick}
                 disabled={isLoading}
                 title="View Version History"
               >
@@ -75,8 +86,17 @@ function ProcedureTitle({ selectedProcedure }) {
         }}
         originalData={originalData}
       />
+      <VersionHistory
+        isOpen={showVersionHistory}
+        onClose={handleCloseVersionHistory}
+        procedure={selectedProcedure}
+      />
     </>
   );
 }
+
+ProcedureTitle.propTypes = {
+  selectedProcedure: PropTypes.object
+};
 
 export default ProcedureTitle;
