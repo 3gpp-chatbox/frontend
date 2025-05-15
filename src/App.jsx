@@ -26,24 +26,12 @@ function App() {
   const [highlightedSection, setHighlightedSection] = useState(null);
   const [markdownContent, setMarkdownContent] = useState("");
 
-  // Load markdown content when component mounts
+  // Update markdown content when procedure data changes
   useEffect(() => {
-    const loadMarkdownContent = async () => {
-      try {
-        const response = await fetch(
-          "/src/data/Security mode control procedure_original_context_context_20250505_182324.md",
-        );
-        if (!response.ok) {
-          throw new Error("Failed to load markdown content");
-        }
-        const content = await response.text();
-        setMarkdownContent(content);
-      } catch (error) {
-        console.error("Error loading markdown content:", error);
-      }
-    };
-    loadMarkdownContent();
-  }, []);
+    if (procedureData?.reference?.context_markdown) {
+      setMarkdownContent(procedureData.reference.context_markdown);
+    }
+  }, [procedureData]);
 
   /**
    * Handles procedure selection from the list.
