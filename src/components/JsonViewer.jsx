@@ -403,32 +403,29 @@ function JsonViewer({
   };
 
   // Handle node/edge click in Mermaid view
-  const handleDiagramClick = useCallback((elementId, elementType, elementText = null) => {
+  const handleDiagramClick = useCallback((element) => {
     // Update highlighted element
-    const element = {
-      id: elementId,
-      type: elementType,
-      text: elementText || elementId
-    };
     setHighlightedElement(element);
     
     // Find corresponding section in reference view
-    if (markdownContent) {
-      const searchText = elementText || elementId;
-      const sectionMatch = markdownContent.match(
-        new RegExp(`(?:^|\n)#{2,3} .*${searchText}.*`, 'm')
-      );
-      
-      if (sectionMatch) {
+    if (markdownContent && element) {
+      // Use the section_ref and text_ref directly from the element object
+      const sectionRef = element.section_ref;
+      const textRef = element.text_ref;
+
+      if (sectionRef) {
         // Create a reference section object with both section and text refs
         const referenceSection = {
           refs: {
-            section: sectionMatch[0].trim(),
-            text: searchText
+            section: sectionRef,
+            text: textRef
           },
-          type: elementType
+          type: element.type
         };
         setHighlightedSection(referenceSection);
+      } else {
+        // If no section_ref, clear the highlighted section
+        setHighlightedSection(null);
       }
     }
   }, [setHighlightedElement, setHighlightedSection, markdownContent]);
@@ -580,7 +577,14 @@ function JsonViewer({
                           const nodeText = node.querySelector(".label, .nodeLabel")?.textContent;
                           // Add highlight class to the clicked node
                           node.classList.add("highlighted");
-                          handleDiagramClick(nodeId, "node", nodeText);
+                          // Pass the extracted references and other properties
+                          handleDiagramClick({
+                            type: "node",
+                            id: nodeId,
+                            text: nodeText,
+                            section_ref: node.dataset.sectionRef, // Assuming data attributes are added
+                            text_ref: node.dataset.textRef // Assuming data attributes are added
+                          });
                         } else if (edge) {
                           // Extract edge ID from the path or title
                           const edgeId = edge.id?.split('-').slice(-1)[0] || 
@@ -588,7 +592,14 @@ function JsonViewer({
                           if (edgeId) {
                             // Add highlight class to the clicked edge
                             edge.classList.add("highlighted");
-                            handleDiagramClick(edgeId, "edge");
+                            // Pass the extracted references and other properties
+                            handleDiagramClick({
+                              type: "edge",
+                              id: edgeId,
+                              text: edgeId, // Or extract edge label if needed
+                              section_ref: edge.dataset.sectionRef, // Assuming data attributes are added
+                              text_ref: edge.dataset.textRef // Assuming data attributes are added
+                            });
                           }
                         }
                       }
