@@ -1228,6 +1228,7 @@ pre.json-content {
     padding: 2px 4px;
     border-radius: 4px;
     transition: background-color 0.2s ease;
+    display: block;
   }
 
   .mermaid-line:hover {
@@ -1235,43 +1236,22 @@ pre.json-content {
   }
 
   .highlighted-line {
-    background-color: rgba(249, 115, 22, 0.2);
-    border-left: 3px solid #f97316;
+    background-color: rgba(249, 115, 22, 0.2) !important;
+    border-left: 3px solid #f97316 !important;
     border-radius: 4px;
-    margin: -2px -8px;
-    padding: 2px 8px;
-  }
-
-  /* Mermaid syntax highlighting */
-  .mermaid-editor .flowchart {
-    color: var(--blue-400);
-    font-weight: 500;
-  }
-
-  .mermaid-editor .node-id {
-    color: var(--orange-400);
-    font-weight: 500;
-  }
-
-  .mermaid-editor .node-text {
-    color: var(--silver-100);
-  }
-
-  .mermaid-editor .arrow {
-    color: var(--blue-300);
-    font-weight: 500;
-  }
-
-  .mermaid-editor .comment {
-    color: var(--silver-500);
-    font-style: italic;
+    margin: 0 -8px;
+    padding: 2px 8px 2px 16px;
+    display: block;
   }
 
   /* Ensure highlighted elements are visible */
   .highlighted-line .node-id,
   .highlighted-line .node-text,
-  .highlighted-line .arrow {
-    color: inherit;
+  .highlighted-line .arrow,
+  .highlighted-line .comment,
+  .highlighted-line .description,
+  .highlighted-line .type {
+    color: #f97316 !important;
     opacity: 0.9;
   }
 
@@ -1296,6 +1276,11 @@ pre.json-content {
 
   .edgePath.highlighted marker {
     fill: #f97316 !important;
+  }
+
+  .edgePath.highlighted .edgeLabel {
+    color: #f97316 !important;
+    font-weight: bold;
   }
 
   /* Hover effects */

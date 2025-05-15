@@ -58,9 +58,6 @@ function JsonViewer({
   });
   const [activeView, setActiveView] = useState("mermaid");
   const [showMermaid, setShowMermaid] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [position, setPosition] = useState({ x: 0, y: 0 });
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
@@ -333,46 +330,6 @@ function JsonViewer({
     handleSaveClick();
   };
 
-  const handleMouseMove = useCallback((e) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
-    }
-  }, [isDragging, dragStart]);
-
-  const handleMouseDown = useCallback(
-    (e) => {
-      if (e.target.closest(".node") || e.target.closest(".edgePath")) {
-        return; // Don't initiate drag if clicking on a node or edge
-      }
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-    },
-    [position],
-  );
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  // Add event listeners for dragging
-  useEffect(() => {
-    const currentRef = codeContentRef.current;
-    if (currentRef) {
-      currentRef.addEventListener("mousedown", handleMouseDown);
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-
-      return () => {
-        currentRef?.removeEventListener("mousedown", handleMouseDown);
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [handleMouseDown, handleMouseMove, handleMouseUp]);
-
   /**
    * Cleans and formats Mermaid code for rendering.
    * @param {string} code - The Mermaid code to clean
@@ -636,12 +593,6 @@ function JsonViewer({
                           }
                         }
                       }
-                    }}
-                    style={{
-                      cursor: isDragging ? "grabbing" : "grab",
-                      transform: `translate(${position.x}px, ${position.y}px)`,
-                      position: "relative",
-                      userSelect: isDragging ? "none" : "text",
                     }}
                     dangerouslySetInnerHTML={{
                       __html: highlightMermaidElement(

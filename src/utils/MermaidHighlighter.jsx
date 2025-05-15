@@ -4,54 +4,71 @@ export const highlightMermaidElement = (mermaidCode, highlightedElement) => {
   const lines = mermaidCode.split('\n');
   const result = [];
   let inHighlightBlock = false;
-  let bracketCount = 0;
-  let currentSubgraphStart = -1;
-  let targetSubgraphStart = -1;
+  let metadataCount = 0;
 
-  // First pass: identify subgraph boundaries and target location
-  lines.forEach((line, i) => {
+  // Helper function to wrap line in highlight
+  const wrapInHighlight = (line) => {
+    return `<div class="highlighted-line" style="background-color: rgba(249, 115, 22, 0.2); border-left: 3px solid #f97316;">${line}</div>`;
+  };
+
+  // First pass: identify and highlight relevant lines
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmedLine = line.trim();
-    
-    // Track subgraph boundaries
-    if (trimmedLine.startsWith('subgraph')) {
-      currentSubgraphStart = i;
-    }
+    let shouldHighlight = false;
 
-    // Check if this line contains our target identifier
     if (highlightedElement) {
       if (highlightedElement.type === 'node') {
-        // Match node definition lines
-        const nodeText = highlightedElement.text || highlightedElement.id;
-        if (line.includes(`${nodeText}[`) || line.includes(`${nodeText}(`)) {
-          targetSubgraphStart = currentSubgraphStart;
+        // For nodes, we need to match the node ID without the flowchart- prefix
+        const nodeId = (highlightedElement.text || highlightedElement.id).replace('flowchart-', '');
+        
+        // Check if this is a node definition line
+        if (trimmedLine.includes(nodeId)) {
+          shouldHighlight = true;
           inHighlightBlock = true;
+          metadataCount = 0;
+        }
+        // Check for metadata lines that follow
+        else if (inHighlightBlock && trimmedLine.startsWith('%%')) {
+          shouldHighlight = true;
+          metadataCount++;
+        }
+        // If we hit a non-metadata line after our node, stop highlighting
+        else if (inHighlightBlock && !trimmedLine.startsWith('%%')) {
+          inHighlightBlock = false;
         }
       } else if (highlightedElement.type === 'edge') {
-        // Match edge definition lines
-        if (line.includes(highlightedElement.id)) {
-          targetSubgraphStart = currentSubgraphStart;
+        // For edges, check both the edge line and its metadata
+        if (trimmedLine.includes(highlightedElement.id)) {
+          shouldHighlight = true;
           inHighlightBlock = true;
+          metadataCount = 0;
+        }
+        // Check for metadata lines that follow
+        else if (inHighlightBlock && trimmedLine.startsWith('%%')) {
+          shouldHighlight = true;
+          metadataCount++;
+        }
+        // If we hit a non-metadata line after our edge, stop highlighting
+        else if (inHighlightBlock && !trimmedLine.startsWith('%%')) {
+          inHighlightBlock = false;
         }
       }
     }
 
-    // Track bracket nesting
-    const openBrackets = (trimmedLine.match(/[{[]/g) || []).length;
-    const closeBrackets = (trimmedLine.match(/[}\]]/g) || []).length;
-    bracketCount += openBrackets - closeBrackets;
-
-    // Add highlighting class to the line if it's part of the target
-    if (inHighlightBlock) {
-      result.push(`<div class="highlighted-line">${line}</div>`);
-      
-      // Check if we've reached the end of our highlight block
-      if (bracketCount === 0 && closeBrackets > 0) {
-        inHighlightBlock = false;
-      }
+    // Add the line with appropriate highlighting
+    if (shouldHighlight) {
+      result.push(wrapInHighlight(line));
     } else {
       result.push(`<div class="mermaid-line">${line}</div>`);
     }
-  });
+
+    // If we've processed all metadata lines (Type and Description), stop the highlight block
+    if (metadataCount >= 2) {
+      inHighlightBlock = false;
+      metadataCount = 0;
+    }
+  }
 
   return result.join('\n');
 };
