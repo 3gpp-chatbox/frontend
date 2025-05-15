@@ -165,7 +165,7 @@ function JsonViewer({
         setIsEditing(false);
         isUserEditing.current = false;
 
-        const procedureData = await fetchProcedure(selectedProcedure.id);
+        const procedureData = await fetchProcedure(selectedProcedure.id, selectedProcedure.entity);
         console.log("Received procedure data:", procedureData);
 
         if (!procedureData) {
@@ -186,7 +186,7 @@ function JsonViewer({
     };
 
     loadProcedureData();
-  }, [selectedProcedure?.id]);
+  }, [selectedProcedure?.id, selectedProcedure?.entity]);
 
   // Update data when procedure is updated externally
   useEffect(() => {

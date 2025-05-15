@@ -92,10 +92,35 @@ export const handleConfirmSave = async ({
 
     // Convert to JSON and save
     const graphData = convertMermaidToJson(mermaidGraph);
-    const result = await insertProcedureGraphChanges(selectedProcedure.id, {
-      nodes: graphData.nodes,
-      edges: graphData.edges,
-    });
+    
+    // Add required fields to nodes and edges
+    const enrichedGraphData = {
+      nodes: graphData.nodes.map(node => ({
+        id: node.id,
+        type: node.type === "event" ? "event" : "state",  // Must be exactly "state" or "event"
+        description: node.description || "Manually added node",
+        section_reference: "Manual Edit",
+        text_reference: "Manually edited through UI"
+      })),
+      edges: graphData.edges.map(edge => ({
+        from: edge.from,  // Using 'from' as it's aliased to 'from_node' in backend
+        to: edge.to,
+        type: edge.type === "condition" ? "condition" : "trigger",  // Must be exactly "trigger" or "condition"
+        description: edge.description || "Manually added edge",
+        section_reference: "Manual Edit",
+        text_reference: "Manually edited through UI"
+      }))
+    };
+
+    const result = await insertProcedureGraphChanges(
+      selectedProcedure.id || selectedProcedure.procedure_id,
+      selectedProcedure.entity,
+      {
+        edited_graph: enrichedGraphData,
+        commit_title: "Manual edit",
+        commit_message: "Graph manually edited through UI"
+      }
+    );
 
     if (!result) {
       throw new Error("Failed to save changes");

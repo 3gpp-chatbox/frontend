@@ -75,9 +75,11 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
         // Pass all procedure data to the parent component
         onProcedureSelect({
           ...procedureData,           // Include all API response data
+          id: procedure.procedure_id,  // Map procedure_id to id for consistency
           name: entity.name,          // Use entity-specific name
           procedure_name: procedure.procedure_name, // Keep original procedure name 
           mermaidDiagram,            // Add generated Mermaid diagram
+          entity: entity.entity      // Add entity type
         });
       } else {
         setError(`No data available for ${entity.name}`);

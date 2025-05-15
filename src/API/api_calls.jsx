@@ -53,11 +53,19 @@ export const insertProcedureGraphChanges = async (procedureId, entity, changes) 
   }
 
   try {
-    console.log("Inserting procedure graph changes:", changes);
+    console.log("Inserting procedure graph changes:", {
+      procedureId,
+      entity,
+      requestBody: {
+        edited_graph: changes.edited_graph,
+        commit_title: changes.commit_title,
+        commit_message: changes.commit_message,
+      }
+    });
     const response = await axios.post(
       `${API_BASE_URL}/procedures/${procedureId}/${entity}`,
       {
-        edited_graph: changes.graph,
+        edited_graph: changes.edited_graph,
         commit_title: changes.commit_title,
         commit_message: changes.commit_message,
       }
@@ -65,6 +73,11 @@ export const insertProcedureGraphChanges = async (procedureId, entity, changes) 
     return response.data || null;
   } catch (error) {
     console.error("Error inserting procedure graph changes:", error);
+    if (error.response) {
+      console.error("Response data:", error.response.data);
+      console.error("Response status:", error.response.status);
+      console.error("Response headers:", error.response.headers);
+    }
     throw error;
   }
 };
