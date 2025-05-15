@@ -1,72 +1,71 @@
 export const highlightMermaidElement = (mermaidCode, highlightedElement) => {
-  if (!mermaidCode || !highlightedElement) return mermaidCode;
+  if (!mermaidCode || !highlightedElement) {
+    console.log("No code or highlighted element provided");
+    return mermaidCode;
+  }
 
-  const lines = mermaidCode.split('\n');
+  console.log("Highlighting element:", highlightedElement);
+
+  // Strip existing HTML tags before processing
+  const lines = mermaidCode.replace(/<[^>]*>/g, '').split('\n');
   const result = [];
   let inHighlightBlock = false;
   let metadataCount = 0;
 
   // Helper function to wrap line in highlight
   const wrapInHighlight = (line) => {
-    return `<div class="highlighted-line" style="background-color: rgba(249, 115, 22, 0.2); border-left: 3px solid #f97316;">${line}</div>`;
+    return `<div class="highlighted-line" style="background-color: rgba(249, 115, 22, 0.2); border-left: 3px solid #f97316;">${highlightMermaid(line)}</div>`;
   };
 
-  // First pass: identify and highlight relevant lines
+  // Process each line
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmedLine = line.trim();
     let shouldHighlight = false;
 
-    if (highlightedElement) {
-      if (highlightedElement.type === 'node') {
-        // For nodes, we need to match the node ID without the flowchart- prefix
-        const nodeId = (highlightedElement.text || highlightedElement.id).replace('flowchart-', '');
-        
-        // Check if this is a node definition line
-        if (trimmedLine.includes(nodeId)) {
-          shouldHighlight = true;
-          inHighlightBlock = true;
-          metadataCount = 0;
-        }
-        // Check for metadata lines that follow
-        else if (inHighlightBlock && trimmedLine.startsWith('%%')) {
-          shouldHighlight = true;
-          metadataCount++;
-        }
-        // If we hit a non-metadata line after our node, stop highlighting
-        else if (inHighlightBlock && !trimmedLine.startsWith('%%')) {
-          inHighlightBlock = false;
-        }
-      } else if (highlightedElement.type === 'edge') {
-        // For edges, check both the edge line and its metadata
-        if (trimmedLine.includes(highlightedElement.id)) {
-          shouldHighlight = true;
-          inHighlightBlock = true;
-          metadataCount = 0;
-        }
-        // Check for metadata lines that follow
-        else if (inHighlightBlock && trimmedLine.startsWith('%%')) {
-          shouldHighlight = true;
-          metadataCount++;
-        }
-        // If we hit a non-metadata line after our edge, stop highlighting
-        else if (inHighlightBlock && !trimmedLine.startsWith('%%')) {
-          inHighlightBlock = false;
-        }
+    if (highlightedElement.type === 'node') {
+      // Extract node ID, handling both text and id properties
+      const nodeId = (highlightedElement.text || highlightedElement.id || '').replace('flowchart-', '');
+      
+      // Check if this line contains the node definition
+      if (trimmedLine.includes(nodeId) && /^[A-Z0-9]+[\[(]/.test(trimmedLine)) {
+        shouldHighlight = true;
+        inHighlightBlock = true;
+        metadataCount = 0;
+      }
+    } else if (highlightedElement.type === 'edge') {
+      // Extract the actual edge ID from the full ID (which includes source and target)
+      const edgeIdMatch = (highlightedElement.id || '').match(/edge-([^-]+)/);
+      const edgeId = edgeIdMatch ? edgeIdMatch[1] : highlightedElement.id;
+      
+      // Check if this line contains the edge definition
+      if (trimmedLine.includes(edgeId)) {
+        shouldHighlight = true;
+        inHighlightBlock = true;
+        metadataCount = 0;
       }
     }
 
-    // Add the line with appropriate highlighting
+    // Handle metadata lines that follow the highlighted element
+    if (inHighlightBlock && trimmedLine.startsWith('%%')) {
+      shouldHighlight = true;
+      if (trimmedLine.includes('Type:') || trimmedLine.includes('Description:')) {
+        metadataCount++;
+      }
+    } else if (inHighlightBlock && !trimmedLine.startsWith('%%')) {
+      // Only end the highlight block if we've found both Type and Description
+      // or if we've hit a non-metadata line
+      if (metadataCount >= 2) {
+        inHighlightBlock = false;
+        metadataCount = 0;
+      }
+    }
+
+    // Apply highlighting while preserving syntax highlighting
     if (shouldHighlight) {
       result.push(wrapInHighlight(line));
     } else {
-      result.push(`<div class="mermaid-line">${line}</div>`);
-    }
-
-    // If we've processed all metadata lines (Type and Description), stop the highlight block
-    if (metadataCount >= 2) {
-      inHighlightBlock = false;
-      metadataCount = 0;
+      result.push(`<div class="mermaid-line">${highlightMermaid(line)}</div>`);
     }
   }
 
@@ -105,18 +104,18 @@ export const highlightMermaid = (code) => {
           highlightedLine = `<span class="comment">${line}</span>`;
         }
       }
-      // Highlight node definitions: A(text)
-      else if (/^[A-Z]+\([^)]+\)/.test(trimmedLine)) {
+      // Highlight node definitions with improved pattern matching
+      else if (/^[A-Z0-9]+[\[(]/.test(trimmedLine)) {
         highlightedLine = line.replace(
-          /([A-Z]+)(\()([^)]+)(\))/,
-          '<span class="node-id">$1</span>$2<span class="node-text">$3</span>$4',
+          /([A-Z0-9]+)([\[(][^)\]]+[)\]])/,
+          '<span class="node-id">$1</span><span class="node-text">$2</span>',
         );
       }
-      // Highlight edges: A --> B
-      else if (/^[A-Z]+\s*-->/.test(trimmedLine)) {
+      // Highlight edges with improved pattern matching
+      else if (/^[A-Z0-9]+\s*-->/.test(trimmedLine)) {
         highlightedLine = line.replace(
-          /([A-Z]+)(\s*-->?\s*)([A-Z]+)/,
-          '<span class="node-id">$1</span><span class="arrow">$2</span><span class="node-id">$3</span>',
+          /([A-Z0-9]+)(\s*-->?\s*)([A-Z0-9]+)(\|[^|]*\|)?/,
+          '<span class="node-id">$1</span><span class="arrow">$2</span><span class="node-id">$3</span>$4',
         );
       }
 
@@ -143,7 +142,7 @@ export const highlightMermaidLine = (code, elementId, elementType) => {
   const nodeLabel = nodeMatch ? nodeMatch[1] : null;
   console.log("Looking for node/edge:", { nodeLabel, elementId });
   
-  // Split the code into lines
+  // Strip existing HTML tags before processing
   const lines = code.replace(/<[^>]*>/g, '').split('\n');
   let highlightedLines = [];
   let foundTarget = false;
@@ -155,7 +154,7 @@ export const highlightMermaidLine = (code, elementId, elementType) => {
     
     if (elementType === 'node' && nodeLabel) {
       // Match node definitions with optional leading whitespace
-      const nodePattern = new RegExp(`^\\s*${nodeLabel}(\\[|\\(\\()`);
+      const nodePattern = new RegExp(`^\\s*${nodeLabel}(\\[|\\(|\\(\\()`);
       if (nodePattern.test(line)) {
         foundTarget = true;
         shouldHighlight = true;

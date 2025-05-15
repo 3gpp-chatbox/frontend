@@ -448,6 +448,9 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   overflow-y: auto;
   min-height: 0;
   background-color: var(--black-800);
+  height: calc(100% - 48px); /* Subtract header height */
+  display: flex;
+  flex-direction: column;
 }
 
 .content-area.diagram-container {
@@ -455,7 +458,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   padding: 0;
   overflow: hidden;
   position: relative;
-  height: calc(100% - 48px);
+  height: calc(100% - 48px); /* Subtract header height */
   touch-action: none;
 }
 
@@ -465,7 +468,49 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   flex: 1;
   min-height: 0;
   position: relative;
-  /* gap: 20px; */
+  height: calc(100vh - 160px); /* Adjust for title bar and padding */
+}
+
+.procedure-container-left,
+.procedure-container-right {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-panel {
+  background: var(--black-700);
+  border: 1px solid var(--black-500);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  overflow: auto;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.diagram-panel {
+  background: var(--black-700);
+  border-radius: 8px;
+  border: 1px solid var(--black-500);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  height: 100%;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure PanelGroup takes full height */
+[data-panel-group] {
+  height: 100%;
+}
+
+[data-panel] {
+  height: 100%;
 }
 
 .resize-handle {
@@ -479,62 +524,6 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 .resize-handle:hover,
 .resize-handle:active {
   background-color: var(--blue-500);
-}
-
-.procedure-container-left {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-.procedure-container-right {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* .description-panel {
-  background: var(--black-700);
-  border: 1px solid var(--black-500);
-  box-shadow: 0 4px 6px #000000;
-  height: 40%;
-  padding: 8px 16px;
-} */
-
-.editor-panel {
-  background: var(--black-700);
-  border: 1px solid var(--black-500);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  overflow: auto;
-}
-
-.diagram-panel {
-  background: var(--black-700);
-  border-radius: 8px;
-  border: 1px solid var(--black-500);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  height: 100%;
-  overflow: auto;
-}
-
-.resizer {
-  position: absolute;
-  right: -5px;
-  top: 0;
-  height: 100%;
-  width: 10px;
-  background: transparent;
-  cursor: col-resize;
-  z-index: 100;
-}
-
-.resizer:hover,
-.resizer.dragging {
-  background: rgba(59, 130, 246, 0.5);
 }
 
 /* Code line styles */
@@ -605,7 +594,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 
 /* JsonViewer Styles */
 .json-viewer-content {
-  height: calc(1000px - 48px); /* 1000px minus header height */
+  height: 100%;
   background-color: var(--black-800);
   position: relative;
   display: flex;
@@ -633,9 +622,11 @@ pre.json-content {
   background-color: var(--black-800);
   width: 100%;
   box-sizing: border-box;
+  flex: 1;
 }
 
 .json-content .code-content {
+  height: 100%;
   width: 100%;
   box-sizing: border-box;
   overflow-x: auto;
@@ -646,7 +637,7 @@ pre.json-content {
   white-space: pre-wrap !important;
   word-wrap: break-word !important;
   overflow-wrap: break-word !important;
-  overflow-x: hidden !important;
+  max-width: 100%;
 }
 
 .json-content .code-line {
@@ -1167,155 +1158,101 @@ pre.json-content {
   border-radius: 6px;
   padding: 20px;
   overflow: auto;
-  /* mermaid code styles */
-  .modal-mermaid-content {
-    background-color: var(--black-700);
-    padding: 1rem;
-    border-radius: 4px;
-    font-family: "Consolas", "Monaco", monospace;
-  }
+}
 
-  .modal-mermaid-content .flowchart {
-    color: var(--blue-500); /* Electric blue for flowchart declarations */
-  }
+/* Mermaid code styles */
+.modal-mermaid-content {
+  background-color: var(--black-700);
+  padding: 1rem;
+  border-radius: 4px;
+  font-family: "Consolas", "Monaco", monospace;
+}
 
-  .modal-mermaid-content .node-id {
-    color: var(--blue-300); /* Light blue for node IDs */
-  }
+.modal-mermaid-content .flowchart,
+.flowchart {
+  color: var(--blue-500); /* Electric blue for flowchart declarations */
+}
 
-  .modal-mermaid-content .node-text {
-    color: var(--orange-400); /* Orange for node text */
-  }
+.modal-mermaid-content .node-id,
+.node-id {
+  color: var(--blue-300); /* Light blue for node IDs */
+}
 
-  .modal-mermaid-content .arrow {
-    color: var(--blue-400); /* Mid blue for arrows */
-  }
+.modal-mermaid-content .node-text,
+.node-text {
+  color: var(--orange-400); /* Orange for node text */
+}
 
-  .modal-mermaid-content .comment {
-    color: var(--silver-500); /* Gray for comments */
-    font-style: italic;
-  }
+.modal-mermaid-content .arrow,
+.arrow {
+  color: var(--blue-400); /* Mid blue for arrows */
+}
 
-  .modal-mermaid-content .type {
-    color: var(--orange-500); /* Orange for types */
-  }
+.modal-mermaid-content .comment,
+.comment {
+  color: var(--silver-500); /* Gray for comments */
+  font-style: italic;
+}
 
-  .modal-mermaid-content .description {
-    color: var(--silver-300); /* Light gray for descriptions */
-  }
+.modal-mermaid-content .type,
+.type {
+  color: var(--orange-500); /* Orange for types */
+}
 
-  .mermaid-editor {
-    position: relative;
-    background-color: var(--black-800);
-    color: var(--silver-100);
-    font-family: "Consolas", "Monaco", monospace;
-    line-height: 1.5;
-  }
+.modal-mermaid-content .description,
+.description {
+  color: var(--silver-300); /* Light gray for descriptions */
+}
 
-  .mermaid-editor .code-content {
-    padding: 16px;
-    white-space: pre;
-    overflow-x: auto;
-  }
+.mermaid-editor {
+  position: relative;
+  background-color: var(--black-800);
+  color: var(--silver-100);
+  font-family: "Consolas", "Monaco", monospace;
+  line-height: 1.5;
+}
 
-  .mermaid-editor .code-content.wrapped {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
+.mermaid-editor .code-content {
+  padding: 16px;
+  white-space: pre;
+  overflow-x: auto;
+}
 
-  /* Mermaid line highlighting */
-  .mermaid-line {
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    display: block;
-  }
+.mermaid-editor .code-content.wrapped {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
 
-  .mermaid-line:hover {
-    background-color: var(--black-700);
-  }
+/* Mermaid line highlighting */
+.mermaid-line {
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  display: block;
+}
 
-  .highlighted-line {
-    background-color: rgba(249, 115, 22, 0.2) !important;
-    border-left: 3px solid #f97316 !important;
-    border-radius: 4px;
-    margin: 0 -8px;
-    padding: 2px 8px 2px 16px;
-    display: block;
-  }
+.mermaid-line:hover {
+  background-color: var(--black-700);
+}
 
-  /* Ensure highlighted elements are visible */
-  .highlighted-line .node-id,
-  .highlighted-line .node-text,
-  .highlighted-line .arrow,
-  .highlighted-line .comment,
-  .highlighted-line .description,
-  .highlighted-line .type {
-    color: #f97316 !important;
-    opacity: 0.9;
-  }
+.orange-highlight {
+  background-color: rgba(249, 115, 22, 0.2) !important;
+  border-left: 3px solid #f97316 !important;
+  border-radius: 4px;
+  margin: 0 -8px;
+  padding: 2px 8px 2px 16px;
+  display: block;
+}
 
-  /* Mermaid diagram highlighting */
-  .node.highlighted rect,
-  .node.highlighted circle,
-  .node.highlighted polygon {
-    stroke: #f97316 !important;
-    stroke-width: 3px !important;
-    filter: brightness(1.2);
-  }
-
-  .node.highlighted .label {
-    fill: #f97316 !important;
-    font-weight: bold;
-  }
-
-  .edgePath.highlighted path {
-    stroke: #f97316 !important;
-    stroke-width: 3px !important;
-  }
-
-  .edgePath.highlighted marker {
-    fill: #f97316 !important;
-  }
-
-  .edgePath.highlighted .edgeLabel {
-    color: #f97316 !important;
-    font-weight: bold;
-  }
-
-  /* Hover effects */
-  .node:hover rect,
-  .node:hover circle,
-  .node:hover polygon {
-    stroke: #f97316 !important;
-    stroke-width: 2px !important;
-    cursor: pointer;
-  }
-
-  .edgePath:hover path {
-    stroke: #f97316 !important;
-    stroke-width: 2px !important;
-    cursor: pointer;
-  }
-
-  .edgePath:hover marker {
-    fill: #f97316 !important;
-  }
-
-  /* Ensure SVG elements are visible and interactive */
-  svg.mermaid {
-    width: 100% !important;
-    height: auto !important;
-    cursor: default;
-  }
-
-  .node, .edgePath {
-    pointer-events: all;
-  }
-
-  .node .label, .edgeLabel {
-    pointer-events: none;
-  }
+/* Ensure highlighted elements are visible */
+.orange-highlight .node-id,
+.orange-highlight .node-text,
+.orange-highlight .arrow,
+.orange-highlight .comment,
+.orange-highlight .description,
+.orange-highlight .type {
+  color: #f97316 !important;
+  opacity: 0.9;
 }
 
 /* View Tabs Styles */

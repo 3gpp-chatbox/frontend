@@ -9,7 +9,6 @@ import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid, highlightMermaidElement } from "../utils/MermaidHighlighter";
 import { FaSave } from "react-icons/fa";
 import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
-import { highlightMermaidLine } from "../utils/MermaidHighlighter";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
 import { createSaveHandlers } from "../utils/SaveChanges";
 import ConfirmationDialog from "./modals/ConfirmationDialog";
