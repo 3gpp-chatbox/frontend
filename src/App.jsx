@@ -6,6 +6,7 @@ import ProcedureList from "./components/ProcedureList";
 // import Description from "./components/Descriptions";
 import ProcedureTitle from "./components/procedureTitle";
 import { mapElementToReference } from "./utils/referenceMapper";
+import Comparison from "./components/Comparison";
 
 /**
  * Main application component for the 3GPP Flow Editor.
@@ -25,6 +26,7 @@ function App() {
   const [highlightedElement, setHighlightedElement] = useState(null);
   const [highlightedSection, setHighlightedSection] = useState(null);
   const [markdownContent, setMarkdownContent] = useState("");
+  const [showComparison, setShowComparison] = useState(false);
 
   // Load markdown content when component mounts
   useEffect(() => {
@@ -152,6 +154,26 @@ function App() {
     setHighlightedSection(null);
   };
 
+  // Dummy data for left/right comparison (replace with real data as needed)
+  const leftVersion = {
+    title: selectedProcedure?.name + ' - V02 (Baseline)',
+    // Add more fields as needed
+  };
+  const rightVersion = {
+    title: selectedProcedure?.name + ' - V01',
+    // Add more fields as needed
+  };
+
+  // Handler to open comparison view
+  const handleOpenComparison = () => {
+    setShowComparison(true);
+  };
+
+  // Handler to close comparison view
+  const handleCloseComparison = () => {
+    setShowComparison(false);
+  };
+
   useEffect(() => {
     const resizer = document.querySelector(".resizer");
     const leftPanel = document.querySelector(".editor-panel");
@@ -221,49 +243,54 @@ function App() {
       {/* grid layout */}
       <div className="grid-layout">
         {/* procedure title bar */}
-        <ProcedureTitle selectedProcedure={selectedProcedure} />
+        <ProcedureTitle selectedProcedure={selectedProcedure} onOpenComparison={handleOpenComparison} />
 
-        {/* procedure Container */}
-        <div className="procedure-container">
-          <PanelGroup direction="horizontal">
-            <Panel defaultSize={50} minSize={30}>
-              <div className="procedure-container-left">
-                {/* description panel */}
-                {/* <Description
-                    procedure={procedureData}
-                    onProcedureUpdate={handleProcedureUpdate}
+        {/* Render comparison view if toggled */}
+        {showComparison ? (
+          <Comparison left={leftVersion} right={rightVersion} onClose={handleCloseComparison} />
+        ) : (
+          // ... existing procedure container ...
+          <div className="procedure-container">
+            <PanelGroup direction="horizontal">
+              <Panel defaultSize={50} minSize={30}>
+                <div className="procedure-container-left">
+                  {/* description panel */}
+                  {/* <Description
+                      procedure={procedureData}
+                      onProcedureUpdate={handleProcedureUpdate}
+                      onMermaidCodeChange={handleMermaidCodeChange}
+                    /> */}
+                  {/* JSON/Mermaid Editor Panel */}
+                  <JsonViewer
                     onMermaidCodeChange={handleMermaidCodeChange}
-                  /> */}
-                {/* JSON/Mermaid Editor Panel */}
-                <JsonViewer
-                  onMermaidCodeChange={handleMermaidCodeChange}
-                  selectedProcedure={selectedProcedure}
-                  onProcedureUpdate={handleProcedureUpdate}
-                  highlightedElement={highlightedElement}
-                  setHighlightedElement={setHighlightedElement}
-                  highlightedSection={highlightedSection}
-                  markdownContent={markdownContent}
-                  onEditorFocus={handleEditorFocus}
-                  setHighlightedSection={setHighlightedSection}
-                />
-                <div className="resizer"></div>
-              </div>
-            </Panel>
-            <PanelResizeHandle className="resize-handle" />
-            <Panel defaultSize={50} minSize={30}>
-              <div className="procedure-container-right">
-                {/* Flow Diagram Panel */}
-                <div className="diagram-panel">
-                  <FlowDiagram
-                    mermaidCode={mermaidCode}
-                    onElementClick={handleElementClick}
+                    selectedProcedure={selectedProcedure}
+                    onProcedureUpdate={handleProcedureUpdate}
                     highlightedElement={highlightedElement}
+                    setHighlightedElement={setHighlightedElement}
+                    highlightedSection={highlightedSection}
+                    markdownContent={markdownContent}
+                    onEditorFocus={handleEditorFocus}
+                    setHighlightedSection={setHighlightedSection}
                   />
+                  <div className="resizer"></div>
                 </div>
-              </div>
-            </Panel>
-          </PanelGroup>
-        </div>
+              </Panel>
+              <PanelResizeHandle className="resize-handle" />
+              <Panel defaultSize={50} minSize={30}>
+                <div className="procedure-container-right">
+                  {/* Flow Diagram Panel */}
+                  <div className="diagram-panel">
+                    <FlowDiagram
+                      mermaidCode={mermaidCode}
+                      onElementClick={handleElementClick}
+                      highlightedElement={highlightedElement}
+                    />
+                  </div>
+                </div>
+              </Panel>
+            </PanelGroup>
+          </div>
+        )}
       </div>
     </div>
   );

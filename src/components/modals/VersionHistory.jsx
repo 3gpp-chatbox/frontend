@@ -10,8 +10,7 @@ const versionHistory = [
     title: 'Procedure extracted',
     message: 'Title here',
     commit: 'This is a temporary commit message for testing purposes. Actual functionality will be implemented in future commits. This is a temporary commit message for testing purposes. Actual functionality will be implemented in future commits.',
-    timestamp: '5/6/2025, 10:30:00 AM',
-    link: '#',
+    timestamp: '5/6/2025, 10:30:00 AM'
   },
   {
     id: 2,
@@ -19,8 +18,7 @@ const versionHistory = [
     title: 'Created V01',
     message: 'Title here',
     commit: 'This is a temporary commit message for testing purposes. Actual functionality will be implemented in future commits. This is a temporary commit message for testing purposes. Actual functionality will be implemented in future commits.',
-    timestamp: '5/6/2025, 10:30:00 AM',
-    link: '#',
+    timestamp: '5/6/2025, 10:30:00 AM'
   },
   {
     id: 3,
@@ -28,12 +26,11 @@ const versionHistory = [
     title: 'Created V02',
     message: 'Title here',
     commit: 'This is a temporary commit message for testing purposes. Actual functionality will be implemented in future commits. This is a temporary commit message for testing purposes. Actual functionality will be implemented in future commits.',
-    timestamp: '5/6/2025, 10:30:00 AM',
-    link: '#',
+    timestamp: '5/6/2025, 10:30:00 AM'
   },
 ];
 
-function VersionHistory({ isOpen, onClose }) {
+function VersionHistory({ isOpen, onClose, onOpenComparison }) {
   const [expandedCommit, setExpandedCommit] = useState(null);
 
   const handleToggleExpand = (id) => {
@@ -46,7 +43,9 @@ function VersionHistory({ isOpen, onClose }) {
     <div className="modal-overlay">
       <div className="modal-content description-modal-content version-history-modal-content">
         <div className="modal-header">
-          <h3>Version History</h3>
+          <h3>Version History Summary</h3>
+          {/* add a button to open the comparison view*/}
+          <button onClick={onOpenComparison}>Open Comparison</button>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
         <div className="modal-body version-history-modal-body">
@@ -60,11 +59,11 @@ function VersionHistory({ isOpen, onClose }) {
                     <div className="timeline-header-row">
                       <span className="timeline-title">
                         {event.title}
-                        {event.link && (
+                        {/* {event.link && (
                           <a href={event.link} target="_blank" rel="noopener noreferrer" className="timeline-link" title="Open comparison">
                             <FiExternalLink size={16} />
                           </a>
-                        )}
+                        )} */}
                       </span>
                       <span className="commit-timestamp">{event.timestamp}</span>
                     </div>
@@ -115,6 +114,7 @@ function VersionHistory({ isOpen, onClose }) {
 VersionHistory.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  onOpenComparison: PropTypes.func.isRequired,
 };
 
 export default VersionHistory;

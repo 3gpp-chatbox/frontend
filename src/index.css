@@ -2398,3 +2398,135 @@ pre.json-content {
 .show-more-less:hover {
   text-decoration: underline;
 }
+
+/* Comparison View Styles */
+.comparison-view {
+  width: 100%;
+  height: 80vh;
+  background: var(--black-800);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--black-700);
+  padding-left: 18px;
+  border-bottom: 1px solid var(--silver-100);
+  font-size: 1rem;
+  color: var(--blue-300);
+  font-weight: 600;
+}
+
+.comparison-header .close-btn {
+  background: none;
+  border: none;
+  color: var(--silver-400);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+.comparison-header .close-btn:hover {
+  background: var(--black-600);
+  color: var(--silver-100);
+}
+
+.comparison-panels {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  background: var(--black-800);
+}
+
+.comparison-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1.5px solid var(--black-600);
+  background: var(--black-700);
+  min-width: 0;
+}
+.comparison-panel:last-child {
+  border-right: none;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--blcak-700);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--blue-700);
+}
+
+.panel-title {
+  font-size: 0.9rem;
+  color: var(--orange-400);
+  font-weight: 500;
+}
+
+.panel-tabs {
+  display: flex;
+  gap: 2px;
+  background-color: var(--black-600);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--black-500);
+}
+.panel-tabs button {
+  background: none;
+  border: none;
+  color: var(--silver-300);
+  font-size: 0.7rem;
+  padding: 6px 8px;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.panel-tabs button.active {
+  background: var(--blue-600);
+  color: var(--silver-100);
+  font-weight: 600;
+}
+.panel-tabs button:not(.active):hover {
+  background: var(--black-500);
+  color: var(--silver-200);
+}
+
+.panel-content {
+  flex: 1;
+  background: var(--black-800);
+  color: var(--silver-100);
+  padding: 24px 20px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 1rem;
+  overflow: auto;
+}
+
+.panel-mermaid, .panel-json {
+  min-height: 200px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  .comparison-view {
+    height: auto;
+    min-height: 60vh;
+  }
+  .comparison-panels {
+    flex-direction: column;
+  }
+  .comparison-panel {
+    border-right: none;
+    border-bottom: 1.5px solid var(--black-600);
+  }
+  .comparison-panel:last-child {
+    border-bottom: none;
+  }
+}

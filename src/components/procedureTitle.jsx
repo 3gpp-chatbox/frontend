@@ -6,7 +6,7 @@ import VersionHistory from './modals/VersionHistory';
 import { fetchOriginalGraph } from "../API/api_calls";
 import { MdInfo, MdHistory } from 'react-icons/md';
 
-function ProcedureTitle({ selectedProcedure }) {
+function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
   const [isOriginalGraphModalOpen, setIsOriginalGraphModalOpen] = useState(false);
   const [originalData, setOriginalData] = useState(null);
@@ -40,6 +40,14 @@ function ProcedureTitle({ selectedProcedure }) {
 
   const handleCloseVersionHistory = () => {
     setShowVersionHistory(false);
+  };
+
+  // Handler to open comparison from VersionHistory
+  const handleOpenComparison = () => {
+    setShowVersionHistory(false);
+    if (onOpenComparison) {
+      onOpenComparison();
+    }
   };
 
   return (
@@ -89,6 +97,7 @@ function ProcedureTitle({ selectedProcedure }) {
       <VersionHistory
         isOpen={showVersionHistory}
         onClose={handleCloseVersionHistory}
+        onOpenComparison={handleOpenComparison}
         procedure={selectedProcedure}
       />
     </>
@@ -96,7 +105,8 @@ function ProcedureTitle({ selectedProcedure }) {
 }
 
 ProcedureTitle.propTypes = {
-  selectedProcedure: PropTypes.object
+  selectedProcedure: PropTypes.object,
+  onOpenComparison: PropTypes.func,
 };
 
 export default ProcedureTitle;
