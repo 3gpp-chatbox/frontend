@@ -26,7 +26,7 @@ function Description({ procedure }) {
 
   const handleViewOriginalData = async () => {
     if (!procedure?.id || procedure.status === "original") return;
-    
+
     setIsLoading(true);
     try {
       const response = await fetchOriginalGraph(procedure.id);
@@ -44,18 +44,18 @@ function Description({ procedure }) {
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    
+
     // Parse date string in format "DD-MM-YYYY HH:MI"
-    const [datePart, timePart] = dateString.split(' ');
-    const [day, month, year] = datePart.split('-');
-    const [hour, minute] = timePart.split(':');
-    
+    const [datePart, timePart] = dateString.split(" ");
+    const [day, month, year] = datePart.split("-");
+    const [hour, minute] = timePart.split(":");
+
     // Create date object (months are 0-based in JavaScript)
     const date = new Date(year, month - 1, day, hour, minute);
-    
+
     // Check if date is valid
     if (isNaN(date.getTime())) return "Invalid Date";
-    
+
     // Format using browser's locale
     return date.toLocaleString();
   };
@@ -77,9 +77,9 @@ function Description({ procedure }) {
 
   return (
     <div className="description-panel">
-              <div className="section-header">
-            <span>Details</span>
-            </div>
+      <div className="section-header">
+        <span>Details</span>
+      </div>
       {procedure ? (
         <>
           {/* <div className="detail-sections-container"> */}
@@ -98,15 +98,21 @@ function Description({ procedure }) {
               <h3>Graph Information</h3>
               <div className="detail-item">
                 <text className="detail-label">Status:</text>
-                <text className="detail-value">{procedure.edited ? "Edited" : "Original"}</text>
+                <text className="detail-value">
+                  {procedure.edited ? "Edited" : "Original"}
+                </text>
               </div>
               <div className="detail-item">
                 <text className="detail-label">Model:</text>
-                <text className="detail-value">{procedure.model_name || "N/A"}</text>
+                <text className="detail-value">
+                  {procedure.model_name || "N/A"}
+                </text>
               </div>
               <div className="detail-item">
                 <text className="detail-label">Method:</text>
-                <text className="detail-value">{procedure.extraction_method || "N/A"}</text>
+                <text className="detail-value">
+                  {procedure.extraction_method || "N/A"}
+                </text>
               </div>
               {/*Accuracy format should be a percentage*/}
               <div className="detail-item">
@@ -114,11 +120,15 @@ function Description({ procedure }) {
                 <text className="detail-value">
                   {formatAccuracy(procedure.accuracy)}
                 </text>
-                <button 
-                  className="view-original-btn" 
+                <button
+                  className="view-original-btn"
                   onClick={handleViewOriginalData}
                   disabled={isLoading || procedure.status === "original"}
-                  title={procedure.status === "original" ? "Currently viewing original data" : "View original data"}
+                  title={
+                    procedure.status === "original"
+                      ? "Currently viewing original data"
+                      : "View original data"
+                  }
                 >
                   {getButtonText()}
                 </button>
@@ -141,7 +151,7 @@ function Description({ procedure }) {
               </div>
             </div>
           </div>
-          <OriginalDataModal 
+          <OriginalDataModal
             isOpen={showModal}
             onClose={() => setShowModal(false)}
             originalData={originalData}
@@ -157,7 +167,7 @@ function Description({ procedure }) {
 }
 
 Description.propTypes = {
-  procedure: PropTypes.object
+  procedure: PropTypes.object,
 };
 
 export default Description;

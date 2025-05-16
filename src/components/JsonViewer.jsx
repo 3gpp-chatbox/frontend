@@ -1,58 +1,107 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { fetchProcedure, insertProcedureGraphChanges } from "../API/api_calls";
+import { fetchProcedure } from "../API/api_calls";
 import {
   JsonToMermaid,
   defaultMermaidConfig,
 } from "../functions/jsonToMermaid";
-import {
-  validateMermaidCode,
-  convertMermaidToJson,
-} from "../functions/mermaidToJson";
-import { validateGraph } from "../functions/schema_validation";
-import ConfirmationDialog from "./modals/ConfirmationDialog";
 import { highlightJson } from "../utils/jsonHighlighter";
-import { highlightMermaid } from "../utils/MermaidHighlighter";
+import { highlightMermaid, highlightMermaidElement } from "../utils/MermaidHighlighter";
 import { FaSave } from "react-icons/fa";
 import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
+import InteractiveMarkdown from "../utils/InteractiveMarkdown";
+import { createSaveHandlers } from "../utils/SaveChanges";
+import ConfirmationDialog from "./modals/ConfirmationDialog";
 
-function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate, highlightedElement, onEditorFocus }) {
+/**
+ * Component for displaying and editing JSON data with multiple view modes.
+ * Supports JSON tree view, Mermaid diagram view, and reference view.
+ *
+ * @component
+ * @param {Object} props - Component properties
+ * @param {Function} props.onMermaidCodeChange - Callback for Mermaid code changes
+ * @param {Object} props.selectedProcedure - Currently selected procedure
+ * @param {Function} props.onProcedureUpdate - Callback for procedure updates
+ * @param {Object} props.highlightedElement - Currently highlighted diagram element
+ * @param {Function} props.setHighlightedElement - Callback to set highlighted element
+ * @param {Object} props.highlightedSection - Currently highlighted section
+ * @param {string} props.markdownContent - Markdown content to display
+ * @param {Function} props.onEditorFocus - Callback for editor focus events
+ * @param {Function} props.setHighlightedSection - Callback to set highlighted section
+ * @returns {JSX.Element} The rendered JSON viewer
+ */
+function JsonViewer({
+  onMermaidCodeChange,
+  selectedProcedure,
+  onProcedureUpdate,
+  highlightedElement,
+  setHighlightedElement,
+  highlightedSection,
+  markdownContent,
+  onEditorFocus,
+  setHighlightedSection,
+}) {
   const [data, setData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [mermaidGraph, setMermaidGraph] = useState("");
   const [originalMermaidGraph, setOriginalMermaidGraph] = useState("");
-  const [showMermaid, setShowMermaid] = useState(true);
   const [jsonContent, setJsonContent] = useState("");
   const [isWrapped, setIsWrapped] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [direction, setDirection] = useState('TD');
+  const [direction, setDirection] = useState("TD");
   const [notification, setNotification] = useState({
     show: false,
     message: "",
     type: "",
   });
+  const [activeView, setActiveView] = useState("mermaid");
+  const [showMermaid, setShowMermaid] = useState(true);
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
   const isUserEditing = useRef(false);
   const editorRef = useRef(null);
   const cursorPosition = useRef(null);
+  const codeContentRef = useRef(null);
+
+  // Create save handlers
+  const {
+    handleSaveClick,
+    handleConfirmSaveClick,
+    handleRevertChangesClick,
+    handleContinueEditingClick,
+  } = createSaveHandlers({
+    mermaidGraph,
+    selectedProcedure,
+    setShowConfirmation,
+    setNotification,
+    setOriginalMermaidGraph,
+    setData,
+    setOriginalData,
+    setJsonContent,
+    isUserEditing,
+    setIsEditing,
+    onProcedureUpdate,
+    onMermaidCodeChange,
+    originalMermaidGraph,
+    originalData,
+    setMermaidGraph,
+  });
 
   // Add effect to update view when procedure data changes
   useEffect(() => {
-    if (data && !isUserEditing.current) {
+    if (data) {
       try {
         // Get the current graph data based on edited status
-        const graphData = data.edited ? data.edited_graph : data.original_graph;
-        
+        const graphData = data.edited_graph || data.original_graph || data.graph;
+
         if (!graphData) {
-          console.error("No graph data available:", data);
-          setNotification({
-            show: true,
-            message: "No graph data available for this procedure",
-            type: "error"
-          });
+          console.warn("No graph data available in:", data);
+          setJsonContent("");
+          setMermaidGraph("");
+          setOriginalMermaidGraph("");
+          onMermaidCodeChange("");
           return;
         }
 
@@ -60,7 +109,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         const jsonString = JSON.stringify(graphData, null, 2);
         console.log("Setting JSON content:", jsonString);
         setJsonContent(jsonString);
-        
+
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
@@ -74,7 +123,7 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         setNotification({
           show: true,
           message: "Error processing graph data",
-          type: "error"
+          type: "error",
         });
       }
     }
@@ -99,7 +148,8 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
       if (isUserEditing.current) {
         setNotification({
           show: true,
-          message: "Please save or discard your changes before switching procedures",
+          message:
+            "Please save or discard your changes before switching procedures",
           type: "warning",
         });
         return;
@@ -155,6 +205,12 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     }
   }, [notification.show]);
 
+  /**
+   * Handles changes to the Mermaid code.
+   * Updates the code and triggers necessary state updates.
+   *
+   * @param {string} newCode - The updated Mermaid code
+   */
   const handleMermaidChange = (event) => {
     saveCursorPosition();
     const newCode = event.currentTarget.textContent;
@@ -169,222 +225,23 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     }
   };
 
-  const handleSaveChanges = () => {
-    try {
-      // Validate Mermaid syntax (basic validation)
-      if (!mermaidGraph.match(/flowchart\s+(TD|TB|BT|LR|RL)/)) {
-        throw new Error('Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)');
-      }
-
-      setNotification({
-        show: true,
-        message: "Validating structure...",
-        type: "info",
-      });
-
-      // Convert to JSON and validate structure
-      const jsonData = convertMermaidToJson(mermaidGraph);
-      const validationResult = validateGraph(jsonData);
-
-      if (validationResult.valid) {
-        setNotification({
-          show: true,
-          message: "Structure validation successful",
-          type: "success",
+  // Add effect to scroll to highlighted element
+  useEffect(() => {
+    if (highlightedElement && codeContentRef.current) {
+      // Find the highlighted element in the current view
+      const highlightedDiv = codeContentRef.current.querySelector(
+        activeView === "json" ? ".orange-highlight" : ".highlighted-line"
+      );
+      
+      if (highlightedDiv) {
+        // Scroll the element into view with smooth behavior
+        highlightedDiv.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
         });
-        setTimeout(() => {
-          setShowConfirmation(true);
-        }, 1000);
-      } else {
-        throw new Error(
-          `Structural validation failed: ${validationResult.error}`,
-        );
       }
-    } catch (error) {
-      setNotification({
-        show: true,
-        message: error.message,
-        type: "error",
-      });
     }
-  };
-
-  const handleConfirmSave = async () => {
-    setShowConfirmation(false);
-    setNotification({
-      show: true,
-      message: "Saving changes...",
-      type: "info",
-    });
-
-    try {
-      // First validate the Mermaid code
-      if (!validateMermaidCode(mermaidGraph)) {
-        throw new Error("Invalid Mermaid syntax");
-      }
-
-      // Convert to JSON and save
-      const graphData = convertMermaidToJson(mermaidGraph);
-      const result = await insertProcedureGraphChanges(selectedProcedure.id,{nodes:graphData.nodes,edges:graphData.edges});
-
-      if (!result) {
-        throw new Error("Failed to save changes");
-      }
-
-      // Update both Mermaid and JSON views
-      setOriginalMermaidGraph(mermaidGraph);
-      setData(result);
-      setOriginalData(result);
-      
-      // Only show the graph data in JSON view
-      const updatedGraphData = result.edited_graph || result.original_graph;
-      setJsonContent(JSON.stringify(updatedGraphData, null, 2));
-      
-      isUserEditing.current = false;
-      setIsEditing(false);
-
-      // Update parent component with new data
-      onProcedureUpdate(result);
-
-      setNotification({
-        show: true,
-        message: "Changes saved successfully",
-        type: "success",
-      });
-
-      // Update the diagram
-      onMermaidCodeChange(mermaidGraph);
-    } catch (error) {
-      setNotification({
-        show: true,
-        message: `Failed to save changes: ${error.message}`,
-        type: "error",
-      });
-    }
-  };
-
-  const handleContinueEditing = () => {
-    setShowConfirmation(false);
-  };
-
-  const handleRevertChanges = () => {
-    setMermaidGraph(originalMermaidGraph);
-    setData(originalData);
-    
-    // Only show the graph data in JSON view
-    const graphData = originalData.edited_graph || originalData.original_graph;
-    setJsonContent(JSON.stringify(graphData, null, 2));
-    
-    isUserEditing.current = false;
-    setIsEditing(false);
-    setShowConfirmation(false);
-    onMermaidCodeChange(originalMermaidGraph);
-    setNotification({
-      show: true,
-      message: "Changes reverted to original",
-      type: "info",
-    });
-  };
-
-  const cleanMermaidCode = (code) => {
-    return code
-      .split("\n")
-      .filter(
-        (line) => 
-          // Keep flowchart direction lines
-          (line.startsWith('flowchart') || line.startsWith('graph')) ||
-          // Filter out only init and class definitions
-          (!line.includes("%%{init:") && !line.includes("classDef"))
-      )
-      .join("\n");
-  };
-
-  // Handle fold/unfold
-  const handleFold = (event) => {
-    const button = event.target;
-    if (!button.classList.contains("fold-button")) return;
-
-    const line = button.closest(".code-line");
-    if (!line) return;
-
-    const lineNumber = parseInt(line.dataset.line);
-    const level = parseInt(line.dataset.level);
-
-    // Toggle fold state
-    const isFolded = button.textContent === "▼";
-    button.textContent = isFolded ? "▶" : "▼";
-
-    // Find the range to fold/unfold
-    let current = line.nextElementSibling;
-    while (current && parseInt(current.dataset.level) > level) {
-      current.style. display= isFolded ? "none" : "flex";
-      current = current.nextElementSibling;
-    }
-  };
-
-  const highlightMermaidLine = (code, elementId, elementType) => {
-    if (!code || !elementId) {
-      console.log("No code or elementId provided");
-      return code;
-    }
-    
-    console.log("Received element:", { id: elementId, type: elementType });
-    
-    // Extract the node label for node highlighting
-    const nodeMatch = elementId.match(/flowchart-([A-Z0-9]+)-/);
-    if (!nodeMatch && elementType === 'node') {
-      console.log("No node match found for elementId:", elementId);
-      return code;
-    }
-    
-    const nodeLabel = nodeMatch ? nodeMatch[1] : null;
-    console.log("Looking for node/edge:", { nodeLabel, elementId });
-    
-    // First split and process the raw code
-    const lines = code.replace(/<[^>]*>/g, '').split('\n');
-    const highlightedLines = lines.map(line => {
-      console.log("Checking raw line:", line);
-      
-      if (elementType === 'node' && nodeLabel) {
-        // Match node definitions with optional leading whitespace
-        const nodePattern = new RegExp(`^\\s*${nodeLabel}(\\[|\\(\\()`);
-        const matches = nodePattern.test(line);
-        console.log("Node pattern test:", { line, matches });
-        if (matches) {
-          console.log("Found matching node line:", line);
-          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
-        }
-      } else if (elementType === 'edge') {
-        // For edges, we now use the label text directly
-        // The elementId is now the label text from the edge label
-        // We need to escape special characters in the elementId for the regex
-        const escapedElementId = elementId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        
-        // Look for the edge label with quotes around it
-        // The edge label in the Mermaid code is wrapped in quotes, but the elementId doesn't have quotes
-        const edgePattern = new RegExp(`^\\s*.*-->\\|"${escapedElementId}"\\|.*`);
-        const matches = edgePattern.test(line);
-        console.log("Edge pattern test:", { line, matches, elementId, escapedElementId });
-        if (matches) {
-          console.log("Found matching edge line:", line);
-          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
-        }
-        
-        // If the first pattern didn't match, try without quotes
-        // This handles cases where the edge label might not have quotes
-        const edgePatternNoQuotes = new RegExp(`^\\s*.*-->\\|${escapedElementId}\\|.*`);
-        const matchesNoQuotes = edgePatternNoQuotes.test(line);
-        console.log("Edge pattern test (no quotes):", { line, matches: matchesNoQuotes });
-        if (matchesNoQuotes) {
-          console.log("Found matching edge line (no quotes):", line);
-          return `<div class="highlighted-line">${highlightMermaid(line)}</div>`;
-        }
-      }
-      return highlightMermaid(line);
-    });
-    
-    return highlightedLines.join('\n');
-  };
+  }, [highlightedElement, activeView]);
 
   const saveCursorPosition = () => {
     const selection = window.getSelection();
@@ -460,22 +317,133 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
     }
     setDirection(newDirection);
     // Update the Mermaid code with new direction
-    const updatedCode = mermaidGraph.replace(/flowchart\s+(TD|TB|BT|LR|RL)/, `flowchart ${newDirection}`);
+    const updatedCode = mermaidGraph.replace(
+      /flowchart\s+(TD|TB|BT|LR|RL)/,
+      `flowchart ${newDirection}`,
+    );
     setMermaidGraph(updatedCode);
     onMermaidCodeChange(updatedCode);
   };
+
+  const handleSaveChanges = () => {
+    handleSaveClick();
+  };
+
+  /**
+   * Cleans and formats Mermaid code for rendering.
+   * @param {string} code - The Mermaid code to clean
+   * @returns {string} Cleaned Mermaid code
+   */
+  const cleanMermaidCode = (code) => {
+    if (!code) return "";
+    
+    // Split into lines and filter out classDef lines
+    const lines = code.split('\n')
+      .filter(line => !line.trim().startsWith('classDef'))
+      .join('\n');
+    
+    return lines.trim();
+  };
+
+  // Add effect to update highlighting when highlightedElement changes
+  useEffect(() => {
+    if (activeView === "mermaid" && highlightedElement && codeContentRef.current) {
+      const svg = codeContentRef.current.querySelector("svg");
+      if (svg) {
+        // Clear existing highlights
+        svg.querySelectorAll(".node.highlighted, .edgePath.highlighted").forEach(el => {
+          el.classList.remove("highlighted");
+        });
+
+        // Apply new highlight
+        if (highlightedElement.type === "node") {
+          // Look for node with the correct ID pattern
+          const nodeId = `flowchart-${highlightedElement.id}`;
+          const node = svg.querySelector(`#${nodeId}`);
+          if (node) {
+            node.classList.add("highlighted");
+          }
+        } else if (highlightedElement.type === "edge") {
+          // Look for edge with ID containing the edge ID
+          const edges = svg.querySelectorAll('.edgePath');
+          for (const edge of edges) {
+            if (edge.id.includes(highlightedElement.id)) {
+              edge.classList.add("highlighted");
+              break;
+            }
+          }
+        }
+      }
+    }
+  }, [activeView, highlightedElement]);
+
+  /**
+   * Handles folding/unfolding of JSON content
+   * @param {Event} e - Click event
+   */
+  const handleFold = (e) => {
+    // Only handle clicks on the fold buttons
+    if (!e.target.classList.contains('fold-button')) return;
+    
+    const line = e.target.closest('.code-line');
+    if (!line) return;
+
+    const level = parseInt(line.dataset.level);
+
+    // Toggle fold state
+    const isFolded = e.target.textContent === "▼";
+    e.target.textContent = isFolded ? "▶" : "▼";
+
+    // Find the range to fold/unfold
+    let current = line.nextElementSibling;
+    while (current && parseInt(current.dataset.level) > level) {
+      current.style.display = isFolded ? "none" : "flex";
+      current = current.nextElementSibling;
+    }
+  };
+
+  // Handle node/edge click in Mermaid view
+  const handleDiagramClick = useCallback((elementId, elementType, elementText = null) => {
+    // Update highlighted element
+    const element = {
+      id: elementId,
+      type: elementType,
+      text: elementText || elementId
+    };
+    setHighlightedElement(element);
+    
+    // Find corresponding section in reference view
+    if (markdownContent) {
+      const searchText = elementText || elementId;
+      const sectionMatch = markdownContent.match(
+        new RegExp(`(?:^|\n)#{2,3} .*${searchText}.*`, 'm')
+      );
+      
+      if (sectionMatch) {
+        // Create a reference section object with both section and text refs
+        const referenceSection = {
+          refs: {
+            section: sectionMatch[0].trim(),
+            text: searchText
+          },
+          type: elementType
+        };
+        setHighlightedSection(referenceSection);
+      }
+    }
+  }, [setHighlightedElement, setHighlightedSection, markdownContent]);
 
   return (
     <div className="editor-panel">
       <div className="section-header">
         <span>
-          {showMermaid ? 'Mermaid' : 'JSON'} Viewer
+          {activeView === "mermaid" ? "Mermaid" : activeView === "json" ? "JSON" : "Reference"} Viewer
           {isEditing && <span className="editing-indicator"> (Editing)</span>}
         </span>
         <div className="header-controls">
           <div className="view-tabs">
             <button
-              className={`tab-button ${showMermaid ? 'active' : ''}`}
+              className={`tab-button ${activeView === "mermaid" ? "active" : ""}`}
               onClick={() => {
                 if (isEditing) {
                   setNotification({
@@ -485,13 +453,13 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                   });
                   return;
                 }
-                setShowMermaid(true);
+                setActiveView("mermaid");
               }}
             >
               Mermaid
             </button>
             <button
-              className={`tab-button ${!showMermaid ? 'active' : ''}`}
+              className={`tab-button ${activeView === "json" ? "active" : ""}`}
               onClick={() => {
                 if (isEditing) {
                   setNotification({
@@ -501,47 +469,67 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                   });
                   return;
                 }
-                setShowMermaid(false);
+                setActiveView("json");
               }}
             >
               JSON
             </button>
+            <button
+              className={`tab-button ${activeView === "reference" ? "active" : ""}`}
+              onClick={() => {
+                if (isEditing) {
+                  setNotification({
+                    show: true,
+                    message: "Please save or revert your changes first",
+                    type: "warning",
+                  });
+                  return;
+                }
+                setActiveView("reference");
+              }}
+            >
+              Reference
+            </button>
           </div>
         </div>
       </div>
-      {showMermaid && selectedProcedure && (
-          <div className="viewer-controls">
-            <div className="viewer-controls-left">
-              <span className="direction-label">Flow chart direction</span>
-              <div className="direction-tabs">
-                <button
-                  className={`direction-button ${direction === 'TD' ? 'active' : ''}`}
-                  onClick={() => handleDirectionChange('TD')}
-                  title="Top to Bottom"
-                >
-                  <BiVerticalTop size={20} />
-                </button>
-                <button
-                  className={`direction-button ${direction === 'LR' ? 'active' : ''}`}
-                  onClick={() => handleDirectionChange('LR')}
-                  title="Left to Right"
-                >
-                  <BiHorizontalLeft size={20} />
-                </button>
-              </div>
-            </div>
-            <div className="viewer-controls-right">
+      {activeView === "mermaid" && selectedProcedure && (
+        <div className="viewer-controls">
+          <div className="viewer-controls-left">
+            <span className="direction-label">Flow chart direction</span>
+            <div className="direction-tabs">
               <button
-                className={`save-button ${isEditing ? "active" : ""}`}
-                onClick={handleSaveChanges}
-                disabled={!isEditing}
-                title="Save Changes"
+                className={`direction-button ${
+                  direction === "TD" ? "active" : ""
+                }`}
+                onClick={() => handleDirectionChange("TD")}
+                title="Top to Bottom"
               >
-                <FaSave size={16} />
-                Save
+                <BiVerticalTop size={20} />
+              </button>
+              <button
+                className={`direction-button ${
+                  direction === "LR" ? "active" : ""
+                }`}
+                onClick={() => handleDirectionChange("LR")}
+                title="Left to Right"
+              >
+                <BiHorizontalLeft size={20} />
               </button>
             </div>
           </div>
+          <div className="viewer-controls-right">
+            <button
+              className={`save-button ${isEditing ? "active" : ""}`}
+              onClick={handleSaveChanges}
+              disabled={!isEditing}
+              title="Save Changes"
+            >
+              <FaSave size={16} />
+              Save
+            </button>
+          </div>
+        </div>
       )}
       {notification.show && (
         <div className={`notification ${notification.type}`}>
@@ -549,38 +537,67 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         </div>
       )}
       <div className="json-viewer-content">
-        {selectedProcedure ? (
+        {activeView === "reference" ? (
+          <div className="reference-viewer">
+            <div className="markdown-content">
+              <InteractiveMarkdown
+                content={markdownContent}
+                highlightedSection={highlightedSection}
+                key={`${activeView}-${!!highlightedSection}`}
+              />
+            </div>
+          </div>
+        ) : selectedProcedure ? (
           data ? (
             <pre className="json-content">
-              {showMermaid ? (
+              {activeView === "mermaid" ? (
                 <div className="mermaid-editor">
                   <div
-                    ref={editorRef}
+                    ref={(el) => {
+                      editorRef.current = el;
+                      codeContentRef.current = el;
+                    }}
                     className={`code-content ${isWrapped ? "wrapped" : ""}`}
                     contentEditable={true}
                     onInput={handleMermaidChange}
                     onFocus={onEditorFocus}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const selection = window.getSelection();
-                        const range = selection.getRangeAt(0);
-                        const br = document.createElement('br');
-                        range.deleteContents();
-                        range.insertNode(br);
-                        range.setStartAfter(br);
-                        range.setEndAfter(br);
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                        handleMermaidChange(e);
+                    onClick={(e) => {
+                      const node = e.target.closest(".node");
+                      const edge = e.target.closest(".edgePath");
+                      
+                      if (node || edge) {
+                        // Remove any existing highlights first
+                        const svg = e.target.closest("svg");
+                        if (svg) {
+                          svg.querySelectorAll(".node.highlighted, .edgePath.highlighted").forEach(el => {
+                            el.classList.remove("highlighted");
+                          });
+                        }
+                        
+                        if (node) {
+                          // Extract the actual node ID from the flowchart-prefixed ID
+                          const nodeId = node.id.replace(/^flowchart-/, '').split('-')[0];
+                          const nodeText = node.querySelector(".label, .nodeLabel")?.textContent;
+                          // Add highlight class to the clicked node
+                          node.classList.add("highlighted");
+                          handleDiagramClick(nodeId, "node", nodeText);
+                        } else if (edge) {
+                          // Extract edge ID from the path or title
+                          const edgeId = edge.id?.split('-').slice(-1)[0] || 
+                                       edge.querySelector("title")?.textContent;
+                          if (edgeId) {
+                            // Add highlight class to the clicked edge
+                            edge.classList.add("highlighted");
+                            handleDiagramClick(edgeId, "edge");
+                          }
+                        }
                       }
                     }}
                     dangerouslySetInnerHTML={{
-                      __html: highlightMermaidLine(
+                      __html: highlightMermaidElement(
                         highlightMermaid(cleanMermaidCode(mermaidGraph)),
-                        highlightedElement?.id,
-                        highlightedElement?.type
-                      )
+                        highlightedElement
+                      ),
                     }}
                     spellCheck="false"
                   />
@@ -589,19 +606,17 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}
                   dangerouslySetInnerHTML={{
-                    __html: highlightJson(jsonContent),
+                    __html: highlightJson(jsonContent, highlightedElement),
                   }}
-                  onClick={handleFold}
+                  ref={codeContentRef}
                 />
               )}
             </pre>
           ) : (
-            <div className="placeholder-text">Loading procedure data...</div>
+            <div className="loading">Loading...</div>
           )
         ) : (
-          <div className="placeholder-text">
-            Please select a procedure from the list above
-          </div>
+          <div className="no-procedure">No procedure selected</div>
         )}
       </div>
       <div className="viewer-controls bottom-controls">
@@ -622,9 +637,9 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
         show={showConfirmation}
         title="Save Changes?"
         message="Are you sure you want to save the changes you made to the JSON code?"
-        onConfirm={handleConfirmSave}
-        onContinueEditing={handleContinueEditing}
-        onRevert={handleRevertChanges}
+        onConfirm={handleConfirmSaveClick}
+        onContinueEditing={handleContinueEditingClick}
+        onRevert={handleRevertChangesClick}
         showContinueEditing={true}
         showRevert={true}
       />
@@ -635,15 +650,31 @@ function JsonViewer({ onMermaidCodeChange, selectedProcedure, onProcedureUpdate,
 JsonViewer.propTypes = {
   onMermaidCodeChange: PropTypes.func.isRequired,
   selectedProcedure: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
+    id: PropTypes.string,
+    name: PropTypes.string,
   }),
   onProcedureUpdate: PropTypes.func.isRequired,
   highlightedElement: PropTypes.shape({
-    type: PropTypes.oneOf(['node', 'edge']),
+    type: PropTypes.oneOf(["node", "edge"]),
     id: PropTypes.string,
   }),
+  setHighlightedElement: PropTypes.func.isRequired,
+  highlightedSection: PropTypes.shape({
+    refs: PropTypes.shape({
+      section: PropTypes.string,
+      text: PropTypes.string
+    }),
+    type: PropTypes.string
+  }),
+  markdownContent: PropTypes.string.isRequired,
   onEditorFocus: PropTypes.func.isRequired,
+  setHighlightedSection: PropTypes.func.isRequired,
+};
+
+JsonViewer.defaultProps = {
+  selectedProcedure: null,
+  highlightedElement: null,
+  highlightedSection: null
 };
 
 export default JsonViewer;

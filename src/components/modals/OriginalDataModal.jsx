@@ -9,15 +9,20 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
   const [selectedView, setSelectedView] = useState("json");
   const [error, setError] = useState(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [size, setSize] = useState({ width: 900, height: "90vh" });
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeDirection, setResizeDirection] = useState(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isWrapped, setIsWrapped] = useState(true);
   const editorRef = useRef(null);
+  const modalRef = useRef(null);
 
-  // Reset position when modal is opened
+  // Reset position and size when modal is opened
   useEffect(() => {
     if (isOpen) {
       setPosition({ x: 0, y: 0 });
+      setSize({ width: 900, height: "90vh" });
     }
   }, [isOpen]);
 
@@ -36,6 +41,23 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
     [position],
   );
 
+  // Handle resize start
+  const handleResizeStart = useCallback((e, direction) => {
+    e.stopPropagation();
+    const rect = modalRef.current.getBoundingClientRect();
+    setIsResizing(true);
+    setResizeDirection(direction);
+    setDragStart({
+      x: e.clientX,
+      y: e.clientY,
+      initialWidth: rect.width,
+      initialHeight: rect.height,
+      initialLeft: rect.left,
+      initialTop: rect.top,
+    });
+  }, []);
+
+  // Handle mouse move for both dragging and resizing
   const handleMouseMove = useCallback(
     (e) => {
       if (isDragging) {
@@ -43,13 +65,79 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
           x: e.clientX - dragStart.x,
           y: e.clientY - dragStart.y,
         });
+      } else if (isResizing) {
+        e.preventDefault();
+        const deltaX = e.clientX - dragStart.x;
+        const deltaY = e.clientY - dragStart.y;
+
+        let newWidth = dragStart.initialWidth;
+        let newHeight = dragStart.initialHeight;
+        let newX = position.x;
+        let newY = position.y;
+
+        // Handle corner resizing
+        if (
+          resizeDirection === "nw" ||
+          resizeDirection === "ne" ||
+          resizeDirection === "sw" ||
+          resizeDirection === "se"
+        ) {
+          // Handle width
+          if (resizeDirection.includes("e")) {
+            newWidth = Math.max(400, dragStart.initialWidth + deltaX);
+          } else if (resizeDirection.includes("w")) {
+            newWidth = Math.max(400, dragStart.initialWidth - deltaX);
+            newX = dragStart.initialLeft + deltaX;
+          }
+
+          // Handle height
+          if (resizeDirection.includes("s")) {
+            newHeight = Math.max(200, dragStart.initialHeight + deltaY);
+          } else if (resizeDirection.includes("n")) {
+            newHeight = Math.max(200, dragStart.initialHeight - deltaY);
+            newY = dragStart.initialTop + deltaY;
+          }
+        }
+        // Handle edge resizing
+        else {
+          if (resizeDirection === "e") {
+            newWidth = Math.max(400, dragStart.initialWidth + deltaX);
+          } else if (resizeDirection === "w") {
+            newWidth = Math.max(400, dragStart.initialWidth - deltaX);
+            newX = dragStart.initialLeft + deltaX;
+          } else if (resizeDirection === "s") {
+            newHeight = Math.max(200, dragStart.initialHeight + deltaY);
+          } else if (resizeDirection === "n") {
+            newHeight = Math.max(200, dragStart.initialHeight - deltaY);
+            newY = dragStart.initialTop + deltaY;
+          }
+        }
+
+        // Ensure we don't resize beyond minimum dimensions
+        if (newWidth === 400) {
+          newX = position.x;
+        }
+        if (newHeight === 200) {
+          newY = position.y;
+        }
+
+        setSize({
+          width: newWidth,
+          height: newHeight,
+        });
+        setPosition({
+          x: newX,
+          y: newY,
+        });
       }
     },
-    [isDragging, dragStart],
+    [isDragging, isResizing, dragStart, resizeDirection, position],
   );
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    setIsResizing(false);
+    setResizeDirection(null);
   }, []);
 
   // Add and remove event listeners
@@ -113,11 +201,12 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
     return code
       .split("\n")
       .filter(
-        (line) => 
+        (line) =>
           // Keep flowchart direction lines
-          (line.startsWith('flowchart') || line.startsWith('graph')) ||
+          line.startsWith("flowchart") ||
+          line.startsWith("graph") ||
           // Filter out only init and class definitions
-          (!line.includes("%%{init:") && !line.includes("classDef"))
+          (!line.includes("%%{init:") && !line.includes("classDef")),
       )
       .join("\n");
   };
@@ -182,7 +271,7 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
                   contentEditable={false}
                   spellCheck="false"
                   dangerouslySetInnerHTML={{
-                    __html: highlightMermaid(cleanMermaidCode(mermaidCode))
+                    __html: highlightMermaid(cleanMermaidCode(mermaidCode)),
                   }}
                 />
               </div>
@@ -240,42 +329,54 @@ function OriginalDataModal({ isOpen, onClose, originalData }) {
   };
 
   return (
-    <div
-      className="modal-overlay"
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: "transparent",
-        pointerEvents: "none",
-        zIndex: 1000,
-      }}
-    >
+    <div className="modal-overlay">
       <div
+        ref={modalRef}
         className="modal-content"
         style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100vh",
-          maxHeight: "90vh",
-          width: "100vw",
-          maxWidth: "900px",
-          backgroundColor: "#1a1a1a",
-          border: "1px solid #333",
-          borderRadius: "8px",
-          overflow: "hidden",
-          position: "absolute",
+          width: size.width,
+          height: size.height,
           transform: `translate(${position.x}px, ${position.y}px)`,
           cursor: isDragging ? "grabbing" : "default",
-          transition: isDragging ? "none" : "transform 0.1s ease-out",
-          pointerEvents: "auto",
-          boxShadow:
-            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          transition:
+            isDragging || isResizing ? "none" : "transform 0.1s ease-out",
         }}
         onMouseDown={handleMouseDown}
       >
+        {/* Resize handles */}
+        <div
+          className="resize-handle e"
+          onMouseDown={(e) => handleResizeStart(e, "e")}
+        />
+        <div
+          className="resize-handle w"
+          onMouseDown={(e) => handleResizeStart(e, "w")}
+        />
+        <div
+          className="resize-handle n"
+          onMouseDown={(e) => handleResizeStart(e, "n")}
+        />
+        <div
+          className="resize-handle s"
+          onMouseDown={(e) => handleResizeStart(e, "s")}
+        />
+        <div
+          className="resize-handle se"
+          onMouseDown={(e) => handleResizeStart(e, "se")}
+        />
+        <div
+          className="resize-handle sw"
+          onMouseDown={(e) => handleResizeStart(e, "sw")}
+        />
+        <div
+          className="resize-handle ne"
+          onMouseDown={(e) => handleResizeStart(e, "ne")}
+        />
+        <div
+          className="resize-handle nw"
+          onMouseDown={(e) => handleResizeStart(e, "nw")}
+        />
+
         <div
           className="modal-header"
           style={{
