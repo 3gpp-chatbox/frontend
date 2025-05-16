@@ -494,7 +494,6 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 
 .diagram-panel {
   background: var(--black-700);
-  border-radius: 8px;
   border: 1px solid var(--black-500);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   height: 100%;
@@ -1210,17 +1209,37 @@ pre.json-content {
   color: var(--silver-100);
   font-family: "Consolas", "Monaco", monospace;
   line-height: 1.5;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .mermaid-editor .code-content {
   padding: 16px;
   white-space: pre;
   overflow-x: auto;
+  overflow-y: auto;
+  flex: 1;
+  position: relative;
+  will-change: scroll-position;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mermaid-editor .code-content.wrapped {
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* Ensure smooth scrolling behavior */
+.mermaid-editor .code-content {
+  scroll-behavior: auto;
+  overscroll-behavior: contain;
+}
+
+/* Prevent unwanted scroll resets during edits */
+.mermaid-editor .code-content:focus {
+  outline: none;
+  scroll-behavior: auto !important;
 }
 
 /* Mermaid line highlighting */

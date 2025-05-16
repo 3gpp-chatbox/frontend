@@ -1,31 +1,11 @@
-/**
- * Module for handling API calls to the backend server.
- * @module api_calls
- */
-
+// api_calls.jsx
 import axios from "axios";
 import { dummyProcedures, dummyProcedureData } from "./dummyData";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-const USE_DUMMY_DATA = true; // Set to false when using real API
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const USE_DUMMY_DATA = false; // Set to false when using real API
 
-// Configure axios defaults
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-/**
- * Fetches a list of all available procedures.
- *
- * @async
- * @returns {Promise<Array>} Array of procedure objects
- * @throws {Error} If the API call fails
- */
+// Fetch all procedures
 export const fetchProcedures = async () => {
   if (USE_DUMMY_DATA) {
     console.log("Using dummy data for procedures");
@@ -41,103 +21,94 @@ export const fetchProcedures = async () => {
   }
 };
 
-/**
- * Fetches detailed data for a specific procedure.
- *
- * @async
- * @param {string} id - The procedure ID
- * @param {string} [entity] - Optional entity parameter
- * @returns {Promise<Object>} Procedure data including graphs and metadata
- * @throws {Error} If the API call fails
- */
-export const fetchProcedure = async (id, entity) => {
+// Fetch data for a specific procedure and entity
+export const fetchProcedure = async (procedureId, entity) => {
   if (USE_DUMMY_DATA) {
-    console.log("Using dummy data for procedure:", id, entity);
-    // Get the base procedure data
-    const procedureData = dummyProcedureData[id];
+    console.log("Using dummy data for procedure:", procedureId, entity);
+    const procedureData = dummyProcedureData[procedureId];
     if (!procedureData) return null;
-
-    // Return the procedure data with entity information
-    return {
-      ...procedureData,
-    };
+    return { ...procedureData };
   }
 
   try {
-    const response = await api.get(
-      entity ? `/procedures/${id}/${entity}` : `/procedures/${id}`,
-    );
-    return response.data || null;
+    const response = await axios.get(`${API_BASE_URL}/procedures/${procedureId}/${entity}`);
+    return response.data;
   } catch (error) {
     console.error("Error fetching procedure data:", error);
     throw error;
   }
 };
 
-// Insert procedure graph changes
-export const insertProcedureGraphChanges = async (procedureId, changes) => {
+// Insert a new version of a graph with edited data
+export const insertProcedureGraphChanges = async (procedureId, entity, changes) => {
   if (USE_DUMMY_DATA) {
-    console.log("Using dummy data for procedure changes:", {
-      procedureId,
-      changes,
-    });
-    // Update the dummy data
+    console.log("Using dummy data for procedure changes:", { procedureId, entity, changes });
     if (dummyProcedureData[procedureId]) {
       dummyProcedureData[procedureId] = {
         ...dummyProcedureData[procedureId],
-        ...changes,
+        ...changes
       };
     }
     return dummyProcedureData[procedureId] || null;
   }
 
   try {
-    console.log("Inserting procedure graph changes:", changes);
-    const response = await api.put(`/procedures/${procedureId}`, {
-      edited_graph: changes,
+    console.log("Inserting procedure graph changes:", {
+      procedureId,
+      entity,
+      requestBody: {
+        edited_graph: changes.edited_graph,
+        commit_title: changes.commit_title,
+        commit_message: changes.commit_message,
+      }
     });
+    const response = await axios.post(
+      `${API_BASE_URL}/procedures/${procedureId}/${entity}`,
+      {
+        edited_graph: changes.edited_graph,
+        commit_title: changes.commit_title,
+        commit_message: changes.commit_message,
+      }
+    );
     return response.data || null;
   } catch (error) {
     console.error("Error inserting procedure graph changes:", error);
+    if (error.response) {
+      console.error("Response data:", error.response.data);
+      console.error("Response status:", error.response.status);
+      console.error("Response headers:", error.response.headers);
+    }
     throw error;
   }
 };
 
-// Fetch original graph data for a procedure
-export const fetchOriginalGraph = async (procedureId) => {
+// Fetch the original graph data (latest version) for a procedure and entity
+export const fetchOriginalGraph = async (procedureId, entity) => {
   if (USE_DUMMY_DATA) {
     console.log("Using dummy data for original graph:", procedureId);
     return dummyProcedureData[procedureId] || null;
   }
 
   try {
-    const response = await api.get(`/procedures/${procedureId}`);
+    const response = await axios.get(`${API_BASE_URL}/procedures/${procedureId}/${entity}`);
     return response.data || null;
   } catch (error) {
-    console.error("Error fetching procedure:", error);
+    console.error("Error fetching original graph:", error);
     return null;
   }
 };
 
-export const updateProcedureGraph = async (procedureId, entity, graphData) => {
+// Fetch the version history for a procedure
+export const fetchVersionHistory = async (procedureId, entity) => {
   if (USE_DUMMY_DATA) {
-    console.log(
-      "Using dummy data for updating procedure:",
-      procedureId,
-      entity,
-      graphData,
-    );
-    return { success: true, message: "Dummy update successful" };
+    console.log("Using dummy data for version history:", procedureId);
+    return dummyVersionHistory[procedureId] || null;
   }
-
   try {
-    const response = await axios.put(
-      `${API_BASE_URL}/procedures/${procedureId}/${entity}`,
-      { graph: graphData },
-    );
-    return response.data;
+    const response = await axios.get(`${API_BASE_URL}/procedures/${procedureId}/${entity}/history`);
+    return response.data || null;
   } catch (error) {
-    console.error("Error updating procedure graph:", error);
+    console.error("Error fetching version history:", error);
     throw error;
   }
 };

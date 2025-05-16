@@ -19,33 +19,22 @@ import Comparison from "./components/Comparison";
  * @component
  * @returns {JSX.Element} The rendered application interface
  */
+
 function App() {
   const [mermaidCode, setMermaidCode] = useState(null);
   const [selectedProcedure, setSelectedProcedure] = useState(null);
   const [procedureData, setProcedureData] = useState(null);
   const [highlightedElement, setHighlightedElement] = useState(null);
-  const [highlightedSection, setHighlightedSection] = useState(null);
   const [markdownContent, setMarkdownContent] = useState("");
   const [showComparison, setShowComparison] = useState(false);
+  const [highlightedSection, setHighlightedSection] = useState(null);
 
-  // Load markdown content when component mounts
+  // Update markdown content when procedure data changes
   useEffect(() => {
-    const loadMarkdownContent = async () => {
-      try {
-        const response = await fetch(
-          "/src/data/Security mode control procedure_original_context_context_20250505_182324.md",
-        );
-        if (!response.ok) {
-          throw new Error("Failed to load markdown content");
-        }
-        const content = await response.text();
-        setMarkdownContent(content);
-      } catch (error) {
-        console.error("Error loading markdown content:", error);
-      }
-    };
-    loadMarkdownContent();
-  }, []);
+    if (procedureData?.reference?.context_markdown) {
+      setMarkdownContent(procedureData.reference.context_markdown);
+    }
+  }, [procedureData]);
 
   /**
    * Handles procedure selection from the list.
@@ -67,6 +56,7 @@ function App() {
    *
    * @param {string} newCode - The new Mermaid diagram code
    */
+  
   const handleMermaidCodeChange = (newCode) => {
     console.log("App: Mermaid code updated:", newCode);
     setMermaidCode(newCode);
@@ -82,6 +72,7 @@ function App() {
    *
    * @param {Object} updatedData - The updated procedure data
    */
+  
   const handleProcedureUpdate = (updatedData) => {
     console.log("App: Procedure data updated:", updatedData);
     setProcedureData({
@@ -102,6 +93,7 @@ function App() {
    * @param {string} [element.section_ref] - Section reference (future use)
    * @param {string} [element.text_ref] - Text reference (future use)
    */
+  
   const handleElementClick = (element) => {
     console.log("Diagram element clicked:", element);
 
@@ -109,38 +101,22 @@ function App() {
     // Don't clear highlighting when element is null (clicking empty space)
     if (element) {
       setHighlightedElement(element);
-
-      // Map the element to its reference section
-      if (markdownContent) {
-        /* When the new data structure is available, use section_ref and text_ref directly
-        if (element.section_ref) {
-          const referenceSection = {
-            refs: {
-              section: element.section_ref,
-              text: element.text_ref || ''
-            },
-            type: element.type
-          };
-          setHighlightedSection(referenceSection);
-          return;
-        }
-        */
-
-        // Current implementation - fallback to using description
-        const elementToMap =
-          element.type === "node" && element.description
-            ? { ...element, id: element.description }
-            : element;
-
-        const referenceSection = mapElementToReference(
-          markdownContent,
-          elementToMap,
-        );
-        console.log("Found reference section:", referenceSection);
-        if (referenceSection) {
-          referenceSection.type = element.type; // Add element type for better matching
-        }
+      // Use the section_ref and text_ref directly from the element object
+      const sectionRef = element.section_ref;
+      const textRef = element.text_ref;
+      if (markdownContent && sectionRef) {
+        const referenceSection = {
+          refs: {
+            section: sectionRef,
+            text: textRef || '',
+          },
+          type: element.type,
+        };
+        console.log("Setting highlighted section:", referenceSection);
         setHighlightedSection(referenceSection);
+      } else {
+        // If no section_ref or markdown content, clear the highlighted section
+        setHighlightedSection(null);
       }
     }
   };
@@ -168,11 +144,11 @@ function App() {
   const handleOpenComparison = () => {
     setShowComparison(true);
   };
-
   // Handler to close comparison view
   const handleCloseComparison = () => {
     setShowComparison(false);
   };
+
 
   useEffect(() => {
     const resizer = document.querySelector(".resizer");

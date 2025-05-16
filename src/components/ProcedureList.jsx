@@ -23,20 +23,24 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
           const groupedProcedures = data.reduce((acc, procedure) => {
             const existingProcedure = acc.find(p => p.procedure_name === procedure.procedure_name);
             if (existingProcedure) {
-              existingProcedure.entities.push({
-                id: `${procedure.procedure_id}_${procedure.entity.toLowerCase()}`,
-                name: `${procedure.entity}-${procedure.procedure_name}`,
-                entity: procedure.entity
+              // Add entities from the list
+              procedure.entity.forEach(entityName => {
+                existingProcedure.entities.push({
+                  id: `${procedure.procedure_id}_${entityName.toLowerCase()}`,
+                  name: `${entityName}-${procedure.procedure_name}`,
+                  entity: entityName
+                });
               });
             } else {
+              // Create new procedure entry with entities from the list
               acc.push({
                 procedure_id: procedure.procedure_id,
                 procedure_name: procedure.procedure_name,
-                entities: [{
-                  id: `${procedure.procedure_id}_${procedure.entity.toLowerCase()}`,
-                  name: `${procedure.entity}-${procedure.procedure_name}`,
-                  entity: procedure.entity
-                }]
+                entities: procedure.entity.map(entityName => ({
+                  id: `${procedure.procedure_id}_${entityName.toLowerCase()}`,
+                  name: `${entityName}-${procedure.procedure_name}`,
+                  entity: entityName
+                }))
               });
             }
             return acc;
@@ -68,13 +72,14 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
           procedureData.graph,
           defaultMermaidConfig
         );
-        // todo: modify this
         // Pass all procedure data to the parent component
         onProcedureSelect({
           ...procedureData,           // Include all API response data
+          id: procedure.procedure_id,  // Map procedure_id to id for consistency
           name: entity.name,          // Use entity-specific name
           procedure_name: procedure.procedure_name, // Keep original procedure name 
           mermaidDiagram,            // Add generated Mermaid diagram
+          entity: entity.entity      // Add entity type
         });
       } else {
         setError(`No data available for ${entity.name}`);
@@ -89,18 +94,18 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
     setExpandedProcedure(expandedProcedure === procedureId ? null : procedureId);
   };
 
-  if (error) {
-    return (
-      <div className="section-container">
-        <div className="section-header">
-          <span>Procedures</span>
-        </div>
-        <div className="content-area error-message">
-          {error}
-        </div>
-      </div>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <div className="section-container">
+  //       <div className="section-header">
+  //         <span>Procedures</span>
+  //       </div>
+  //       <div className="content-area error-message">
+  //         {error}
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="menu-bar">
