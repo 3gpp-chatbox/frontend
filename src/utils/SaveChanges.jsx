@@ -93,22 +93,22 @@ export const handleConfirmSave = async ({
     // Convert to JSON and save
     const graphData = convertMermaidToJson(mermaidGraph);
     
-    // Add required fields to nodes and edges
+    // Add required fields to nodes and edges while preserving references
     const enrichedGraphData = {
       nodes: graphData.nodes.map(node => ({
         id: node.id,
         type: node.type === "event" ? "event" : "state",  // Must be exactly "state" or "event"
         description: node.description || "Manually added node",
-        section_reference: "Manual Edit",
-        text_reference: "Manually edited through UI"
+        section_reference: node.section_reference || node.section_ref || "Manual Edit",
+        text_reference: node.text_reference || node.text_ref || "Manually edited through UI"
       })),
       edges: graphData.edges.map(edge => ({
         from: edge.from,  // Using 'from' as it's aliased to 'from_node' in backend
         to: edge.to,
         type: edge.type === "condition" ? "condition" : "trigger",  // Must be exactly "trigger" or "condition"
         description: edge.description || "Manually added edge",
-        section_reference: "Manual Edit",
-        text_reference: "Manually edited through UI"
+        section_reference: edge.section_reference || edge.section_ref || "Manual Edit",
+        text_reference: edge.text_reference || edge.text_ref || "Manually edited through UI"
       }))
     };
 
