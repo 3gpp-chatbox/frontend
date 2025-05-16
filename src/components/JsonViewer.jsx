@@ -12,6 +12,7 @@ import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
 import { createSaveHandlers } from "../utils/SaveChanges";
 import ConfirmationDialog from "./modals/ConfirmationDialog";
+import { debounce } from "lodash";
 
 /**
  * Component for displaying and editing JSON data with multiple view modes.
@@ -57,13 +58,17 @@ function JsonViewer({
   });
   const [activeView, setActiveView] = useState("mermaid");
   const [showMermaid, setShowMermaid] = useState(true);
+  const [editorContent, setEditorContent] = useState("");
+  const debouncedUpdateRef = useRef(null);
+  const lastScrollPosition = useRef(null);
+  const cursorPositionRef = useRef(null);
 
   // Add ref to track user edits
   const userEditedContent = useRef("");
   const isUserEditing = useRef(false);
   const editorRef = useRef(null);
-  const cursorPosition = useRef(null);
   const codeContentRef = useRef(null);
+  const scrollPositionRef = useRef(null);
 
   // Create save handlers
   const {
@@ -165,7 +170,7 @@ function JsonViewer({
         setIsEditing(false);
         isUserEditing.current = false;
 
-        const procedureData = await fetchProcedure(selectedProcedure.id);
+        const procedureData = await fetchProcedure(selectedProcedure.id, selectedProcedure.entity);
         console.log("Received procedure data:", procedureData);
 
         if (!procedureData) {
@@ -186,7 +191,7 @@ function JsonViewer({
     };
 
     loadProcedureData();
-  }, [selectedProcedure?.id]);
+  }, [selectedProcedure?.id, selectedProcedure?.entity]);
 
   // Update data when procedure is updated externally
   useEffect(() => {
@@ -205,25 +210,235 @@ function JsonViewer({
     }
   }, [notification.show]);
 
-  /**
-   * Handles changes to the Mermaid code.
-   * Updates the code and triggers necessary state updates.
-   *
-   * @param {string} newCode - The updated Mermaid code
-   */
-  const handleMermaidChange = (event) => {
-    saveCursorPosition();
-    const newCode = event.currentTarget.textContent;
-    // Only trigger changes if the code actually changed
-    if (newCode !== mermaidGraph) {
-      console.log("Mermaid code changed:", newCode);
-      isUserEditing.current = true;
-      userEditedContent.current = newCode;
+  // Add debounced update function
+  useEffect(() => {
+    debouncedUpdateRef.current = debounce((newCode) => {
+      // Save scroll position before the update
+      if (editorRef.current) {
+        lastScrollPosition.current = {
+          top: editorRef.current.scrollTop,
+          left: editorRef.current.scrollLeft
+        };
+      }
+      
       setMermaidGraph(newCode);
-      setIsEditing(true);
       onMermaidCodeChange(newCode);
+      
+      // Restore scroll position after the update
+      requestAnimationFrame(() => {
+        if (editorRef.current && lastScrollPosition.current) {
+          editorRef.current.scrollTop = lastScrollPosition.current.top;
+          editorRef.current.scrollLeft = lastScrollPosition.current.left;
+        }
+      });
+    }, 300);
+
+    return () => {
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current.cancel();
+      }
+    };
+  }, [onMermaidCodeChange]);
+
+  // Debounce function implementation
+  const debounce = (func, wait) => {
+    let timeout;
+    const debouncedFunc = function (...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+    debouncedFunc.cancel = () => clearTimeout(timeout);
+    return debouncedFunc;
+  };
+
+  // Save both cursor and scroll position
+  const saveEditorState = () => {
+    if (editorRef.current) {
+      // Save scroll position
+      lastScrollPosition.current = {
+        top: editorRef.current.scrollTop,
+        left: editorRef.current.scrollLeft
+      };
+
+      // Save cursor position with more context
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const content = editorRef.current.textContent;
+        
+        // Store more context about the cursor position
+        cursorPositionRef.current = {
+          offset: range.startOffset,
+          containerText: range.startContainer.textContent,
+          containerIndex: Array.from(editorRef.current.childNodes).indexOf(range.startContainer),
+          totalLength: content.length,
+          // Store some surrounding text for better position recovery
+          surroundingText: content.substring(
+            Math.max(0, range.startOffset - 10),
+            Math.min(content.length, range.startOffset + 10)
+          )
+        };
+      }
     }
   };
+
+  // Restore both cursor and scroll position
+  const restoreEditorState = useCallback(() => {
+    if (!editorRef.current || !cursorPositionRef.current) return;
+
+    // Restore scroll position first
+    if (scrollPositionRef.current) {
+      editorRef.current.scrollTop = scrollPositionRef.current.top;
+      editorRef.current.scrollLeft = scrollPositionRef.current.left;
+    }
+
+    // Restore cursor position
+    const selection = window.getSelection();
+    const range = document.createRange();
+
+    // Try to find the exact text node based on surrounding context
+    const findTextNodeWithContext = (node, searchText) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (node.textContent.includes(searchText)) {
+          return node;
+        }
+      } else {
+        for (const child of node.childNodes) {
+          const result = findTextNodeWithContext(child, searchText);
+          if (result) return result;
+        }
+      }
+      return null;
+    };
+
+    // First try to find the exact text node using surrounding context
+    const surroundingText = cursorPositionRef.current.surroundingText;
+    let targetNode = findTextNodeWithContext(editorRef.current, surroundingText);
+    let targetOffset = cursorPositionRef.current.offset;
+
+    // If we can't find the exact node, try to find a node with similar content
+    if (!targetNode) {
+      const walk = document.createTreeWalker(
+        editorRef.current,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+      );
+      let node;
+      let bestMatch = { node: null, similarity: 0 };
+
+      while ((node = walk.nextNode())) {
+        const similarity = calculateStringSimilarity(
+          node.textContent,
+          cursorPositionRef.current.containerText
+        );
+        if (similarity > bestMatch.similarity) {
+          bestMatch = { node, similarity };
+        }
+      }
+
+      if (bestMatch.node) {
+        targetNode = bestMatch.node;
+        // Adjust offset based on content similarity
+        const originalLength = cursorPositionRef.current.containerText.length;
+        const newLength = targetNode.textContent.length;
+        targetOffset = Math.round((cursorPositionRef.current.offset * newLength) / originalLength);
+      }
+    }
+
+    // If we found a target node, set the cursor position
+    if (targetNode) {
+      try {
+        targetOffset = Math.min(targetOffset, targetNode.textContent.length);
+        range.setStart(targetNode, targetOffset);
+        range.setEnd(targetNode, targetOffset);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } catch (error) {
+        console.warn("Error restoring cursor position:", error);
+      }
+    }
+  }, []);
+
+  // Add helper function to calculate string similarity
+  const calculateStringSimilarity = (str1, str2) => {
+    if (!str1 || !str2) return 0;
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const matrix = Array(len1 + 1).fill().map(() => Array(len2 + 1).fill(0));
+
+    for (let i = 0; i <= len1; i++) matrix[i][0] = i;
+    for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+
+    const maxLen = Math.max(len1, len2);
+    return 1 - matrix[len1][len2] / maxLen;
+  };
+
+  // Update the handleMermaidChange function with improved cursor handling
+  const handleMermaidChange = (event) => {
+    const newCode = event.currentTarget.textContent;
+    
+    // Save editor state before any updates
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(editorRef.current);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      
+      // Store more detailed cursor context
+      cursorPositionRef.current = {
+        offset: range.startOffset,
+        containerNode: range.startContainer,
+        containerText: range.startContainer.textContent,
+        containerIndex: Array.from(editorRef.current.childNodes).indexOf(range.startContainer.parentNode),
+        surroundingText: range.startContainer.textContent.substring(
+          Math.max(0, range.startOffset - 20),
+          Math.min(range.startContainer.textContent.length, range.startOffset + 20)
+        )
+      };
+    }
+    
+    // Save scroll position
+    if (editorRef.current) {
+      scrollPositionRef.current = {
+        top: editorRef.current.scrollTop,
+        left: editorRef.current.scrollLeft
+      };
+    }
+    
+    // Update editor content immediately for responsive typing
+    setEditorContent(newCode);
+    
+    // Only trigger mermaid updates if code actually changed
+    if (newCode !== mermaidGraph) {
+      isUserEditing.current = true;
+      userEditedContent.current = newCode;
+      setIsEditing(true);
+      
+      // Debounce the mermaid graph update
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newCode);
+      }
+    }
+  };
+
+  // Add effect to restore editor state after content updates
+  useEffect(() => {
+    requestAnimationFrame(restoreEditorState);
+  }, [editorContent, mermaidGraph, restoreEditorState]);
 
   // Add effect to scroll to highlighted element
   useEffect(() => {
@@ -250,12 +465,19 @@ function JsonViewer({
       const preCaretRange = range.cloneRange();
       preCaretRange.selectNodeContents(editorRef.current);
       preCaretRange.setEnd(range.endContainer, range.endOffset);
-      cursorPosition.current = preCaretRange.toString().length;
+      cursorPositionRef.current = preCaretRange.toString().length;
+      // Save scroll position
+      if (editorRef.current) {
+        scrollPositionRef.current = {
+          top: editorRef.current.scrollTop,
+          left: editorRef.current.scrollLeft
+        };
+      }
     }
   };
 
   const restoreCursorPosition = useCallback(() => {
-    if (editorRef.current && cursorPosition.current !== null) {
+    if (editorRef.current && cursorPositionRef.current !== null) {
       const selection = window.getSelection();
       const range = document.createRange();
       let charCount = 0;
@@ -267,9 +489,9 @@ function JsonViewer({
 
         if (node.nodeType === Node.TEXT_NODE) {
           const length = node.textContent.length;
-          if (charCount + length >= cursorPosition.current) {
+          if (charCount + length >= cursorPositionRef.current) {
             targetNode = node;
-            targetOffset = cursorPosition.current - charCount;
+            targetOffset = cursorPositionRef.current - charCount;
             return;
           }
           charCount += length;
@@ -289,6 +511,16 @@ function JsonViewer({
           range.setEnd(targetNode, targetOffset);
           selection.removeAllRanges();
           selection.addRange(range);
+          
+          // Restore scroll position after cursor is restored
+          if (scrollPositionRef.current) {
+            requestAnimationFrame(() => {
+              if (editorRef.current) {
+                editorRef.current.scrollTop = scrollPositionRef.current.top;
+                editorRef.current.scrollLeft = scrollPositionRef.current.left;
+              }
+            });
+          }
         } catch (error) {
           console.log("Error restoring cursor position:", error);
         }
@@ -403,35 +635,40 @@ function JsonViewer({
   };
 
   // Handle node/edge click in Mermaid view
-  const handleDiagramClick = useCallback((elementId, elementType, elementText = null) => {
+  const handleDiagramClick = useCallback((element) => {
     // Update highlighted element
-    const element = {
-      id: elementId,
-      type: elementType,
-      text: elementText || elementId
-    };
     setHighlightedElement(element);
     
     // Find corresponding section in reference view
-    if (markdownContent) {
-      const searchText = elementText || elementId;
-      const sectionMatch = markdownContent.match(
-        new RegExp(`(?:^|\n)#{2,3} .*${searchText}.*`, 'm')
-      );
-      
-      if (sectionMatch) {
+    if (markdownContent && element) {
+      // Use the section_ref and text_ref directly from the element object
+      const sectionRef = element.section_ref;
+      const textRef = element.text_ref;
+
+      if (sectionRef) {
         // Create a reference section object with both section and text refs
         const referenceSection = {
           refs: {
-            section: sectionMatch[0].trim(),
-            text: searchText
+            section: sectionRef,
+            text: textRef
           },
-          type: elementType
+          type: element.type
         };
         setHighlightedSection(referenceSection);
+      } else {
+        // If no section_ref, clear the highlighted section
+        setHighlightedSection(null);
       }
     }
   }, [setHighlightedElement, setHighlightedSection, markdownContent]);
+
+  // Add effect to maintain scroll position after any content updates
+  useEffect(() => {
+    if (editorRef.current && lastScrollPosition.current) {
+      editorRef.current.scrollTop = lastScrollPosition.current.top;
+      editorRef.current.scrollLeft = lastScrollPosition.current.left;
+    }
+  }, [editorContent, mermaidGraph]);
 
   return (
     <div className="editor-panel">
@@ -580,7 +817,14 @@ function JsonViewer({
                           const nodeText = node.querySelector(".label, .nodeLabel")?.textContent;
                           // Add highlight class to the clicked node
                           node.classList.add("highlighted");
-                          handleDiagramClick(nodeId, "node", nodeText);
+                          // Pass the extracted references and other properties
+                          handleDiagramClick({
+                            type: "node",
+                            id: nodeId,
+                            text: nodeText,
+                            section_ref: node.dataset.sectionRef, // Assuming data attributes are added
+                            text_ref: node.dataset.textRef // Assuming data attributes are added
+                          });
                         } else if (edge) {
                           // Extract edge ID from the path or title
                           const edgeId = edge.id?.split('-').slice(-1)[0] || 
@@ -588,14 +832,21 @@ function JsonViewer({
                           if (edgeId) {
                             // Add highlight class to the clicked edge
                             edge.classList.add("highlighted");
-                            handleDiagramClick(edgeId, "edge");
+                            // Pass the extracted references and other properties
+                            handleDiagramClick({
+                              type: "edge",
+                              id: edgeId,
+                              text: edgeId, // Or extract edge label if needed
+                              section_ref: edge.dataset.sectionRef, // Assuming data attributes are added
+                              text_ref: edge.dataset.textRef // Assuming data attributes are added
+                            });
                           }
                         }
                       }
                     }}
                     dangerouslySetInnerHTML={{
                       __html: highlightMermaidElement(
-                        highlightMermaid(cleanMermaidCode(mermaidGraph)),
+                        highlightMermaid(cleanMermaidCode(editorContent || mermaidGraph)),
                         highlightedElement
                       ),
                     }}

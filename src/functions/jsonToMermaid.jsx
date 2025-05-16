@@ -115,9 +115,17 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     mermaidCode += `    ${label}${shape}"${escapedContent}"${closeShape}:::${nodeType}\n`;
 
     // Add comments for type and description if available
-    if (node.description) {
+    if (node.type) {
       mermaidCode += `    %% Type: ${node.type}\n`;
+    }
+    if (node.description) {
       mermaidCode += `    %% Description: ${node.description}\n`;
+    }
+    if (node.section_reference) {
+      mermaidCode += `    %% Section_Reference: ${node.section_reference}\n`;
+    }
+    if (node.text_reference) {
+      mermaidCode += `    %% Text_Reference: ${node.text_reference}\n`;
     }
   });
 
@@ -148,6 +156,12 @@ export const JsonToMermaid = (jsonData, options = {}) => {
     }
     if (edge.description) {
       mermaidCode += `    %% Description: ${edge.description}\n`;
+    }
+    if (edge.section_reference) {
+      mermaidCode += `    %% Section_Reference: ${edge.section_reference}\n`;
+    }
+    if (edge.text_reference) {
+      mermaidCode += `    %% Text_Reference: ${edge.text_reference}\n`;
     }
   });
 

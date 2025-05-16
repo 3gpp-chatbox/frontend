@@ -83,7 +83,18 @@ function InteractiveMarkdown({ content, highlightedSection }) {
       return;
     }
 
-    const { section: sectionRef, text: textRef } = refs;
+    // Use the section and text properties directly from the refs object
+    let sectionRef = refs.section;
+    let textRef = refs.text;
+
+    // Remove potential prefixes from extracted references
+    if (sectionRef && sectionRef.startsWith('%% Section_Reference:')) {
+        sectionRef = sectionRef.replace('%% Section_Reference:', '').trim();
+    }
+    if (textRef && textRef.startsWith('%% Text_Reference:')) {
+        textRef = textRef.replace('%% Text_Reference:', '').trim();
+    }
+
     console.log("Looking for refs:", { sectionRef, textRef });
 
     let foundHighlight = false;
@@ -96,7 +107,7 @@ function InteractiveMarkdown({ content, highlightedSection }) {
       const lineContent = lineElements[i].textContent.toLowerCase();
 
       // Check for section header
-      if (lineContent.includes(sectionRef?.toLowerCase())) {
+      if (sectionRef && lineContent.includes(sectionRef.toLowerCase())) {
         sectionStartLine = i;
         foundHighlight = true;
 
@@ -108,62 +119,50 @@ function InteractiveMarkdown({ content, highlightedSection }) {
           }
         }
         if (!sectionEndLine) sectionEndLine = lineElements.length - 1;
+
+        // If section is found, immediately attempt to find the textRef within it
+        if (textRef) {
+          const cleanTextRef = textRef
+            .toLowerCase()
+            .replace(/\.\.\./g, "")
+            .trim();
+          console.log("Searching for textRef within section:", cleanTextRef);
+
+          for (let k = sectionStartLine; k <= sectionEndLine; k++) {
+            const lineContentInSection = lineElements[k].textContent.toLowerCase();
+            // Use includes for flexible matching, can be refined if needed
+            if (lineContentInSection.includes(cleanTextRef)) {
+              textMatchLine = k;
+              console.log("Found textRef match at line:", k + 1);
+              // Found the first match, no need to search further in this section for scroll target
+              break;
+            }
+          }
+        }
+        // Found the section start, no need to search the rest of the file for the section
         break;
       }
     }
 
-    // If we found the section, highlight it and look for specific text
+    // If we found the section (and optionally a text match), apply highlights
     if (foundHighlight) {
-      console.log("Found section boundaries:", {
-        start: sectionStartLine,
-        end: sectionEndLine,
-      });
+      console.log("Found section boundaries:", { start: sectionStartLine, end: sectionEndLine, textMatchLine: textMatchLine });
 
-      // Add blue highlight to the entire section
+      // Apply blue highlight to the entire section initially
       for (let i = sectionStartLine; i <= sectionEndLine; i++) {
         lineElements[i].classList.add("highlighted-section");
       }
 
-      // Look for specific text within the section
-      if (textRef) {
-        const cleanTextRef = textRef
-          .toLowerCase()
-          .replace(/\.\.\./g, "")
-          .trim();
-        console.log("Looking for text:", cleanTextRef, "type:", section.type);
-
-        for (let i = sectionStartLine; i <= sectionEndLine; i++) {
-          const lineContent = lineElements[i].textContent.toLowerCase();
-
-          // For nodes, we need to be more flexible in matching since the node text might be part of a longer line
-          // For edges, we want to match the exact text
-          const isNode = section.type === "node";
-          const isMatch = isNode
-            ? lineContent.includes(cleanTextRef)
-            : lineContent.includes(cleanTextRef);
-
-          if (isMatch) {
-            // Remove section highlight from this line and add orange highlight
-            lineElements[i].classList.remove("highlighted-section");
-            lineElements[i].classList.add("highlighted-line"); // Orange highlight for text match
-            textMatchLine = i;
-            console.log(
-              "Found matching text at line:",
-              i + 1,
-              "for",
-              isNode ? "node" : "edge",
-            );
-            break;
-          }
-        }
+      // If a specific text match was found, apply orange highlight and remove blue from that line
+      if (textMatchLine !== null) {
+         console.log("Applying orange highlight to text match line:", textMatchLine + 1);
+         lineElements[textMatchLine].classList.remove("highlighted-section");
+         lineElements[textMatchLine].classList.add("highlighted-line"); // Orange highlight for text match
       }
 
       // Scroll to the text match if found, otherwise to section header
       setTimeout(() => {
-        const targetLine =
-          textMatchLine !== null
-            ? lineElements[textMatchLine]
-            : lineElements[sectionStartLine];
+        const targetLine = textMatchLine !== null ? lineElements[textMatchLine] : lineElements[sectionStartLine];
         if (targetLine) {
           targetLine.scrollIntoView({ behavior: "smooth", block: "center" });
           console.log(
@@ -173,7 +172,7 @@ function InteractiveMarkdown({ content, highlightedSection }) {
         }
       }, 100);
     } else {
-      console.log("No matching section found");
+      console.log("No matching section found for sectionRef:", sectionRef);
     }
   };
 

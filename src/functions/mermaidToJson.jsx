@@ -163,6 +163,20 @@ export function convertMermaidToJson(mermaidCode) {
       lastElementRef.description = cleanText(descMatch[1]);
       continue;
     }
+
+    // Extract Section Reference
+    const sectionRefMatch = line.match(/^%% Section_Reference:\s*(.+)$/);
+    if (sectionRefMatch && lastElementRef) {
+      lastElementRef.section_reference = cleanText(sectionRefMatch[1]);
+      continue;
+    }
+
+    // Extract Text Reference
+    const textRefMatch = line.match(/^%% Text_Reference:\s*(.+)$/);
+    if (textRefMatch && lastElementRef) {
+      lastElementRef.text_reference = cleanText(textRefMatch[1]);
+      continue;
+    }
   }
 
   return jsonOutput;

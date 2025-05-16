@@ -5,14 +5,15 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
 
   // Format date for display
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const [datePart, timePart] = dateString.split(' ');
-    const [day, month, year] = datePart.split('-');
-    const [hour, minute] = timePart.split(':');
-    const date = new Date(year, month - 1, day, hour, minute);
-    if (isNaN(date.getTime())) return "Invalid Date";
-    return date.toLocaleString();
+    if (!dateString) return "N/A";  // Handle undefined or empty date
+    
+    const date = new Date(dateString);  // Parse ISO 8601 format
+    
+    if (isNaN(date.getTime())) return "Invalid Date";  // Handle invalid date
+    
+    return date.toLocaleString();  // Format to a readable string
   };
+  
 
   // Format accuracy as percentage
   const formatAccuracy = (accuracy) => {
@@ -37,13 +38,12 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
               <div className="detail-line">
                 <span className="detail-label">Entity:</span>
                 <span className="detail-value">
-                  -entity here-
+                {procedure.entity}
                 </span>
               </div>
               <div className="detail-line">
                 <text className="detail-label">Status:</text>
-                {/* TODO: modify status */}
-                <text className="detail-value">{procedure.edited ? "Edited" : "Original"}</text>
+                <text className="detail-value">{procedure.status}</text>
               </div>
           </div>
           <div className="description-section">

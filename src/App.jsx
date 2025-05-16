@@ -26,24 +26,12 @@ function App() {
   const [highlightedSection, setHighlightedSection] = useState(null);
   const [markdownContent, setMarkdownContent] = useState("");
 
-  // Load markdown content when component mounts
+  // Update markdown content when procedure data changes
   useEffect(() => {
-    const loadMarkdownContent = async () => {
-      try {
-        const response = await fetch(
-          "/src/data/Security mode control procedure_original_context_context_20250505_182324.md",
-        );
-        if (!response.ok) {
-          throw new Error("Failed to load markdown content");
-        }
-        const content = await response.text();
-        setMarkdownContent(content);
-      } catch (error) {
-        console.error("Error loading markdown content:", error);
-      }
-    };
-    loadMarkdownContent();
-  }, []);
+    if (procedureData?.reference?.context_markdown) {
+      setMarkdownContent(procedureData.reference.context_markdown);
+    }
+  }, [procedureData]);
 
   /**
    * Handles procedure selection from the list.
@@ -108,37 +96,23 @@ function App() {
     if (element) {
       setHighlightedElement(element);
 
-      // Map the element to its reference section
-      if (markdownContent) {
-        /* When the new data structure is available, use section_ref and text_ref directly
-        if (element.section_ref) {
-          const referenceSection = {
-            refs: {
-              section: element.section_ref,
-              text: element.text_ref || ''
-            },
-            type: element.type
-          };
-          setHighlightedSection(referenceSection);
-          return;
-        }
-        */
+      // Use the section_ref and text_ref directly from the element object
+      const sectionRef = element.section_ref;
+      const textRef = element.text_ref;
 
-        // Current implementation - fallback to using description
-        const elementToMap =
-          element.type === "node" && element.description
-            ? { ...element, id: element.description }
-            : element;
-
-        const referenceSection = mapElementToReference(
-          markdownContent,
-          elementToMap,
-        );
-        console.log("Found reference section:", referenceSection);
-        if (referenceSection) {
-          referenceSection.type = element.type; // Add element type for better matching
-        }
+      if (markdownContent && sectionRef) {
+        const referenceSection = {
+          refs: {
+            section: sectionRef,
+            text: textRef || '' // Use textRef if available, otherwise empty string
+          },
+          type: element.type
+        };
+        console.log("Setting highlighted section:", referenceSection);
         setHighlightedSection(referenceSection);
+      } else {
+        // If no section_ref or markdown content, clear the highlighted section
+        setHighlightedSection(null);
       }
     }
   };
