@@ -130,14 +130,11 @@ function App() {
     setHighlightedSection(null);
   };
 
-  // Dummy data for left/right comparison (replace with real data as needed)
+  // Current version data for the left panel of comparison view
   const leftVersion = {
-    title: selectedProcedure?.name + ' - V02 (Baseline)',
-    // Add more fields as needed
-  };
-  const rightVersion = {
-    title: selectedProcedure?.name + ' - V01',
-    // Add more fields as needed
+    title: selectedProcedure?.name + ' - Verified Version',
+    mermaidContent: mermaidCode,
+    jsonContent: JSON.stringify(procedureData?.graph || {}, null, 2),
   };
 
   // Handler to open comparison view
@@ -151,9 +148,15 @@ function App() {
 
 
   useEffect(() => {
+    // Only set up resize handlers when not in comparison view
+    if (showComparison) return;
+
     const resizer = document.querySelector(".resizer");
     const leftPanel = document.querySelector(".editor-panel");
     const rightPanel = document.querySelector(".diagram-panel");
+
+    // Return early if any required elements are missing
+    if (!resizer || !leftPanel || !rightPanel) return;
 
     let isResizing = false;
     let startX;
@@ -204,7 +207,7 @@ function App() {
       document.removeEventListener("mousemove", resize);
       document.removeEventListener("mouseup", stopResizing);
     };
-  }, []);
+  }, [showComparison]); // Add showComparison to dependencies
 
   return (
     <div className="container">
@@ -223,7 +226,12 @@ function App() {
 
         {/* Render comparison view if toggled */}
         {showComparison ? (
-          <Comparison left={leftVersion} right={rightVersion} onClose={handleCloseComparison} />
+          <Comparison 
+            left={leftVersion} 
+            right={{ title: 'Select Version' }} 
+            onClose={handleCloseComparison}
+            selectedProcedure={selectedProcedure}
+          />
         ) : (
           // ... existing procedure container ...
           <div className="procedure-container">

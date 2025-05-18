@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import DescriptionModal from './modals/DescriptionModal';
-import OriginalDataModal from './modals/OriginalDataModal';
+import OriginalDataModal from './modals/Archieve_OriginalDataModal';
 import VersionHistory from './modals/VersionHistory';
 import { fetchOriginalGraph } from "../API/api_calls";
 import { MdInfo, MdHistory } from 'react-icons/md';

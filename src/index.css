@@ -2433,26 +2433,94 @@ pre.json-content {
   justify-content: space-between;
   align-items: center;
   background: var(--black-700);
-  padding-left: 18px;
-  border-bottom: 1px solid var(--silver-100);
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--black-500);
+}
+.comparison-header .close-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--black-500);
+  border: 1px solid var(--blue-400);
+  color: var(--silver-400);
+  font-size: 1.2rem;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+}
+
+.comparison-header .close-btn:hover {
+  background: var(--black-600);
+  color: var(--silver-100);
+  border-color: var(--blue-500);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-header .close-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.comparison-header .close-btn-text {
+  color: var(--silver-400);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.comparison-header .close-btn:hover .close-btn-text {
+  color: var(--silver-100);
+}
+
+.comparison-header .close-btn .close-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  margin-left: 2px;
+}
+
+.comparison-header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.comparison-header-left span {
   font-size: 1rem;
   color: var(--blue-300);
   font-weight: 600;
 }
 
-.comparison-header .close-btn {
+.comparison-tabs {
+  display: flex;
+  gap: 2px;
+  background-color: var(--black-600);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--black-500);
+}
+
+.comparison-tabs button {
   background: none;
   border: none;
-  color: var(--silver-400);
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 4px 8px;
+  color: var(--silver-300);
+  font-size: 0.8rem;
+  padding: 6px 12px;
   border-radius: 4px;
-  transition: background 0.2s, color 0.2s;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
-.comparison-header .close-btn:hover {
-  background: var(--black-600);
+
+.comparison-tabs button.active {
+  background: var(--blue-600);
   color: var(--silver-100);
+  font-weight: 500;
+}
+
+.comparison-tabs button:not(.active):hover {
+  background: var(--black-500);
+  color: var(--silver-200);
 }
 
 .comparison-panels {
@@ -2470,6 +2538,7 @@ pre.json-content {
   background: var(--black-700);
   min-width: 0;
 }
+
 .comparison-panel:last-child {
   border-right: none;
 }
@@ -2478,43 +2547,19 @@ pre.json-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--blcak-700);
+  background: var(--black-700);
   padding: 12px 20px;
-  border-bottom: 1px solid var(--blue-700);
+  border-bottom: 1px solid var(--black-500);
+  height: 20px;
 }
 
 .panel-title {
   font-size: 0.9rem;
   color: var(--orange-400);
   font-weight: 500;
-}
-
-.panel-tabs {
   display: flex;
-  gap: 2px;
-  background-color: var(--black-600);
-  padding: 2px;
-  border-radius: 6px;
-  border: 1px solid var(--black-500);
-}
-.panel-tabs button {
-  background: none;
-  border: none;
-  color: var(--silver-300);
-  font-size: 0.7rem;
-  padding: 6px 8px;
-  border-radius: 4px 4px 0 0;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.panel-tabs button.active {
-  background: var(--blue-600);
-  color: var(--silver-100);
-  font-weight: 600;
-}
-.panel-tabs button:not(.active):hover {
-  background: var(--black-500);
-  color: var(--silver-200);
+  align-items: center;
+  gap: 8px;
 }
 
 .panel-content {
@@ -2525,12 +2570,92 @@ pre.json-content {
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 1rem;
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue-600) var(--black-800);
 }
 
-.panel-mermaid, .panel-json {
+.panel-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+  background: var(--black-800);
+  border-radius: 4px;
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+  background-color: var(--blue-600);
+  border-radius: 4px;
+  border: 2px solid var(--black-800);
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background-color: var(--blue-500);
+}
+
+.panel-content::-webkit-scrollbar-corner {
+  background: var(--black-800);
+}
+
+.panel-mermaid, .panel-json, .panel-graph {
   min-height: 200px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.version-selector {
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.version-dropdown {
+  width: 100%;
+  padding: 8px 10px;
+  background-color: var(--black-700);
+  border: 1px solid var(--black-500);
+  border-radius: 6px;
+  color: var(--silver-100);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239c9595' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 36px;
+}
+
+.version-dropdown:hover {
+  border-color: var(--blue-500);
+  background-color: var(--black-600);
+}
+
+.version-dropdown:focus {
+  outline: none;
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.version-dropdown option {
+  background-color: var(--black-700);
+  color: var(--silver-100);
+  padding: 8px;
+}
+
+.version-dropdown option:hover {
+  background-color: var(--black-600);
+}
+
+.version-dropdown:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--black-800);
+  border-color: var(--black-600);
 }
 
 @media (max-width: 900px) {
@@ -2548,4 +2673,76 @@ pre.json-content {
   .comparison-panel:last-child {
     border-bottom: none;
   }
+  .comparison-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .comparison-tabs {
+    width: 100%;
+    justify-content: center;
+  }
+}
+.comparison-diagram-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.comparison-diagram-controls span {
+  color: var(--silver-300);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.comparison-diagram-controls button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: var(--black-500);
+  color: var(--silver-300);
+  border: 1px solid var(--blue-500);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.comparison-diagram-controls button:hover {
+  background-color: var(--black-500);
+  color: var(--silver-200);
+  border-color: var(--blue-600);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.comparison-diagram-controls button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.comparison-diagram-controls button:disabled {
+  background-color: var(--black-700);
+  border-color: var(--black-600);
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none;
+}
+
+.comparison-diagram-controls button:focus {
+  outline: 2px solid var(--blue-500);
+  outline-offset: 2px;
+}
+
+.comparison-diagram-controls .reset-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.comparison-diagram-controls button:hover .reset-icon {
+  transform: rotate(180deg);
 }

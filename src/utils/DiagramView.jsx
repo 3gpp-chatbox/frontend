@@ -1,13 +1,45 @@
+// this is the diagram view for the comparison view
 import { useEffect, useRef, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import mermaid from "mermaid";
+import { FaRedo } from "react-icons/fa";
 
 // Constants for zoom control
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 6;
 const ZOOM_SPEED = 0.1;
 
-function ModalDiagram({ mermaidCode }) {
+// Initialize mermaid once at module level
+mermaid.initialize({
+  startOnLoad: true,
+  theme: "dark",
+  logLevel: "error",
+  securityLevel: "loose",
+  flowchart: {
+    curve: "basis",
+    nodeSpacing: 100,
+    rankSpacing: 100,
+    padding: 20,
+    useMaxWidth: false,
+    htmlLabels: true,
+  },
+  themeVariables: {
+    primaryColor: "#3b82f6",
+    primaryTextColor: "#f4f4f5",
+    primaryBorderColor: "#1d4ed8",
+    lineColor: "#60a5fa",
+    secondaryColor: "#1d4ed8",
+    tertiaryColor: "#27272a",
+    mainBkg: "#1a1a1a",
+    nodeBorder: "#3b82f6",
+    clusterBkg: "#1a1a1a",
+    titleColor: "#f4f4f5",
+    edgeLabelBackground: "#1a1a1a",
+    textColor: "#f4f4f5",
+  },
+});
+
+function DiagramView({ mermaidCode }) {
   const mermaidRef = useRef(null);
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -16,47 +48,7 @@ function ModalDiagram({ mermaidCode }) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [error, setError] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(100);
-
-  // Initialize mermaid with a unique ID for this instance
-  useEffect(() => {
-    const init = async () => {
-      try {
-        await mermaid.initialize({
-          startOnLoad: true,
-          theme: "dark",
-          logLevel: "error",
-          securityLevel: "loose",
-          flowchart: {
-            curve: "basis",
-            nodeSpacing: 100,
-            rankSpacing: 100,
-            padding: 20,
-            useMaxWidth: false,
-            htmlLabels: true,
-          },
-          themeVariables: {
-            primaryColor: "#3b82f6",
-            primaryTextColor: "#f4f4f5",
-            primaryBorderColor: "#1d4ed8",
-            lineColor: "#60a5fa",
-            secondaryColor: "#1d4ed8",
-            tertiaryColor: "#27272a",
-            mainBkg: "#1a1a1a",
-            nodeBorder: "#3b82f6",
-            clusterBkg: "#1a1a1a",
-            titleColor: "#f4f4f5",
-            edgeLabelBackground: "#1a1a1a",
-            textColor: "#f4f4f5",
-          },
-        });
-        console.log("Mermaid initialized for modal");
-      } catch (err) {
-        console.error("Error initializing Mermaid:", err);
-        setError("Failed to initialize diagram renderer");
-      }
-    };
-    init();
-  }, []);
+  const [renderedId, setRenderedId] = useState(null);
 
   const renderDiagram = useCallback(async () => {
     if (!mermaidRef.current || !mermaidCode) {
@@ -65,17 +57,26 @@ function ModalDiagram({ mermaidCode }) {
     }
 
     try {
-      console.log("Attempting to render diagram with code:", mermaidCode);
+      // Clear previous content
       mermaidRef.current.innerHTML = "";
       setError(null);
 
+      // Generate a unique ID for this render
       const uniqueId = `modal-mermaid-${Date.now()}`;
+      setRenderedId(uniqueId);
+
+      // Render the diagram
       const { svg } = await mermaid.render(uniqueId, mermaidCode);
       console.log("Diagram rendered successfully");
 
+      // Create a temporary container
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = svg;
       const newSvg = tempDiv.querySelector("svg");
+
+      if (!newSvg) {
+        throw new Error("Failed to create SVG element");
+      }
 
       // Set dimensions and styling
       newSvg.style.width = "100%";
@@ -84,6 +85,8 @@ function ModalDiagram({ mermaidCode }) {
       newSvg.style.minHeight = "600px";
       newSvg.style.display = "block";
 
+      // Clear any existing content and append the new SVG
+      mermaidRef.current.innerHTML = "";
       mermaidRef.current.appendChild(newSvg);
     } catch (err) {
       console.error("Error rendering diagram:", err);
@@ -94,11 +97,26 @@ function ModalDiagram({ mermaidCode }) {
     }
   }, [mermaidCode]);
 
+  // Cleanup function
+  const cleanup = useCallback(() => {
+    if (mermaidRef.current) {
+      mermaidRef.current.innerHTML = "";
+    }
+    if (renderedId) {
+      try {
+        mermaid.contentLoaded();
+      } catch (err) {
+        console.error("Error cleaning up mermaid:", err);
+      }
+    }
+  }, [renderedId]);
+
   // Render diagram when code changes
   useEffect(() => {
-    console.log("Mermaid code changed, rendering diagram");
+    cleanup();
     renderDiagram();
-  }, [renderDiagram]);
+    return cleanup;
+  }, [renderDiagram, cleanup]);
 
   // Handle zooming
   const handleWheel = useCallback(
@@ -159,95 +177,37 @@ function ModalDiagram({ mermaidCode }) {
   }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <div
-      className="modal-diagram-container"
-      style={{
-        width: "90%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        position: "relative",
-        backgroundColor: "#1a1a1a",
-      }}
-    >
-      <div
-        className="diagram-controls"
-        style={{
-          padding: "8px",
-          borderBottom: "1px solid #333",
-          display: "flex",
-          gap: "8px",
-          alignItems: "center",
-        }}
-      >
-        <span style={{ color: "#f4f4f5" }}>Zoom: {zoomLevel}%</span>
+    <div className="comparison-diagram-container">
+      <div className="comparison-diagram-controls">
+        <span>Zoom: {zoomLevel}%</span>
         <button
           onClick={() => {
             setScale(1);
             setZoomLevel(100);
             setPosition({ x: 0, y: 0 });
           }}
-          style={{
-            padding: "4px 8px",
-            backgroundColor: "#3b82f6",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
         >
+          <FaRedo className="reset-icon" />
           Reset View
         </button>
       </div>
       <div
         ref={containerRef}
-        className="diagram-view-area"
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          flex: 1,
-          cursor: isDragging ? "grabbing" : "grab",
-          backgroundColor: "#1a1a1a",
-        }}
+        className={`comparison-diagram-view-area ${isDragging ? 'dragging' : ''}`}
       >
         {error ? (
-          <div
-            className="error-overlay"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "rgba(0,0,0,0.7)",
-            }}
-          >
-            <div
-              className="error-content"
-              style={{
-                padding: "20px",
-                backgroundColor: "#27272a",
-                borderRadius: "8px",
-                color: "#ef4444",
-              }}
-            >
+          <div className="comparison-diagram-error-overlay">
+            <div className="comparison-diagram-error-content">
               <h3>Error Rendering Diagram</h3>
-              <p className="error-message">{error}</p>
+              <p className="comparison-diagram-error-message">{error}</p>
             </div>
           </div>
         ) : (
           <div
             ref={mermaidRef}
+            className="comparison-diagram-mermaid-container"
             style={{
-              position: "absolute",
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transformOrigin: "center center",
-              width: "100%",
-              height: "100%",
-              backgroundColor: "#1a1a1a",
             }}
           />
         )}

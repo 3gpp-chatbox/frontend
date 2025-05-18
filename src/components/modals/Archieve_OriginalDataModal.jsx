@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
 import { JsonToMermaid } from "../../functions/jsonToMermaid";
-import ModalDiagram from "../modals/ModalDiagram";
+import ModalDiagram from "../../utils/DiagramView";
 import { highlightJson } from "../../utils/jsonHighlighter";
 import { highlightMermaid } from "../../utils/MermaidHighlighter";
 

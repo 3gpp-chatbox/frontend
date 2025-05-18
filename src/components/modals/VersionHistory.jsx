@@ -30,11 +30,9 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
       <div className="modal-content description-modal-content version-history-modal-content">
         <div className="modal-header">
           <h3>Version History Summary</h3>
-          {/* add a button to open the comparison view*/}
-          <button onClick={onOpenComparison}>Open Comparison</button>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
-        <div className="modal-body version-history-modal-body">
+        <div className="modal-body version-history-modal-body" style={{ position: 'relative', minHeight: '400px' }}>
           {loading ? (
             <div>Loading...</div>
           ) : error ? (
@@ -66,6 +64,36 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
               </div>
             </div>
           )}
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            right: '20px',
+            display: 'flex',
+            gap: '10px'
+          }}>
+            <button
+              onClick={onOpenComparison}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                transition: 'background-color 0.2s ease'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+            >
+              Open Comparison
+            </button>
+          </div>
         </div>
       </div>
     </div>
