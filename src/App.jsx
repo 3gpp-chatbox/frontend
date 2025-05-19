@@ -133,9 +133,10 @@ function App() {
 
   // Current version data for the left panel of comparison view
   const leftVersion = {
-    title: selectedProcedure?.name + ' - Verified Version',
+    title: selectedProcedure?.name + ' - Version',
     mermaidContent: mermaidCode,
     jsonContent: JSON.stringify(procedureData?.graph || {}, null, 2),
+    version: selectedProcedure?.version,
   };
 
   // Handler to open comparison view

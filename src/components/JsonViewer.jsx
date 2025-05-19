@@ -569,7 +569,7 @@ function JsonViewer({
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
-  // Add function to update direction
+  // here------direction change
   const handleDirectionChange = (newDirection) => {
     if (isEditing) {
       setNotification({
@@ -588,6 +588,7 @@ function JsonViewer({
     setMermaidGraph(updatedCode);
     onMermaidCodeChange(updatedCode);
   };
+  // here------direction change
 
   /**
    * Cleans and formats Mermaid code for rendering.
