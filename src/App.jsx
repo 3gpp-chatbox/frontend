@@ -101,6 +101,7 @@ function App() {
     // Don't clear highlighting when element is null (clicking empty space)
     if (element) {
     setHighlightedElement(element);
+    
       // Use the section_ref and text_ref directly from the element object
       const sectionRef = element.section_ref;
       const textRef = element.text_ref;
