@@ -216,8 +216,8 @@ function DiagramView({ mermaidCode }) {
   );
 }
 
-ModalDiagram.propTypes = {
+DiagramView.propTypes = {
   mermaidCode: PropTypes.string.isRequired,
 };
 
-export default ModalDiagram;
+export default DiagramView;

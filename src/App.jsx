@@ -56,7 +56,7 @@ function App() {
    *
    * @param {string} newCode - The new Mermaid diagram code
    */
-  
+
   const handleMermaidCodeChange = (newCode) => {
     console.log("App: Mermaid code updated:", newCode);
     setMermaidCode(newCode);
@@ -72,7 +72,7 @@ function App() {
    *
    * @param {Object} updatedData - The updated procedure data
    */
-  
+
   const handleProcedureUpdate = (updatedData) => {
     console.log("App: Procedure data updated:", updatedData);
     setProcedureData({
@@ -93,14 +93,14 @@ function App() {
    * @param {string} [element.section_ref] - Section reference (future use)
    * @param {string} [element.text_ref] - Text reference (future use)
    */
-  
+
   const handleElementClick = (element) => {
     console.log("Diagram element clicked:", element);
 
     // Only update if we have a new element to highlight
     // Don't clear highlighting when element is null (clicking empty space)
     if (element) {
-      setHighlightedElement(element);
+    setHighlightedElement(element);
       // Use the section_ref and text_ref directly from the element object
       const sectionRef = element.section_ref;
       const textRef = element.text_ref;
@@ -214,11 +214,12 @@ function App() {
       <div className="title-bar-container">
         {/* title bar */}
         <header className="title">3GPP Procedure Insights</header>
-        <ProcedureList
-          selectedProcedure={selectedProcedure}
-          onProcedureSelect={handleProcedureSelect}
-        />
-      </div>
+          <ProcedureList
+            selectedProcedure={selectedProcedure}
+            onProcedureSelect={handleProcedureSelect}
+            disabled={showComparison}
+          />
+        </div>
       {/* grid layout */}
       <div className="grid-layout">
         {/* procedure title bar */}
@@ -240,15 +241,15 @@ function App() {
                 <div className="procedure-container-left">
                   {/* description panel */}
                   {/* <Description
-                      procedure={procedureData}
-                      onProcedureUpdate={handleProcedureUpdate}
-                      onMermaidCodeChange={handleMermaidCodeChange}
+            procedure={procedureData} 
+            onProcedureUpdate={handleProcedureUpdate}
+            onMermaidCodeChange={handleMermaidCodeChange}
                     /> */}
-                  {/* JSON/Mermaid Editor Panel */}
-                  <JsonViewer
-                    onMermaidCodeChange={handleMermaidCodeChange}
-                    selectedProcedure={selectedProcedure}
-                    onProcedureUpdate={handleProcedureUpdate}
+          {/* JSON/Mermaid Editor Panel */}
+            <JsonViewer
+              onMermaidCodeChange={handleMermaidCodeChange}
+              selectedProcedure={selectedProcedure}
+              onProcedureUpdate={handleProcedureUpdate}
                     highlightedElement={highlightedElement}
                     setHighlightedElement={setHighlightedElement}
                     highlightedSection={highlightedSection}
@@ -257,20 +258,20 @@ function App() {
                     setHighlightedSection={setHighlightedSection}
                   />
                   <div className="resizer"></div>
-                </div>
+          </div>
               </Panel>
               <PanelResizeHandle className="resize-handle" />
               <Panel defaultSize={50} minSize={30}>
                 <div className="procedure-container-right">
-                  {/* Flow Diagram Panel */}
-                  <div className="diagram-panel">
-                    <FlowDiagram
-                      mermaidCode={mermaidCode}
-                      onElementClick={handleElementClick}
+          {/* Flow Diagram Panel */}
+          <div className="diagram-panel">
+            <FlowDiagram 
+              mermaidCode={mermaidCode} 
+              onElementClick={handleElementClick}
                       highlightedElement={highlightedElement}
-                    />
-                  </div>
-                </div>
+            />
+          </div>
+        </div>
               </Panel>
             </PanelGroup>
           </div>

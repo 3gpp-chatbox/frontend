@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { fetchProcedures, fetchProcedure } from "../API/api_calls";
 import { JsonToMermaid, defaultMermaidConfig } from "../functions/jsonToMermaid";
 
-function ProcedureList({ selectedProcedure, onProcedureSelect }) {
+function ProcedureList({ selectedProcedure, onProcedureSelect, disabled }) {
   const [procedureList, setProcedureList] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +63,7 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
   }, []);
 
   const handleProcedureClick = async (procedure, entity) => {
+    if (disabled) return;
     try {
       // Fetch procedure-entity specific data
       const procedureData = await fetchProcedure(procedure.procedure_id, entity.entity);
@@ -94,21 +95,13 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
     setExpandedProcedure(expandedProcedure === procedureId ? null : procedureId);
   };
 
-  // if (error) {
-  //   return (
-  //     <div className="section-container">
-  //       <div className="section-header">
-  //         <span>Procedures</span>
-  //       </div>
-  //       <div className="content-area error-message">
-  //         {error}
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
   return (
-    <div className="menu-bar">
+    <div className={`menu-bar${disabled ? ' disabled' : ''}`}>
+      {disabled && (
+        <div className="disabled-tooltip">
+          To select a new procedure, you have to close the comparison view.
+        </div>
+      )}
       <div className="menu-item"> 
         <span className="menu-item-text">Procedures</span>
         <div className="dropdown-content">
@@ -121,7 +114,7 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
               <div key={procedure.procedure_id}>
                 <div 
                   className={`dropdown-item procedure-header ${expandedProcedure === procedure.procedure_id ? 'expanded' : ''}`}
-                  onClick={() => toggleProcedure(procedure.procedure_id)}
+                  onClick={() => !disabled && toggleProcedure(procedure.procedure_id)}
                 >
                   <span>{procedure.procedure_name}</span>
                   <span className="toggle-icon">
@@ -134,7 +127,7 @@ function ProcedureList({ selectedProcedure, onProcedureSelect }) {
                       <div
                         key={entity.id}
                         className="dropdown-item entity-item"
-                        onClick={() => handleProcedureClick(procedure, entity)}
+                        onClick={() => !disabled && handleProcedureClick(procedure, entity)}
                       >
                         {entity.name}
                       </div>
