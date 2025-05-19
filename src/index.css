@@ -1267,6 +1267,7 @@ pre.json-content {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .mermaid-editor .code-content {
@@ -1278,6 +1279,9 @@ pre.json-content {
   position: relative;
   will-change: scroll-position;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: auto;
+  overscroll-behavior: contain;
+  caret-color: var(--blue-400);
 }
 
 .mermaid-editor .code-content.wrapped {
@@ -2877,4 +2881,13 @@ pre.json-content {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.mermaid-editor .code-content::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+}
+
+.mermaid-editor .code-content:focus {
+  outline: none;
+  scroll-behavior: auto !important;
 }

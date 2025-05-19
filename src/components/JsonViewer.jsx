@@ -319,71 +319,78 @@ function JsonViewer({
   const handleMermaidChange = (event) => {
     try {
       const newCode = event.currentTarget.textContent;
+      
+      // Save scroll position before any changes
+      if (editorRef.current) {
+        scrollPositionRef.current = {
+          top: editorRef.current.scrollTop,
+          left: editorRef.current.scrollLeft
+        };
+      }
 
       // Save cursor position before any changes
       const selection = window.getSelection();
-      let savedCursor = null;
-
       if (selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
         const preCaretRange = range.cloneRange();
         preCaretRange.selectNodeContents(editorRef.current);
         preCaretRange.setEnd(range.endContainer, range.endOffset);
-        savedCursor = {
-          offset: preCaretRange.toString().length,
-          text: preCaretRange.toString().slice(-20),
+        cursorPositionRef.current = {
+          offset: getTextOffset(range.endContainer, range.endOffset, editorRef.current),
+          surroundingText: range.endContainer.textContent
         };
       }
 
       // Basic content validation
-      if (typeof newCode !== "string") {
-        throw new Error("Invalid content type");
+      if (typeof newCode !== 'string') {
+        throw new Error('Invalid content type');
       }
 
       // Normalize line breaks
-      const normalizedCode = newCode.replace(/\r\n/g, "\n");
-
+      const normalizedCode = newCode.replace(/\r\n/g, '\n');
+      
       // Update content
       setEditorContent(normalizedCode);
-
+      
       if (normalizedCode !== mermaidGraph) {
         isUserEditing.current = true;
         userEditedContent.current = normalizedCode;
         setIsEditing(true);
-
-        // Update graph
+        
+        // Update graph with debounce
         if (debouncedUpdateRef.current) {
           debouncedUpdateRef.current(normalizedCode);
         }
       }
 
-      // Restore cursor position
-      if (savedCursor) {
-        requestAnimationFrame(() => {
-          try {
-            const textNodeInfo = findTextNodeAtOffset(
-              editorRef.current,
-              savedCursor.offset,
-            );
-            if (textNodeInfo) {
-              const newRange = document.createRange();
-              newRange.setStart(textNodeInfo.node, textNodeInfo.offset);
-              newRange.collapse(true);
+      // Restore cursor and scroll position
+      requestAnimationFrame(() => {
+        // Restore scroll position first
+        if (editorRef.current && scrollPositionRef.current) {
+          editorRef.current.scrollTop = scrollPositionRef.current.top;
+          editorRef.current.scrollLeft = scrollPositionRef.current.left;
+        }
 
-              selection.removeAllRanges();
-              selection.addRange(newRange);
-            }
-          } catch (error) {
-            console.error("Error restoring cursor position:", error);
+        // Then restore cursor position
+        if (cursorPositionRef.current) {
+          const textNodeInfo = findTextNodeAtOffset(editorRef.current, cursorPositionRef.current.offset);
+          if (textNodeInfo) {
+            const newRange = document.createRange();
+            newRange.setStart(textNodeInfo.node, textNodeInfo.offset);
+            newRange.collapse(true);
+            
+            selection.removeAllRanges();
+            selection.addRange(newRange);
           }
-        });
-      }
+        }
+      });
+
     } catch (error) {
-      console.error("Error in handleMermaidChange:", error);
+      console.error('Error in handleMermaidChange:', error);
       setNotification({
         show: true,
         message: `Error updating content: ${error.message}`,
-        type: "error",
+        type: "error"
       });
     }
   };
@@ -395,26 +402,42 @@ function JsonViewer({
 
   // Add keydown handler for better line break control
   const handleKeyDown = (event) => {
-    if (event.key === "Enter") {
+    if (event.key === 'Enter') {
       event.preventDefault();
-
+      
+      // Save scroll position
+      if (editorRef.current) {
+        scrollPositionRef.current = {
+          top: editorRef.current.scrollTop,
+          left: editorRef.current.scrollLeft
+        };
+      }
+      
       const selection = window.getSelection();
       if (selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-
+        
         // Create a new text node with a line break
-        const textNode = document.createTextNode("\n");
+        const textNode = document.createTextNode('\n');
         range.insertNode(textNode);
-
+        
         // Move cursor to the new line
         range.setStart(textNode, 1);
         range.setEnd(textNode, 1);
         selection.removeAllRanges();
         selection.addRange(range);
-
+        
         // Trigger change event
-        const changeEvent = new Event("input", { bubbles: true });
+        const changeEvent = new Event('input', { bubbles: true });
         editorRef.current.dispatchEvent(changeEvent);
+
+        // Restore scroll position
+        requestAnimationFrame(() => {
+          if (editorRef.current && scrollPositionRef.current) {
+            editorRef.current.scrollTop = scrollPositionRef.current.top;
+            editorRef.current.scrollLeft = scrollPositionRef.current.left;
+          }
+        });
       }
     }
   };
