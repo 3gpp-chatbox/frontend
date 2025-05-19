@@ -54,12 +54,6 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
                   {procedure.document_name || "N/A"}
                 </span>
               </div>
-              <div className="detail-line">
-                <span className="detail-label">Section:</span>
-                <span className="detail-value">
-                  -section number here-
-                </span>
-              </div>
           </div>
           <div className="description-section">
             <h4>Original Graph Extraction Information</h4>
@@ -89,7 +83,7 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
               <div className="detail-line">
                 <span className="detail-label">Last Edited:</span>
                 <span className="detail-value">
-                  {formatDate(procedure.last_edit_at)}
+                  {formatDate(procedure.created_at)}
                 </span>
               </div>
           </div>

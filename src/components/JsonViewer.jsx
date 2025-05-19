@@ -12,7 +12,6 @@ import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
 import { createSaveHandlers } from "../utils/SaveChanges";
 import ConfirmationDialog from "./modals/ConfirmationDialog";
-import { debounce } from "lodash";
 
 /**
  * Component for displaying and editing JSON data with multiple view modes.
@@ -100,7 +99,7 @@ function JsonViewer({
       try {
         // Get the current graph data based on edited status
         const graphData = data.edited_graph || data.original_graph || data.graph;
-
+        
         if (!graphData) {
           console.warn("No graph data available in:", data);
           setJsonContent("");
@@ -114,7 +113,7 @@ function JsonViewer({
         const jsonString = JSON.stringify(graphData, null, 2);
         console.log("Setting JSON content:", jsonString);
         setJsonContent(jsonString);
-
+        
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
@@ -711,17 +710,17 @@ function JsonViewer({
             >
               JSON
             </button>
-            <button
+          <button
               className={`tab-button ${activeView === "reference" ? "active" : ""}`}
-              onClick={() => {
-                if (isEditing) {
-                  setNotification({
-                    show: true,
-                    message: "Please save or revert your changes first",
-                    type: "warning",
-                  });
-                  return;
-                }
+            onClick={() => {
+              if (isEditing) {
+                setNotification({
+                  show: true,
+                  message: "Please save or revert your changes first",
+                  type: "warning",
+                });
+                return;
+              }
                 setActiveView("reference");
               }}
             >
@@ -752,7 +751,7 @@ function JsonViewer({
                 title="Left to Right"
               >
                 <BiHorizontalLeft size={20} />
-              </button>
+          </button>
             </div>
           </div>
           <div className="viewer-controls-right">
@@ -788,16 +787,16 @@ function JsonViewer({
           data ? (
             <pre className="json-content">
               {activeView === "mermaid" ? (
-                <div className="mermaid-editor">
-                  <div
+              <div className="mermaid-editor">
+                <div
                     ref={(el) => {
                       editorRef.current = el;
                       codeContentRef.current = el;
                     }}
-                    className={`code-content ${isWrapped ? "wrapped" : ""}`}
-                    contentEditable={true}
-                    onInput={handleMermaidChange}
-                    onFocus={onEditorFocus}
+                  className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                  contentEditable={true}
+                  onInput={handleMermaidChange}
+                  onFocus={onEditorFocus}
                     onClick={(e) => {
                       const node = e.target.closest(".node");
                       const edge = e.target.closest(".edgePath");
@@ -842,17 +841,17 @@ function JsonViewer({
                             });
                           }
                         }
-                      }
-                    }}
-                    dangerouslySetInnerHTML={{
+                    }
+                  }}
+                  dangerouslySetInnerHTML={{
                       __html: highlightMermaidElement(
                         highlightMermaid(cleanMermaidCode(editorContent || mermaidGraph)),
                         highlightedElement
                       ),
-                    }}
-                    spellCheck="false"
-                  />
-                </div>
+                  }}
+                  spellCheck="false"
+                />
+              </div>
               ) : (
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}

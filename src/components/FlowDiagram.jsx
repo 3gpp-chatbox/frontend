@@ -74,55 +74,55 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
    * @returns {string} Cleaned Mermaid code
    */
   const cleanMermaidCode = (code, direction = "TD") => {
-    if (!code) return "";
-
-    // Split into lines and filter out empty lines
+  if (!code) return "";
+  
+  // Split into lines and filter out empty lines
     let lines = code
       .split("\n")
       .map((line) => line.trim())
-      .filter(Boolean);
-
-    // Extract style definitions
+    .filter(Boolean);
+  
+  // Extract style definitions
     const styleLines = lines.filter((line) => line.startsWith("classDef"));
-
-    // Extract existing direction if present
-    let flowDirection = direction;
+  
+  // Extract existing direction if present
+  let flowDirection = direction;
     lines.forEach((line) => {
-      const match = line.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
-      if (match) {
-        flowDirection = match[1];
-      }
-    });
-
-    // Remove flowchart declarations but keep style definitions
+    const match = line.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
+    if (match) {
+      flowDirection = match[1];
+    }
+  });
+  
+  // Remove flowchart declarations but keep style definitions
     lines = lines.filter((line) => {
       const isFlowchart =
         line.startsWith("flowchart") || line.startsWith("graph");
-      return !isFlowchart;
-    });
-
-    // Add flowchart declaration with preserved direction and styles at the start
-    lines.unshift(`flowchart ${flowDirection}`);
-    if (styleLines.length > 0) {
-      lines.splice(1, 0, ...styleLines);
-    }
-
-    // Clean up class definitions and other special lines
+    return !isFlowchart;
+  });
+  
+  // Add flowchart declaration with preserved direction and styles at the start
+  lines.unshift(`flowchart ${flowDirection}`);
+  if (styleLines.length > 0) {
+    lines.splice(1, 0, ...styleLines);
+  }
+  
+  // Clean up class definitions and other special lines
     lines = lines.map((line) => {
-      // Handle class definitions
+    // Handle class definitions
       if (line.startsWith("classDef")) {
         return line.replace(/\s+/g, " ");
-      }
-
-      // Handle node definitions and connections
+    }
+    
+    // Handle node definitions and connections
       if (line.includes("-->") || line.includes("---")) {
         return line.replace(/\s+/g, " ").trim();
-      }
-
-      return line;
-    });
-
-    // Join lines with proper spacing
+    }
+    
+    return line;
+  });
+  
+  // Join lines with proper spacing
     return lines.join("\n");
   };
 
@@ -143,13 +143,13 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
       const cleanedCode = cleanMermaidCode(mermaidCode, direction);
       mermaidRef.current.innerHTML = "";
       setError(null);
-
+      
       const { svg } = await mermaid.render("mermaid-diagram", cleanedCode);
-
+      
       const tempDiv = document.createElement("div");
       tempDiv.innerHTML = svg;
       const newSvg = tempDiv.querySelector("svg");
-
+      
       // First, let's add a debug log to see what elements we're finding
       console.log("Setting up click handlers for elements:", {
         nodes: newSvg.querySelectorAll(".node").length,
@@ -157,7 +157,7 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
         edgePaths: newSvg.querySelectorAll(".edge path").length,
         edgeLabels: newSvg.querySelectorAll(".edgeLabel").length,
       });
-
+      
       // First set up node click handlers
       newSvg.querySelectorAll(".node").forEach((element) => {
         element.style.cursor = "pointer";
@@ -170,7 +170,7 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
       // Handle edge labels - we need to find the corresponding edge
       newSvg.querySelectorAll(".edgeLabel").forEach((edgeLabel) => {
         edgeLabel.style.cursor = "pointer";
-
+        
         edgeLabel.addEventListener("click", (e) => {
           e.stopPropagation();
           console.log("Edge label clicked:", edgeLabel.textContent);
@@ -178,7 +178,7 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
           onElementClick?.({ type: "edge", id: edgeLabelText });
         });
       });
-
+      
       // Set fixed dimensions for SVG
       newSvg.style.width = "100%";
       newSvg.style.height = "100%";
@@ -385,7 +385,7 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
       });
 
       mermaidRef.current.appendChild(newSvg);
-
+      
       // Restore view state
       setScale(lastViewStateRef.current.scale);
       setZoomLevel(lastViewStateRef.current.zoomLevel);
@@ -429,14 +429,14 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
    */
   const handleWheel = useCallback(
     (e) => {
-      e.preventDefault();
-      const delta = e.deltaY;
-      const newScale = Math.min(
-        Math.max(scale + (delta > 0 ? -ZOOM_SPEED : ZOOM_SPEED), MIN_SCALE),
+    e.preventDefault();
+    const delta = e.deltaY;
+    const newScale = Math.min(
+      Math.max(scale + (delta > 0 ? -ZOOM_SPEED : ZOOM_SPEED), MIN_SCALE),
         MAX_SCALE,
-      );
-      setScale(newScale);
-      setZoomLevel(Math.round(newScale * 100));
+    );
+    setScale(newScale);
+    setZoomLevel(Math.round(newScale * 100));
     },
     [scale],
   );
@@ -451,8 +451,8 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
       if (e.target.closest(".node") || e.target.closest(".edgePath")) {
         return; // Don't initiate drag if clicking on a node or edge
       }
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
     },
     [position],
   );
@@ -464,12 +464,12 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
    */
   const handleMouseMove = useCallback(
     (e) => {
-      if (isDragging) {
-        setPosition({
-          x: e.clientX - dragStart.x,
+    if (isDragging) {
+      setPosition({
+        x: e.clientX - dragStart.x,
           y: e.clientY - dragStart.y,
-        });
-      }
+      });
+    }
     },
     [isDragging, dragStart],
   );
@@ -571,11 +571,11 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
           <button
             className="reset-button"
             onClick={() => {
-              const newScale = 1;
-              const newPosition = { x: 0, y: 0 };
-              setScale(newScale);
-              setZoomLevel(100);
-              setPosition(newPosition);
+            const newScale = 1;
+            const newPosition = { x: 0, y: 0 };
+            setScale(newScale);
+            setZoomLevel(100);
+            setPosition(newPosition);
               lastViewStateRef.current = {
                 scale: newScale,
                 position: newPosition,
