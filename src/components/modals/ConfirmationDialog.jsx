@@ -72,7 +72,6 @@ function ConfirmationDialog({
               </div>
           </div>
           <div className="modal-section">
-            <div className="modal-json-content">
               <div className="dialog-buttons">
                 <button 
                   className="action-button" 
@@ -88,7 +87,6 @@ function ConfirmationDialog({
                   Revert to Original
                 </button>
               </div>
-            </div>
           </div>
         </div>
       </div>

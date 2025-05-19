@@ -9,8 +9,8 @@ import { convertMermaidToJson } from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid, highlightMermaidElement } from "../utils/MermaidHighlighter";
-import { FaSave } from "react-icons/fa";
-import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
+import { FaSave, FaUndo } from "react-icons/fa";
+import { BiVerticalBottom, BiHorizontalRight } from "react-icons/bi";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
 import ConfirmationDialog from "./modals/ConfirmationDialog";
 import { saveGraphChanges, revertChanges, continueEditing } from "../utils/SaveChanges";
@@ -770,7 +770,7 @@ function JsonViewer({
                 onClick={() => handleDirectionChange("TD")}
                 title="Top to Bottom"
               >
-                <BiVerticalTop size={20} />
+                <BiVerticalBottom size={20} />
               </button>
               <button
                 className={`direction-button ${
@@ -779,11 +779,20 @@ function JsonViewer({
                 onClick={() => handleDirectionChange("LR")}
                 title="Left to Right"
               >
-                <BiHorizontalLeft size={20} />
+                <BiHorizontalRight size={20} />
           </button>
             </div>
           </div>
           <div className="viewer-controls-right">
+          <button
+              className={`undo-all-button ${isEditing ? "active" : ""}`}
+              onClick={handleRevertChangesClick}
+              disabled={!isEditing}
+              title="Undo All Changes"
+            >
+              <FaUndo size={16} />
+              Undo all
+            </button>
             <button
               className={`save-button ${isEditing ? "active" : ""}`}
               onClick={handleSaveClick}

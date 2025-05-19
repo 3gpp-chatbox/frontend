@@ -32,14 +32,6 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
           <h3>Version History Summary</h3>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
-        <div className="version-comparison-container">
-            <button
-                className="version-comparison-button"
-                onClick={onOpenComparison}
-            >
-            Open Comparison
-            </button>
-        </div>
         <div className="modal-body version-history-modal-body" style={{ position: 'relative', minHeight: '400px' }}>
           {loading ? (
             <div>Loading...</div>
@@ -103,7 +95,16 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
               </div>
             </div>
           )}
+
         </div>
+        <div className="version-history-button-container">
+            <button
+                className="version-history-button"
+                onClick={onOpenComparison}
+            >
+            Open Comparison
+            </button>
+          </div>
       </div> 
     </div>
   );
