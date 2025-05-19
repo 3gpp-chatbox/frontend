@@ -2297,6 +2297,29 @@ pre.json-content {
   flex-direction: column;
   min-height: 100%;
   margin-left: 40px;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--blue-600) var(--black-800); /* Firefox */
+}
+
+/* Chrome, Edge, Safari */
+.timeline-container::-webkit-scrollbar {
+  width: 8px;
+  background: var(--black-800);
+}
+
+.timeline-container::-webkit-scrollbar-thumb {
+  background: var(--blue-600);
+  border-radius: 4px;
+  border: 2px solid var(--black-800);
+}
+
+.timeline-container::-webkit-scrollbar-thumb:hover {
+  background: var(--blue-500);
+}
+
+.timeline-container::-webkit-scrollbar-track {
+  background: var(--black-800);
+  border-radius: 4px;
 }
 
 .timeline-vertical-line {
@@ -2400,13 +2423,11 @@ pre.json-content {
   -webkit-box-orient: vertical;
   cursor: pointer;
   transition: all 0.2s;
-  position: relative;
-  white-space: normal; /* Ensure normal wrapping */
-  position: relative;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .commit-preview {
-  /* Keep truncation styles here */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2415,13 +2436,13 @@ pre.json-content {
   white-space: normal;
 }
 .commit-message.expanded {
-  display: block !important;
-  -webkit-line-clamp: unset !important;
-  -webkit-box-orient: unset !important;
-  overflow: visible !important;
-  text-overflow: unset !important;
-  white-space: pre-line !important;
-  max-height: none !important;
+  display: block;
+  overflow: visible;
+  text-overflow: unset;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  white-space: pre-line;
+  max-height: none;
 }
 
 .commit-message.expanded .commit-preview {
@@ -2771,4 +2792,36 @@ pre.json-content {
 
 .comparison-diagram-controls button:hover .reset-icon {
   transform: rotate(180deg);
+}
+
+.version-comparison-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 20px 20px 0 0;
+  border-top: 1px solid var(--black-600);
+  background: var(--black-800);
+  position: static;
+  gap: 10px;
+  z-index: 2;
+}
+
+.version-comparison-button {
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.version-comparison-button:hover {
+  background-color: #2563eb;
 }

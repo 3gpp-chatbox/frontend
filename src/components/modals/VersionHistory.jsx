@@ -32,6 +32,14 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
           <h3>Version History Summary</h3>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
+        <div className="version-comparison-container">
+            <button
+                className="version-comparison-button"
+                onClick={onOpenComparison}
+            >
+            Open Comparison
+            </button>
+        </div>
         <div className="modal-body version-history-modal-body" style={{ position: 'relative', minHeight: '400px' }}>
           {loading ? (
             <div>Loading...</div>
@@ -54,9 +62,40 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
                         </span>
                       </div>
                       {event.commit_message && (
-                        <div className="commit-message">
-                          {event.commit_message}
-                        </div>
+                        <div className={`commit-message${expandedCommit === event.graph_id ? ' expanded' : ''}`}>
+                        {expandedCommit === event.graph_id ? (
+                          <>
+                            {event.commit_message}
+                            <span
+                              className="show-more-less"
+                              onClick={() => handleToggleExpand(event.graph_id)}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleToggleExpand(event.graph_id); }}
+                            >
+                              Show less
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="commit-preview">
+                              {event.commit_message}
+                            </div>
+                            {event.commit_message.length > 80 && (
+                              <span
+                                className="show-more-less"
+                                onClick={() => handleToggleExpand(event.graph_id)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleToggleExpand(event.graph_id); }}
+                              >
+                                Show more
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      
                       )}
                     </div>
                   </div>
@@ -64,38 +103,8 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
               </div>
             </div>
           )}
-          <div style={{
-            position: 'absolute',
-            bottom: '20px',
-            right: '20px',
-            display: 'flex',
-            gap: '10px'
-          }}>
-            <button
-              onClick={onOpenComparison}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                transition: 'background-color 0.2s ease'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
-            >
-              Open Comparison
-            </button>
-          </div>
         </div>
-      </div>
+      </div> 
     </div>
   );
 }

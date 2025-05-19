@@ -71,7 +71,7 @@ function JsonViewer({
   const codeContentRef = useRef(null);
   const scrollPositionRef = useRef(null);
 
-  // Replace with direct function calls
+  // Save changes
   const handleSaveClick = () => {
     setShowConfirmation(true);
   };
