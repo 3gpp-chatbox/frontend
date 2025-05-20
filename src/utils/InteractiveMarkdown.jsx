@@ -132,10 +132,7 @@ function InteractiveMarkdown({ content, highlightedSection }) {
           .replace(/^%%\s*text_reference:\s*/i, '')
           .replace(/^looking for text:\s*/i, '')
           .trim();
-
-        // Split the text reference into words for partial matching
-        const textRefWords = cleanTextRef.split(/\s+/).filter(word => word.length > 3);
-        console.log("Looking for text:", cleanTextRef, "type:", section.type, "words:", textRefWords);
+        console.log("Looking for text:", cleanTextRef, "type:", section.type);
 
         for (let i = sectionStartLine; i <= sectionEndLine; i++) {
           const lineContent = lineElements[i].textContent.toLowerCase();
@@ -143,15 +140,9 @@ function InteractiveMarkdown({ content, highlightedSection }) {
           // For nodes, we need to be more flexible in matching since the node text might be part of a longer line
           // For edges, we want to match the exact text
           const isNode = section.type === "node";
-          let isMatch = false;
-
-          if (isNode) {
-            // For nodes, check if all significant words from the text reference are present in the line
-            isMatch = textRefWords.every(word => lineContent.includes(word));
-          } else {
-            // For edges, do an exact match
-            isMatch = lineContent === cleanTextRef;
-          }
+          const isMatch = isNode
+            ? lineContent.includes(cleanTextRef)
+            : lineContent === cleanTextRef;
 
           if (isMatch) {
             // Remove section highlight from this line and add orange highlight
@@ -163,8 +154,6 @@ function InteractiveMarkdown({ content, highlightedSection }) {
               i + 1,
               "for",
               isNode ? "node" : "edge",
-              "content:",
-              lineContent
             );
             break;
           }
