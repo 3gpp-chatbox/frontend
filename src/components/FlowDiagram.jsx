@@ -214,6 +214,7 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
         
         edgeLabel.addEventListener("click", (e) => {
           e.stopPropagation();
+          // Get the raw text content without HTML formatting
           const edgeLabelText = edgeLabel.textContent.trim();
           
           // Extract references from comments
@@ -224,23 +225,26 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
           
           for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
-            // Look for edge definition line with the label
-            if (line.includes(`|"${edgeLabelText}"|`)) {
+            // Look for edge definition line with the label - more flexible matching
+            if (line.includes("-->") && line.includes(edgeLabelText)) {
               foundEdge = true;
-              continue;
-            }
-            if (foundEdge) {
-              if (line.startsWith('%% Section_Reference:')) {
-                sectionRef = line.replace('%% Section_Reference:', '').trim();
-              } else if (line.startsWith('%% Text_Reference:')) {
-                // Extract the text reference and normalize it
-                textRef = line
-                  .replace(/^%%\s*Text_Reference:\s*/i, '') // Remove the prefix
-                  .replace(/^Looking for text:\s*/i, '') // Remove any "Looking for text:" prefix
-                  .trim();
+              // Look ahead for comments
+              for (let j = i + 1; j < lines.length; j++) {
+                const commentLine = lines[j].trim();
+                if (commentLine.startsWith('%% Section_Reference:')) {
+                  sectionRef = commentLine.replace('%% Section_Reference:', '').trim();
+                } else if (commentLine.startsWith('%% Text_Reference:')) {
+                  textRef = commentLine
+                    .replace(/^%%\s*Text_Reference:\s*/i, '')
+                    .replace(/^Looking for text:\s*/i, '')
+                    .trim();
+                }
+                // Break if we've found all metadata or reached next element
+                if (commentLine.match(/^[A-Z][\[\(]/) || !commentLine.startsWith('%%')) {
+                  break;
+                }
               }
-              // Break if we've found all metadata or reached next element
-              if (line.match(/^[A-Z][\[\(]/)) break;
+              break;
             }
           }
 
