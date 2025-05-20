@@ -14,12 +14,14 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
   const [leftMermaidContent, setLeftMermaidContent] = useState('');
   const [rightJsonContent, setRightJsonContent] = useState('');
   const [leftJsonContent, setLeftJsonContent] = useState('');
-
+  const [leftVersion, setLeftVersion] = useState(null);
   // Initialize left panel content when component mounts
   useEffect(() => {
     if (left?.mermaidContent) {
       setLeftMermaidContent(left.mermaidContent);
       setLeftJsonContent(left.jsonContent || ''); 
+      // version number
+      setLeftVersion(left.version);
     }
   }, [left]);
 
@@ -131,12 +133,11 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
         <div className="comparison-panel">
           <div className="panel-header">
             <div className="panel-title">
-              <span>{left?.title || 'unknown Version'}<FaCheckCircle 
+            <span>{`${left?.title} - ${leftVersion}`}<FaCheckCircle 
                 style={{ 
                   color: '#3b82f6',
                   marginLeft: '8px',
-                  fontSize: '16px',
-                  filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))'
+                  fontSize: '16px'
                 }} 
               />
               </span>

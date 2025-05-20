@@ -1,17 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { fetchProcedure } from "../API/api_calls";
+import { fetchProcedure,insertProcedureGraphChanges } from "../API/api_calls";
 import {
   JsonToMermaid,
   defaultMermaidConfig,
 } from "../functions/jsonToMermaid";
+import { convertMermaidToJson } from "../functions/mermaidToJson";
+import { validateGraph } from "../functions/schema_validation";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid, highlightMermaidElement } from "../utils/MermaidHighlighter";
-import { FaSave } from "react-icons/fa";
-import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
+import { FaSave, FaUndo } from "react-icons/fa";
+import { BiVerticalBottom, BiHorizontalRight } from "react-icons/bi";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
-import { createSaveHandlers } from "../utils/SaveChanges";
 import ConfirmationDialog from "./modals/ConfirmationDialog";
+import { saveGraphChanges, revertChanges, continueEditing } from "../utils/SaveChanges";
 
 /**
  * Component for displaying and editing JSON data with multiple view modes.
@@ -69,29 +71,60 @@ function JsonViewer({
   const codeContentRef = useRef(null);
   const scrollPositionRef = useRef(null);
 
-  // Create save handlers
-  const {
-    handleSaveClick,
-    handleConfirmSaveClick,
-    handleRevertChangesClick,
-    handleContinueEditingClick,
-  } = createSaveHandlers({
-    mermaidGraph,
-    selectedProcedure,
-    setShowConfirmation,
-    setNotification,
-    setOriginalMermaidGraph,
-    setData,
-    setOriginalData,
-    setJsonContent,
-    isUserEditing,
-    setIsEditing,
-    onProcedureUpdate,
-    onMermaidCodeChange,
-    originalMermaidGraph,
-    originalData,
-    setMermaidGraph,
-  });
+  // Save changes
+  const handleSaveClick = () => {
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmSaveClick = async ({ title, message }) => {
+    await saveGraphChanges({
+      mermaidGraph,
+      selectedProcedure,
+      setNotification,
+      setShowConfirmation,
+      setIsEditing,
+      isUserEditing,
+      setData,
+      setOriginalData,
+      setJsonContent,
+      onProcedureUpdate,
+      title,
+      message,
+    });
+  };
+
+  const handleRevertChangesClick = () => {
+    // Save current editor state before reverting
+    if (editorRef.current) {
+      lastScrollPosition.current = {
+        top: editorRef.current.scrollTop,
+        left: editorRef.current.scrollLeft
+      };
+    }
+
+    revertChanges({
+      originalMermaidGraph,
+      originalData,
+      setMermaidGraph,
+      setData,
+      setJsonContent,
+      isUserEditing,
+      setIsEditing,
+      setShowConfirmation,
+      onMermaidCodeChange,
+      setNotification,
+    });
+
+    // Clear editor content and reset to original
+    setEditorContent(originalMermaidGraph);
+    
+    // Reset user editing state
+    userEditedContent.current = originalMermaidGraph;
+  };
+
+  const handleContinueEditingClick = () => {
+    continueEditing(setShowConfirmation);
+  };
 
   // Add effect to update view when procedure data changes
   useEffect(() => {
@@ -116,7 +149,7 @@ function JsonViewer({
         
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
-          const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+          const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
           console.log("Generated Mermaid code:", mermaidCode);
           setMermaidGraph(mermaidCode);
           setOriginalMermaidGraph(mermaidCode);
@@ -252,35 +285,35 @@ function JsonViewer({
   };
 
   // Save both cursor and scroll position
-  const saveEditorState = () => {
-    if (editorRef.current) {
-      // Save scroll position
-      lastScrollPosition.current = {
-        top: editorRef.current.scrollTop,
-        left: editorRef.current.scrollLeft
-      };
+  // const saveEditorState = () => {
+  //   if (editorRef.current) {
+  //     // Save scroll position
+  //     lastScrollPosition.current = {
+  //       top: editorRef.current.scrollTop,
+  //       left: editorRef.current.scrollLeft
+  //     };
 
-      // Save cursor position with more context
-      const selection = window.getSelection();
-      if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const content = editorRef.current.textContent;
+  //     // Save cursor position with more context
+  //     const selection = window.getSelection();
+  //     if (selection.rangeCount > 0) {
+  //       const range = selection.getRangeAt(0);
+  //       const content = editorRef.current.textContent;
         
-        // Store more context about the cursor position
-        cursorPositionRef.current = {
-          offset: range.startOffset,
-          containerText: range.startContainer.textContent,
-          containerIndex: Array.from(editorRef.current.childNodes).indexOf(range.startContainer),
-          totalLength: content.length,
-          // Store some surrounding text for better position recovery
-          surroundingText: content.substring(
-            Math.max(0, range.startOffset - 10),
-            Math.min(content.length, range.startOffset + 10)
-          )
-        };
-      }
-    }
-  };
+  //       // Store more context about the cursor position
+  //       cursorPositionRef.current = {
+  //         offset: range.startOffset,
+  //         containerText: range.startContainer.textContent,
+  //         containerIndex: Array.from(editorRef.current.childNodes).indexOf(range.startContainer),
+  //         totalLength: content.length,
+  //         // Store some surrounding text for better position recovery
+  //         surroundingText: content.substring(
+  //           Math.max(0, range.startOffset - 10),
+  //           Math.min(content.length, range.startOffset + 10)
+  //         )
+  //       };
+  //     }
+  //   }
+  // };
 
   // Restore both cursor and scroll position
   const restoreEditorState = useCallback(() => {
@@ -457,23 +490,23 @@ function JsonViewer({
     }
   }, [highlightedElement, activeView]);
 
-  const saveCursorPosition = () => {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(editorRef.current);
-      preCaretRange.setEnd(range.endContainer, range.endOffset);
-      cursorPositionRef.current = preCaretRange.toString().length;
-      // Save scroll position
-      if (editorRef.current) {
-        scrollPositionRef.current = {
-          top: editorRef.current.scrollTop,
-          left: editorRef.current.scrollLeft
-        };
-      }
-    }
-  };
+  // const saveCursorPosition = () => {
+  //   const selection = window.getSelection();
+  //   if (selection.rangeCount > 0) {
+  //     const range = selection.getRangeAt(0);
+  //     const preCaretRange = range.cloneRange();
+  //     preCaretRange.selectNodeContents(editorRef.current);
+  //     preCaretRange.setEnd(range.endContainer, range.endOffset);
+  //     cursorPositionRef.current = preCaretRange.toString().length;
+  //     // Save scroll position
+  //     if (editorRef.current) {
+  //       scrollPositionRef.current = {
+  //         top: editorRef.current.scrollTop,
+  //         left: editorRef.current.scrollLeft
+  //       };
+  //     }
+  //   }
+  // };
 
   const restoreCursorPosition = useCallback(() => {
     if (editorRef.current && cursorPositionRef.current !== null) {
@@ -536,7 +569,7 @@ function JsonViewer({
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
-  // Add function to update direction
+  // here------direction change
   const handleDirectionChange = (newDirection) => {
     if (isEditing) {
       setNotification({
@@ -547,18 +580,15 @@ function JsonViewer({
       return;
     }
     setDirection(newDirection);
-    // Update the Mermaid code with new direction
+    // Use newDirection here!
     const updatedCode = mermaidGraph.replace(
-      /flowchart\s+(TD|TB|BT|LR|RL)/,
+      /flowchart\s+(TD|LR)/,
       `flowchart ${newDirection}`,
     );
     setMermaidGraph(updatedCode);
     onMermaidCodeChange(updatedCode);
   };
-
-  const handleSaveChanges = () => {
-    handleSaveClick();
-  };
+  // here------direction change
 
   /**
    * Cleans and formats Mermaid code for rendering.
@@ -571,6 +601,7 @@ function JsonViewer({
     // Split into lines and filter out classDef lines
     const lines = code.split('\n')
       .filter(line => !line.trim().startsWith('classDef'))
+      .filter(line => !line.trim().startsWith('flowchart'))
       .join('\n');
     
     return lines.trim();
@@ -741,7 +772,7 @@ function JsonViewer({
                 onClick={() => handleDirectionChange("TD")}
                 title="Top to Bottom"
               >
-                <BiVerticalTop size={20} />
+                <BiVerticalBottom size={20} />
               </button>
               <button
                 className={`direction-button ${
@@ -750,14 +781,23 @@ function JsonViewer({
                 onClick={() => handleDirectionChange("LR")}
                 title="Left to Right"
               >
-                <BiHorizontalLeft size={20} />
+                <BiHorizontalRight size={20} />
           </button>
             </div>
           </div>
           <div className="viewer-controls-right">
+          <button
+              className={`undo-all-button ${isEditing ? "active" : ""}`}
+              onClick={handleRevertChangesClick}
+              disabled={!isEditing}
+              title="Undo All Changes"
+            >
+              <FaUndo size={16} />
+              Undo all
+            </button>
             <button
               className={`save-button ${isEditing ? "active" : ""}`}
-              onClick={handleSaveChanges}
+              onClick={handleSaveClick}
               disabled={!isEditing}
               title="Save Changes"
             >
@@ -885,13 +925,13 @@ function JsonViewer({
       {/* Save Confirmation Dialog */}
       <ConfirmationDialog
         show={showConfirmation}
-        title="Save Changes?"
-        message="Are you sure you want to save the changes you made to the JSON code?"
+        // title="Save Changes?"
+        // message="Are you sure you want to save the changes you made to the JSON code?"
         onConfirm={handleConfirmSaveClick}
         onContinueEditing={handleContinueEditingClick}
         onRevert={handleRevertChangesClick}
         showContinueEditing={true}
-        showRevert={true}
+        // showRevert={true}
       />
     </div>
   );

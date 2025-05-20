@@ -1016,25 +1016,15 @@ pre.json-content {
 }
 .description-modal-content {
   max-width: 600px;
-  max-height: 600px;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  max-height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue-600) var(--black-800);
 }
-
-.description-modal-content::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
-}
-
 .description-modal-content .modal-body {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  padding: 30px;
 }
 
-.description-modal-content .modal-body::-webkit-scrollbar {
-  display: none;
-}
-
-/* Textarea container and character count */
+/* Textarea container and character count - save modal */
 .textarea-container {
   position: relative;
   margin-bottom: 16px;
@@ -1397,41 +1387,6 @@ pre.json-content {
 .direction-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.save-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border-radius: 4px;
-  background-color: var(--black-600);
-  color: var(--silver-300);
-  border: 1px solid var(--black-500);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.save-button:hover:not(:disabled) {
-  background-color: var(--black-500);
-  color: var(--silver-200);
-  border-color: var(--blue-500);
-}
-
-.save-button.active {
-  background-color: var(--blue-600);
-  color: var(--silver-100);
-  border-color: var(--blue-500);
-}
-
-.save-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.save-button svg {
-  width: 16px;
-  height: 16px;
 }
 
 /* Mermaid syntax highlighting */
@@ -1937,6 +1892,43 @@ pre.json-content {
   border-color: var(--blue-500);
   color: var(--silver-100);
 }
+.undo-all-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  background-color: var(--black-500);
+  color: var(--silver-300);
+  border: 1px solid var(--blue-500);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.undo-all-button:active {
+  background-color: var(--black-300);
+  color: var(--silver-200);
+  border-color: var(--blue-500);
+}
+
+.undo-all-button:hover:not(:disabled) {
+  background-color: var(--black-300);
+  color: var(--silver-200);
+  border-color: var(--blue-500);
+}
+
+.undo-all-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.undo-all-button svg {
+  width: 16px;
+  height: 16px;
+}
+
 
 /* Reference viewer styles */
 .reference-viewer {
@@ -2288,7 +2280,7 @@ pre.json-content {
   max-width: 50%;
 }
 .version-history-modal-body {
-  padding: 30px
+  padding: 20px
 }
 
 .timeline-container {
@@ -2299,12 +2291,17 @@ pre.json-content {
   margin-left: 40px;
 }
 
+.modal-body.version-history-modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue-600) var(--black-800);
+}
+
 .timeline-vertical-line {
   position: absolute;
   left: -20px;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 2px;
   background: var(--silver-400);
   border-radius: 2px;
   z-index: 0;
@@ -2327,12 +2324,12 @@ pre.json-content {
 
 .timeline-dot {
   position: absolute;
-  left: -28px;
+  left: -26px;
   top: 0;
-  width: 16px;
-  height: 16px;
+  width: 10px;
+  height: 10px;
   background: var(--black-800);
-  border: 4px solid var(--silver-400);
+  border: 2px solid var(--silver-400);
   border-radius: 50%;
   z-index: 2;
 }
@@ -2353,7 +2350,7 @@ pre.json-content {
 }
 
 .timeline-title {
-  font-size: 1.2rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: var(--silver-100);
   display: flex;
@@ -2361,20 +2358,8 @@ pre.json-content {
   gap: 6px;
 }
 
-.timeline-link {
-  color: var(--silver-100);
-  margin-left: 4px;
-  display: inline-flex;
-  align-items: center;
-  transition: color 0.2s;
-}
-
-.timeline-link:hover {
-  color: var(--blue-400);
-}
-
 .commit-timestamp {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   color: var(--silver-300);
   min-width: 180px;
   text-align: right;
@@ -2388,7 +2373,7 @@ pre.json-content {
 }
 
 .commit-message {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: var(--silver-300);
   margin-top: 2px;
   line-height: 1.4;
@@ -2400,13 +2385,11 @@ pre.json-content {
   -webkit-box-orient: vertical;
   cursor: pointer;
   transition: all 0.2s;
-  position: relative;
-  white-space: normal; /* Ensure normal wrapping */
-  position: relative;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .commit-preview {
-  /* Keep truncation styles here */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2415,13 +2398,13 @@ pre.json-content {
   white-space: normal;
 }
 .commit-message.expanded {
-  display: block !important;
-  -webkit-line-clamp: unset !important;
-  -webkit-box-orient: unset !important;
-  overflow: visible !important;
-  text-overflow: unset !important;
-  white-space: pre-line !important;
-  max-height: none !important;
+  display: block;
+  overflow: visible;
+  text-overflow: unset;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  white-space: pre-line;
+  max-height: none;
 }
 
 .commit-message.expanded .commit-preview {
@@ -2434,7 +2417,7 @@ pre.json-content {
   margin-left: 8px;
   cursor: pointer;
   user-select: none;
-  font-size: 0.95em;
+  font-size: 0.9em;
   display: inline;
   position: relative;
   z-index: 2;
@@ -2442,6 +2425,34 @@ pre.json-content {
 
 .show-more-less:hover {
   text-decoration: underline;
+}
+
+.version-history-button-container {
+  display: flex;
+  justify-content: right;
+  padding-top: 10px;
+  padding-bottom: 15px;
+  padding-right: 25px;
+}
+
+.version-history-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  /* background-color: var(--black-600); */
+  background-color: var(--blue-500);
+  color: var(--silver-300);
+  border: 1px solid var(--blue-500);
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.version-history-button:hover {
+  background-color: var(--blue-500);
 }
 
 /* Comparison View Styles */
@@ -2771,4 +2782,36 @@ pre.json-content {
 
 .comparison-diagram-controls button:hover .reset-icon {
   transform: rotate(180deg);
+}
+
+.version-comparison-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 20px 20px 0 0;
+  border-top: 1px solid var(--black-600);
+  background: var(--black-800);
+  position: static;
+  gap: 10px;
+  z-index: 2;
+}
+
+.version-comparison-button {
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.version-comparison-button:hover {
+  background-color: #2563eb;
 }

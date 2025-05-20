@@ -101,6 +101,7 @@ function App() {
     // Don't clear highlighting when element is null (clicking empty space)
     if (element) {
     setHighlightedElement(element);
+    
       // Use the section_ref and text_ref directly from the element object
       const sectionRef = element.section_ref;
       const textRef = element.text_ref;
@@ -132,9 +133,10 @@ function App() {
 
   // Current version data for the left panel of comparison view
   const leftVersion = {
-    title: selectedProcedure?.name + ' - Verified Version',
+    title: selectedProcedure?.name + ' - Version',
     mermaidContent: mermaidCode,
     jsonContent: JSON.stringify(procedureData?.graph || {}, null, 2),
+    version: selectedProcedure?.version,
   };
 
   // Handler to open comparison view
