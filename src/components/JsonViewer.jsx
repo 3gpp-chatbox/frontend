@@ -666,39 +666,25 @@ function JsonViewer({
     foldButton.classList.toggle('expanded');
     foldButton.textContent = isExpanded ? '▶' : '▼';
 
-    // Find the range to fold/unfold
+    // Find all children and simply show/hide them
     let current = line.nextElementSibling;
-    let lastVisibleLevel = level;
-
     while (current && parseInt(current.dataset.level || '0') > level) {
-      const currentLevel = parseInt(current.dataset.level || '0');
-      const currentButton = current.querySelector('.fold-button');
+      // When folding (isExpanded is true), hide all children
+      // When unfolding (isExpanded is false), show all children
+      current.style.display = isExpanded ? 'none' : '';
       
-      if (isExpanded) {
-        // When folding parent, hide all children
-        current.style.display = 'none';
-      } else {
-        // When unfolding parent:
-        if (currentLevel === level + 1) {
-          // Direct children are always shown
-          current.style.display = '';
-        } else if (currentLevel > level + 1) {
-          // Nested children are shown only if their immediate parent is expanded
-          const parentLevel = currentLevel - 1;
-          let previousSibling = current.previousElementSibling;
-          while (previousSibling && parseInt(previousSibling.dataset.level || '0') > level) {
-            const prevLevel = parseInt(previousSibling.dataset.level || '0');
-            if (prevLevel === parentLevel) {
-              const prevButton = previousSibling.querySelector('.fold-button');
-              if (prevButton && prevButton.classList.contains('expanded')) {
-                current.style.display = '';
-              }
-              break;
-            }
-            previousSibling = previousSibling.previousElementSibling;
-          }
+      // Also update the fold button state to match parent
+      const childFoldButton = current.querySelector('.fold-button');
+      if (childFoldButton) {
+        if (isExpanded) {
+          childFoldButton.classList.remove('expanded');
+          childFoldButton.textContent = '▶';
+        } else {
+          childFoldButton.classList.add('expanded');
+          childFoldButton.textContent = '▼';
         }
       }
+      
       current = current.nextElementSibling;
     }
   };
