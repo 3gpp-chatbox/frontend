@@ -2280,7 +2280,10 @@ pre.json-content {
   max-width: 50%;
 }
 .version-history-modal-body {
-  padding: 20px
+  padding: 20px;
+  min-height: 100%;
+  position: 'relative';
+  minHeight: '400px'
 }
 
 .timeline-container {

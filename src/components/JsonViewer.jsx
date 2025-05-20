@@ -120,6 +120,7 @@ function JsonViewer({
     
     // Reset user editing state
     userEditedContent.current = originalMermaidGraph;
+    isUserEditing.current = false;
   };
 
   const handleContinueEditingClick = () => {
@@ -569,7 +570,7 @@ function JsonViewer({
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
-  // here------direction change
+  // direction change
   const handleDirectionChange = (newDirection) => {
     if (isEditing) {
       setNotification({
@@ -588,7 +589,15 @@ function JsonViewer({
     setMermaidGraph(updatedCode);
     onMermaidCodeChange(updatedCode);
   };
-  // here------direction change
+  // hide flowchart declaration or display purpose only 
+  // const displayCode = (code) => {
+  //   if (!code) return "";
+  //   return code
+  //     .split('\n')
+  //     .filter(line => !/^flowchart\s+\w+/i.test(line.trim()))
+  //     .join('\n')
+  //     .replace(/^\s+|\s+$/g, '');
+  // };
 
   /**
    * Cleans and formats Mermaid code for rendering.
@@ -601,7 +610,7 @@ function JsonViewer({
     // Split into lines and filter out classDef lines
     const lines = code.split('\n')
       .filter(line => !line.trim().startsWith('classDef'))
-      .filter(line => !line.trim().startsWith('flowchart'))
+      // .filter(line => !line.trim().startsWith('flowchart'))
       .join('\n');
     
     return lines.trim();

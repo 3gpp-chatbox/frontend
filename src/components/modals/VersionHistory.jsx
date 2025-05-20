@@ -32,7 +32,7 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
           <h3>Version History Summary</h3>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
-        <div className="modal-body version-history-modal-body" style={{ position: 'relative', minHeight: '400px' }}>
+        <div className="modal-body version-history-modal-body">
           {loading ? (
             <div>Loading...</div>
           ) : error ? (
