@@ -149,7 +149,7 @@ function JsonViewer({
         
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
-          const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+          const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
           console.log("Generated Mermaid code:", mermaidCode);
           setMermaidGraph(mermaidCode);
           setOriginalMermaidGraph(mermaidCode);
@@ -580,9 +580,9 @@ function JsonViewer({
       return;
     }
     setDirection(newDirection);
-    // Update the Mermaid code with new direction
+    // Use newDirection here!
     const updatedCode = mermaidGraph.replace(
-      /flowchart\s+(TD|TB|BT|LR|RL)/,
+      /flowchart\s+(TD|LR)/,
       `flowchart ${newDirection}`,
     );
     setMermaidGraph(updatedCode);
@@ -601,6 +601,7 @@ function JsonViewer({
     // Split into lines and filter out classDef lines
     const lines = code.split('\n')
       .filter(line => !line.trim().startsWith('classDef'))
+      .filter(line => !line.trim().startsWith('flowchart'))
       .join('\n');
     
     return lines.trim();
