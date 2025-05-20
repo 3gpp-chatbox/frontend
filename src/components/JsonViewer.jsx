@@ -65,6 +65,7 @@ function JsonViewer({
   const [activeView, setActiveView] = useState("mermaid");
   const [showMermaid, setShowMermaid] = useState(true);
   const [editorContent, setEditorContent] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
   const debouncedUpdateRef = useRef(null);
   const lastScrollPosition = useRef(null);
   const cursorPositionRef = useRef(null);
@@ -101,6 +102,17 @@ function JsonViewer({
   });
 
   const [isValidCode, setIsValidCode] = useState(true);
+  const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
+  const lastContentRef = useRef('');
+
+  // Add effect to initialize undo stack when editing starts
+  useEffect(() => {
+    if (isEditing && undoStack.length === 0) {
+      setUndoStack([mermaidGraph]);
+      lastContentRef.current = mermaidGraph;
+    }
+  }, [isEditing, mermaidGraph]);
 
   // Add handler for validation changes
   const handleValidationChange = useCallback((isValid) => {
@@ -316,7 +328,104 @@ function JsonViewer({
     return null;
   };
 
-  // Modify handleMermaidChange to use imported validation
+  // Add keydown handler for better line break control and undo/redo
+  const handleKeyDown = (event) => {
+    // Handle undo
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      if (undoStack.length > 0) {
+        const prevState = undoStack[undoStack.length - 1];
+        const currentContent = editorRef.current.textContent;
+        
+        // Update stacks
+        setUndoStack(undoStack.slice(0, -1));
+        setRedoStack([currentContent, ...redoStack]);
+        
+        // Update content
+        editorRef.current.textContent = prevState;
+        setEditorContent(prevState);
+        
+        // Update Mermaid graph
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current(prevState);
+        }
+      }
+      return;
+    }
+    
+    // Handle redo (Ctrl+Y or Ctrl+Shift+Z)
+    if ((event.ctrlKey || event.metaKey) && (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      if (redoStack.length > 0) {
+        const nextState = redoStack[0];
+        const currentContent = editorRef.current.textContent;
+        
+        // Update stacks
+        setRedoStack(redoStack.slice(1));
+        setUndoStack([...undoStack, currentContent]);
+        
+        // Update content
+        editorRef.current.textContent = nextState;
+        setEditorContent(nextState);
+        
+        // Update Mermaid graph
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current(nextState);
+        }
+      }
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      
+      // Save scroll position
+      if (editorRef.current) {
+        scrollPositionRef.current = {
+          top: editorRef.current.scrollTop,
+          left: editorRef.current.scrollLeft
+        };
+      }
+      
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const currentContent = editorRef.current.textContent;
+        
+        // Create a new text node with a line break
+        const textNode = document.createTextNode('\n');
+        range.insertNode(textNode);
+        
+        // Move cursor to the new line
+        range.setStart(textNode, 1);
+        range.setEnd(textNode, 1);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Save state for undo
+        setUndoStack([...undoStack, currentContent]);
+        setRedoStack([]);
+        
+        // Trigger change event
+        const changeEvent = new Event('input', { bubbles: true });
+        editorRef.current.dispatchEvent(changeEvent);
+
+        // Restore scroll position
+        requestAnimationFrame(() => {
+          if (editorRef.current && scrollPositionRef.current) {
+            editorRef.current.scrollTop = scrollPositionRef.current.top;
+            editorRef.current.scrollLeft = scrollPositionRef.current.left;
+          }
+        });
+      }
+    }
+  };
+
+  // Modify handleMermaidChange to track actual changes
   const handleMermaidChange = (event) => {
     try {
       const newCode = event.currentTarget.textContent;
@@ -347,20 +456,57 @@ function JsonViewer({
         throw new Error('Invalid content type');
       }
 
-      // Normalize line breaks
-      const normalizedCode = newCode.replace(/\r\n/g, '\n');
+      // Normalize line breaks and clean whitespace while preserving meaningful line breaks
+      const normalizeContent = (content) => {
+        // First, normalize line endings and remove leading/trailing whitespace
+        const normalized = content
+          .replace(/\r\n/g, '\n')
+          .trim();
+
+        // Split into lines, trim each line, and filter out empty or whitespace-only lines
+        const lines = normalized
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line !== '' && /\S/.test(line)); // Keep only non-empty, non-whitespace lines
+
+        return lines.join('\n');
+      };
+
+      const normalizedCode = normalizeContent(newCode);
+      const normalizedOriginal = normalizeContent(originalMermaidGraph);
       
-      // Update content
-      setEditorContent(normalizedCode);
+      // Check if content actually changed compared to original and is valid
+      const hasValidFlowchart = /^flowchart\s+(TD|TB|BT|LR|RL)/m.test(normalizedCode);
+      const hasValidContent = normalizedCode.split('\n')
+        .some(line => /[A-Za-z0-9]/.test(line) && !line.startsWith('flowchart')); // Has content beyond flowchart declaration
       
-      if (normalizedCode !== mermaidGraph) {
-        isUserEditing.current = true;
-        userEditedContent.current = normalizedCode;
-        setIsEditing(true);
+      const hasActualChanges = normalizedCode !== normalizedOriginal && // Different from original
+                             normalizedCode !== '' && // Not empty
+                             hasValidFlowchart && // Has valid flowchart declaration
+                             hasValidContent; // Has actual content
+      
+      setHasChanges(hasActualChanges);
+      
+      // Only update if content actually changed from last state and is valid
+      if (normalizedCode !== lastContentRef.current) {
+        // Save current state for undo
+        setUndoStack([...undoStack, lastContentRef.current]);
+        setRedoStack([]);
         
-        // Update graph with debounce
-        if (debouncedUpdateRef.current) {
-          debouncedUpdateRef.current(normalizedCode);
+        // Update content
+        setEditorContent(newCode); // Keep original whitespace for editing
+        lastContentRef.current = normalizedCode;
+        
+        // Only set editing state if there are actual changes
+        if (normalizedCode !== normalizeContent(mermaidGraph)) {
+          isUserEditing.current = hasActualChanges;
+          userEditedContent.current = newCode;
+          setIsEditing(hasActualChanges);
+          
+          // Update graph with debounce only if we have valid changes
+          if (debouncedUpdateRef.current && hasActualChanges) {
+            debouncedUpdateRef.current(newCode);
+          }
         }
       }
 
@@ -398,49 +544,73 @@ function JsonViewer({
 
   // Wrap the original handleSaveClick with validation
   const handleSaveClick = () => {
-    originalHandleSaveClick();
-  };
+    // Normalize and validate content
+    const normalizeContent = (content) => {
+      const normalized = content
+        .replace(/\r\n/g, '\n')
+        .trim();
 
-  // Add keydown handler for better line break control
-  const handleKeyDown = (event) => {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      
-      // Save scroll position
-      if (editorRef.current) {
-        scrollPositionRef.current = {
-          top: editorRef.current.scrollTop,
-          left: editorRef.current.scrollLeft
-        };
-      }
-      
-      const selection = window.getSelection();
-      if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        
-        // Create a new text node with a line break
-        const textNode = document.createTextNode('\n');
-        range.insertNode(textNode);
-        
-        // Move cursor to the new line
-        range.setStart(textNode, 1);
-        range.setEnd(textNode, 1);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        // Trigger change event
-        const changeEvent = new Event('input', { bubbles: true });
-        editorRef.current.dispatchEvent(changeEvent);
+      const lines = normalized
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line !== '' && /\S/.test(line));
 
-        // Restore scroll position
-        requestAnimationFrame(() => {
-          if (editorRef.current && scrollPositionRef.current) {
-            editorRef.current.scrollTop = scrollPositionRef.current.top;
-            editorRef.current.scrollLeft = scrollPositionRef.current.left;
-          }
-        });
-      }
+      return lines.join('\n');
+    };
+
+    const normalizedContent = normalizeContent(editorContent || mermaidGraph);
+    
+    // Check for empty or whitespace-only content
+    if (!normalizedContent || !/\S/.test(normalizedContent)) {
+      setNotification({
+        show: true,
+        message: "Cannot save empty content",
+        type: "error"
+      });
+      return;
     }
+
+    // Check for valid flowchart declaration
+    if (!/^flowchart\s+(TD|TB|BT|LR|RL)/m.test(normalizedContent)) {
+      setNotification({
+        show: true,
+        message: "Invalid flowchart declaration. Must start with 'flowchart' followed by TD, TB, BT, LR, or RL",
+        type: "error"
+      });
+      return;
+    }
+
+    // Check for actual content beyond flowchart declaration
+    if (!normalizedContent.split('\n').some(line => /[A-Za-z0-9]/.test(line) && !line.startsWith('flowchart'))) {
+      setNotification({
+        show: true,
+        message: "Graph must contain at least one node or edge definition",
+        type: "error"
+      });
+      return;
+    }
+
+    // Compare with original content after normalization
+    const normalizedOriginal = normalizeContent(originalMermaidGraph);
+    if (normalizedContent === normalizedOriginal) {
+      setNotification({
+        show: true,
+        message: "No changes to save",
+        type: "info"
+      });
+      return;
+    }
+
+    if (!isValidCode) {
+      setNotification({
+        show: true,
+        message: "Cannot save while there are validation errors",
+        type: "error"
+      });
+      return;
+    }
+
+    originalHandleSaveClick();
   };
 
   // Improved cursor position restoration
@@ -747,7 +917,7 @@ function JsonViewer({
       <ViewerControls
         activeView={activeView}
         direction={direction}
-        isEditing={isEditing}
+        isEditing={isEditing && hasChanges}
         onDirectionChange={handleDirectionChange}
         onSave={handleSaveClick}
         setNotification={setNotification}
