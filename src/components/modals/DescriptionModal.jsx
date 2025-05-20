@@ -42,6 +42,10 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
                 </span>
               </div>
               <div className="detail-line">
+                <text className="detail-label">Version:</text>
+                <text className="detail-value">{procedure.version}</text>
+              </div>
+              <div className="detail-line">
                 <text className="detail-label">Status:</text>
                 <text className="detail-value">{procedure.status}</text>
               </div>

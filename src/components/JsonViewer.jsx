@@ -9,8 +9,8 @@ import { convertMermaidToJson } from "../functions/mermaidToJson";
 import { validateGraph } from "../functions/schema_validation";
 import { highlightJson } from "../utils/jsonHighlighter";
 import { highlightMermaid, highlightMermaidElement } from "../utils/MermaidHighlighter";
-import { FaSave } from "react-icons/fa";
-import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
+import { FaSave, FaUndo } from "react-icons/fa";
+import { BiVerticalBottom, BiHorizontalRight } from "react-icons/bi";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
 import ConfirmationDialog from "./modals/ConfirmationDialog";
 import { saveGraphChanges, revertChanges, continueEditing } from "../utils/SaveChanges";
@@ -71,7 +71,7 @@ function JsonViewer({
   const codeContentRef = useRef(null);
   const scrollPositionRef = useRef(null);
 
-  // Replace with direct function calls
+  // Save changes
   const handleSaveClick = () => {
     setShowConfirmation(true);
   };
@@ -149,7 +149,7 @@ function JsonViewer({
         
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
-          const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+          const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
           console.log("Generated Mermaid code:", mermaidCode);
           setMermaidGraph(mermaidCode);
           setOriginalMermaidGraph(mermaidCode);
@@ -569,7 +569,7 @@ function JsonViewer({
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
-  // Add function to update direction
+  // here------direction change
   const handleDirectionChange = (newDirection) => {
     if (isEditing) {
       setNotification({
@@ -580,14 +580,15 @@ function JsonViewer({
       return;
     }
     setDirection(newDirection);
-    // Update the Mermaid code with new direction
+    // Use newDirection here!
     const updatedCode = mermaidGraph.replace(
-      /flowchart\s+(TD|TB|BT|LR|RL)/,
+      /flowchart\s+(TD|LR)/,
       `flowchart ${newDirection}`,
     );
     setMermaidGraph(updatedCode);
     onMermaidCodeChange(updatedCode);
   };
+  // here------direction change
 
   /**
    * Cleans and formats Mermaid code for rendering.
@@ -600,6 +601,7 @@ function JsonViewer({
     // Split into lines and filter out classDef lines
     const lines = code.split('\n')
       .filter(line => !line.trim().startsWith('classDef'))
+      .filter(line => !line.trim().startsWith('flowchart'))
       .join('\n');
     
     return lines.trim();
@@ -770,7 +772,7 @@ function JsonViewer({
                 onClick={() => handleDirectionChange("TD")}
                 title="Top to Bottom"
               >
-                <BiVerticalTop size={20} />
+                <BiVerticalBottom size={20} />
               </button>
               <button
                 className={`direction-button ${
@@ -779,11 +781,20 @@ function JsonViewer({
                 onClick={() => handleDirectionChange("LR")}
                 title="Left to Right"
               >
-                <BiHorizontalLeft size={20} />
+                <BiHorizontalRight size={20} />
           </button>
             </div>
           </div>
           <div className="viewer-controls-right">
+          <button
+              className={`undo-all-button ${isEditing ? "active" : ""}`}
+              onClick={handleRevertChangesClick}
+              disabled={!isEditing}
+              title="Undo All Changes"
+            >
+              <FaUndo size={16} />
+              Undo all
+            </button>
             <button
               className={`save-button ${isEditing ? "active" : ""}`}
               onClick={handleSaveClick}
