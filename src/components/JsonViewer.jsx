@@ -18,6 +18,7 @@ import ConfirmationDialog from "./modals/ConfirmationDialog";
 import EditorHeader from "./editor/EditorHeader";
 import ViewerControls from "./editor/ViewerControls";
 import NotificationManager from "./editor/NotificationManager";
+import FormatGuide from "./editor/FormatGuide";
 
 /**
  * Component for displaying and editing JSON data with multiple view modes.
@@ -650,28 +651,62 @@ function JsonViewer({
     }
   }, [activeView, highlightedElement]);
 
-  /**
-   * Handles folding/unfolding of JSON content
-   * @param {Event} e - Click event
-   */
+  // Add fold/unfold functionality
   const handleFold = (e) => {
-    // Only handle clicks on the fold buttons
-    if (!e.target.classList.contains("fold-button")) return;
+    const foldButton = e.target.closest('.fold-button');
+    if (!foldButton) return;
 
-    const line = e.target.closest(".code-line");
+    const line = foldButton.closest('.code-line');
     if (!line) return;
 
-    const level = parseInt(line.dataset.level);
+    const level = parseInt(line.dataset.level || '0');
+    const isExpanded = foldButton.classList.contains('expanded');
 
-    // Toggle fold state
-    const isFolded = e.target.textContent === "▼";
-    e.target.textContent = isFolded ? "▶" : "▼";
+    // Toggle fold state of clicked button
+    foldButton.classList.toggle('expanded');
+    foldButton.textContent = isExpanded ? '▶' : '▼';
 
     // Find the range to fold/unfold
     let current = line.nextElementSibling;
-    while (current && parseInt(current.dataset.level) > level) {
-      current.style.display = isFolded ? "none" : "flex";
+    let lastVisibleLevel = level;
+
+    while (current && parseInt(current.dataset.level || '0') > level) {
+      const currentLevel = parseInt(current.dataset.level || '0');
+      const currentButton = current.querySelector('.fold-button');
+      
+      if (isExpanded) {
+        // When folding parent, hide all children
+        current.style.display = 'none';
+      } else {
+        // When unfolding parent:
+        if (currentLevel === level + 1) {
+          // Direct children are always shown
+          current.style.display = '';
+        } else if (currentLevel > level + 1) {
+          // Nested children are shown only if their immediate parent is expanded
+          const parentLevel = currentLevel - 1;
+          let previousSibling = current.previousElementSibling;
+          while (previousSibling && parseInt(previousSibling.dataset.level || '0') > level) {
+            const prevLevel = parseInt(previousSibling.dataset.level || '0');
+            if (prevLevel === parentLevel) {
+              const prevButton = previousSibling.querySelector('.fold-button');
+              if (prevButton && prevButton.classList.contains('expanded')) {
+                current.style.display = '';
+              }
+              break;
+            }
+            previousSibling = previousSibling.previousElementSibling;
+          }
+        }
+      }
       current = current.nextElementSibling;
+    }
+  };
+
+  // Add click handler for JSON content
+  const handleJsonClick = (e) => {
+    if (activeView === 'json') {
+      handleFold(e);
     }
   };
 
@@ -740,6 +775,8 @@ function JsonViewer({
         mermaidCode={editorContent || mermaidGraph}
         onValidationChange={handleValidationChange}
       />
+
+      <FormatGuide isEditing={isEditing} activeView={activeView} />
 
       <div className="json-viewer-content">
         {activeView === "reference" ? (
@@ -831,10 +868,11 @@ function JsonViewer({
               ) : (
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                  onClick={handleJsonClick}
+                  ref={codeContentRef}
                   dangerouslySetInnerHTML={{
                     __html: highlightJson(jsonContent, highlightedElement),
                   }}
-                  ref={codeContentRef}
                 />
               )}
             </pre>

@@ -2,217 +2,101 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
 /**
- * Helper function to validate Mermaid syntax with stricter checks
+ * Validates Mermaid code syntax and structure
  * @param {string} code - The Mermaid code to validate
- * @returns {Object} Validation results
+ * @returns {Object} Validation result with errors array
  */
-const validateMermaidSyntax = (code) => {
-  if (!code) return { isValid: false, error: "Empty code" };
+function validateMermaidSyntax(code) {
+  const errors = [];
+  const lines = code.split('\n');
+  
+  // Check if code starts with flowchart
+  if (!code.trim().startsWith('flowchart')) {
+    errors.push('Code must start with "flowchart" declaration');
+  }
 
-  try {
-    // Basic syntax validation
-    if (!code.trim().startsWith("flowchart")) {
-      return { isValid: false, error: "Must start with flowchart declaration" };
+  // Updated patterns to support both state and event node formats
+  let nodePattern = /^[A-Za-z0-9_]+(?:\["[^"]+"\]|\(\("[^"]+"\)\)):::(?:state|event)$/;
+  let edgePattern = /^[A-Za-z0-9_]+\s*-->\|"[^"]+"\|\s*[A-Za-z0-9_]+$/;
+  let commentPattern = /^%%\s*(Type|Description|Section_Reference|Text_Reference):\s*.+$/;
+
+  // Additional validation for node type matching bracket style
+  const validateNodeFormat = (line) => {
+    const statePattern = /^[A-Za-z0-9_]+\["[^"]+"\]:::state$/;
+    const eventPattern = /^[A-Za-z0-9_]+\(\("[^"]+"\)\):::event$/;
+    
+    if (line.includes(':::state') && !statePattern.test(line)) {
+      return 'State nodes must use square brackets []';
     }
+    if (line.includes(':::event') && !eventPattern.test(line)) {
+      return 'Event nodes must use double parentheses (())';
+    }
+    return null;
+  };
 
-    // Check for basic flowchart structure
-    const lines = code.split("\n");
-    let hasValidDirection = false;
-    let hasNodes = false;
-    let hasEdges = false;
-    let currentNode = null;
-    let currentEdge = null;
-    let nodeMetadata = new Map();
-    let edgeMetadata = new Map();
-    let errors = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmedLine = lines[i].trim();
-
-      // Check flowchart direction
-      if (trimmedLine.match(/^flowchart\s+(TD|TB|BT|LR|RL)/)) {
-        hasValidDirection = true;
-        continue;
-      }
-
-      // Check node definitions
-      const nodeMatch = trimmedLine.match(/^([A-Z0-9]+)(\[|\(|\[\(|\(\()/);
-      if (nodeMatch) {
-        currentNode = nodeMatch[1];
-        currentEdge = null; // Reset edge tracking when we find a node
-        hasNodes = true;
-        const openBracket = nodeMatch[2];
-
-        // Define the corresponding closing bracket pattern
-        const closingPattern = {
-          "[": "]",
-          "(": ")",
-          "[(": ")]",
-          "((": "))",
-        }[openBracket];
-
-        // Check if the line ends with the correct closing bracket, accounting for style definitions
-        const hasStyle = trimmedLine.includes(":::");
-        let hasValidClosure = false;
-
-        if (hasStyle) {
-          const beforeStyle = trimmedLine.split(":::")[0].trim();
-          hasValidClosure = beforeStyle.endsWith(closingPattern);
-        } else {
-          hasValidClosure = trimmedLine.endsWith(closingPattern);
-        }
-
-        nodeMetadata.set(currentNode, {
-          line: i + 1,
-          metadata: new Set(),
-          hasValidBrackets: hasValidClosure,
-        });
-
-        if (!hasValidClosure) {
-          errors.push(
-            `Invalid node format at line ${
-              i + 1
-            }: Missing closing ${closingPattern}`,
-          );
-        }
-        continue;
-      }
-
-      // Check for edge definitions
-      const edgeMatch = trimmedLine.match(/^([A-Z0-9]+)\s*-->\s*([A-Z0-9]+)/);
-      if (edgeMatch) {
-        hasEdges = true;
-        const [_, sourceNode, targetNode] = edgeMatch;
-        currentEdge = `${sourceNode}->${targetNode}`;
-        currentNode = null; // Reset node tracking
-
-        if (!nodeMetadata.has(sourceNode)) {
-          errors.push(
-            `Edge at line ${i + 1} references undefined node: ${sourceNode}`,
-          );
-        }
-        if (!nodeMetadata.has(targetNode)) {
-          errors.push(
-            `Edge at line ${i + 1} references undefined node: ${targetNode}`,
-          );
-        }
-
-        // Clear any existing metadata for this edge and set up new tracking
-        if (!edgeMetadata.has(currentEdge)) {
-          edgeMetadata.set(currentEdge, {
-            line: i + 1,
-            metadata: new Set(),
-          });
-        }
-        continue;
-      }
-
-      // Handle metadata lines
-      if (trimmedLine.startsWith("%%")) {
-        const metadataMatch = trimmedLine.match(/%%\s*([^:]+):\s*(.+)/);
-        if (metadataMatch) {
-          const [_, key, value] = metadataMatch;
-          const trimmedKey = key.trim();
-          const trimmedValue = value.trim();
-
-          // Check if this metadata belongs to the most recently defined edge or node
-          const isNodeMetadata = currentNode && nodeMetadata.has(currentNode);
-          const isEdgeMetadata = currentEdge && edgeMetadata.has(currentEdge);
-
-          if (isNodeMetadata) {
-            // Node metadata validation
-            nodeMetadata.get(currentNode).metadata.add(trimmedKey);
-
-            if (trimmedKey === "Type") {
-              if (!["event", "state"].includes(trimmedValue)) {
-                errors.push(
-                  `Invalid Type value for node ${currentNode} at line ${
-                    i + 1
-                  }: must be event or state`,
-                );
-              }
-            }
-          } else if (isEdgeMetadata) {
-            // Edge metadata validation
-            edgeMetadata.get(currentEdge).metadata.add(trimmedKey);
-
-            if (trimmedKey === "Type") {
-              if (!["trigger", "condition"].includes(trimmedValue)) {
-                errors.push(
-                  `Invalid Type value for edge ${currentEdge} at line ${
-                    i + 1
-                  }: must be trigger or condition`,
-                );
-              }
-            }
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+    if (trimmedLine && !trimmedLine.startsWith('flowchart')) {
+      // Skip empty lines and flowchart declaration
+      if (!trimmedLine.startsWith('%%')) {
+        // Not a comment, should be node or edge
+        if (!nodePattern.test(trimmedLine) && !edgePattern.test(trimmedLine)) {
+          errors.push(`Line ${index + 1}: Invalid node or edge format - "${trimmedLine}"`);
+        } else if (nodePattern.test(trimmedLine)) {
+          // Additional validation for node type matching bracket style
+          const nodeFormatError = validateNodeFormat(trimmedLine);
+          if (nodeFormatError) {
+            errors.push(`Line ${index + 1}: ${nodeFormatError} - "${trimmedLine}"`);
           }
         }
-      }
-
-      // Handle non-metadata, non-definition lines
-      if (
-        !trimmedLine.startsWith("%%") &&
-        !trimmedLine.match(/^([A-Z0-9]+)[\[(]/) &&
-        !trimmedLine.match(/^([A-Z0-9]+)\s*-->\s*([A-Z0-9]+)/)
-      ) {
-        currentNode = null;
-        currentEdge = null;
+      } else if (!commentPattern.test(trimmedLine)) {
+        // Invalid comment format
+        errors.push(`Line ${index + 1}: Invalid comment format. Comments should be Type, Description, Section_Reference, or Text_Reference`);
       }
     }
+  });
 
-    // Validate required metadata for nodes and edges
-    const requiredNodeMetadata = [
-      "Type",
-      "Description",
-      "Section_Reference",
-      "Text_Reference",
-    ];
-    const requiredEdgeMetadata = [
-      "Type",
-      "Description",
-      "Section_Reference",
-      "Text_Reference",
-    ];
+  // Check for required metadata for nodes and edges
+  let currentElement = null;
+  let hasRequiredMetadata = {
+    Type: false,
+    Description: false,
+    Section_Reference: false,
+    Text_Reference: false
+  };
 
-    nodeMetadata.forEach((data, nodeId) => {
-      requiredNodeMetadata.forEach((field) => {
-        if (!data.metadata.has(field)) {
-          errors.push(
-            `Missing ${field} for node ${nodeId} defined at line ${data.line}`,
-          );
-        }
-      });
-    });
-
-    edgeMetadata.forEach((data, edgeId) => {
-      requiredEdgeMetadata.forEach((field) => {
-        if (!data.metadata.has(field)) {
-          errors.push(
-            `Missing ${field} for edge ${edgeId} defined at line ${data.line}`,
-          );
-        }
-      });
-    });
-
-    // Check overall structure
-    if (!hasValidDirection) {
-      errors.push("Missing or invalid flowchart direction");
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+    
+    if (nodePattern.test(trimmedLine) || edgePattern.test(trimmedLine)) {
+      if (currentElement && (!hasRequiredMetadata.Type || !hasRequiredMetadata.Description)) {
+        errors.push(`Missing required metadata for element at line ${index}`);
+      }
+      currentElement = trimmedLine;
+      hasRequiredMetadata = {
+        Type: false,
+        Description: false,
+        Section_Reference: false,
+        Text_Reference: false
+      };
+    } else if (trimmedLine.startsWith('%%')) {
+      const metadataType = trimmedLine.match(/^%%\s*(Type|Description|Section_Reference|Text_Reference):/);
+      if (metadataType) {
+        hasRequiredMetadata[metadataType[1]] = true;
+      }
     }
-    if (!hasNodes) {
-      errors.push("No nodes defined in the flowchart");
-    }
+  });
 
-    return {
-      isValid: errors.length === 0,
-      errors: errors,
-    };
-  } catch (error) {
-    return {
-      isValid: false,
-      errors: [`Syntax error: ${error.message}`],
-    };
+  // Check last element
+  if (currentElement && (!hasRequiredMetadata.Type || !hasRequiredMetadata.Description)) {
+    errors.push('Missing required metadata for last element');
   }
-};
+
+  return {
+    isValid: errors.length === 0,
+    errors: errors
+  };
+}
 
 /**
  * Component for managing notifications and validation errors.
@@ -236,20 +120,18 @@ function NotificationManager({
 
   // Run validation when mermaidCode changes
   useEffect(() => {
-    if (!mermaidCode || !isEditing || activeView !== "mermaid") {
+    if (isEditing && activeView === "mermaid" && mermaidCode) {
+      const { isValid, errors } = validateMermaidSyntax(mermaidCode);
+      setValidationErrors(errors);
+      onValidationChange(isValid);
+    } else {
       setValidationErrors([]);
       onValidationChange(true);
-      return;
     }
-
-    const validation = validateMermaidSyntax(mermaidCode);
-    const errors = validation.errors || [];
-    setValidationErrors(errors);
-    onValidationChange(errors.length === 0);
   }, [mermaidCode, isEditing, activeView, onValidationChange]);
 
   return (
-    <>
+    <div>
       {/* Standard notification */}
       {notification.show && (
         <div className={`notification ${notification.type}`}>
@@ -257,20 +139,10 @@ function NotificationManager({
         </div>
       )}
 
-      {/* Editing warning */}
-      {isEditing && activeView !== "mermaid" && (
-        <div className="editing-warning">
-          You have unsaved changes in the Mermaid editor. Your changes will be
-          preserved while you navigate.
-        </div>
-      )}
-
       {/* Validation errors panel */}
       {isEditing && activeView === "mermaid" && validationErrors.length > 0 && (
         <div className="validation-errors">
-          <div className="validation-error-header">
-            Validation Errors ({validationErrors.length})
-          </div>
+          <div className="validation-error-header">Format Requirements:</div>
           {validationErrors.map((error, index) => (
             <div key={index} className="validation-error-item">
               {error}
@@ -278,7 +150,7 @@ function NotificationManager({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -288,11 +160,10 @@ NotificationManager.propTypes = {
     message: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
   }).isRequired,
-  isEditing: PropTypes.bool,
-  activeView: PropTypes.string,
+  isEditing: PropTypes.bool.isRequired,
+  activeView: PropTypes.string.isRequired,
   mermaidCode: PropTypes.string,
-  onValidationChange: PropTypes.func,
+  onValidationChange: PropTypes.func.isRequired,
 };
 
-export { validateMermaidSyntax };
 export default NotificationManager;
