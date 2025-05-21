@@ -1,24 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
-import { fetchProcedure } from "../API/api_calls";
+import { fetchProcedure,insertProcedureGraphChanges } from "../API/api_calls";
 import {
   JsonToMermaid,
   defaultMermaidConfig,
 } from "../functions/jsonToMermaid";
+import { convertMermaidToJson } from "../functions/mermaidToJson";
+import { validateGraph } from "../functions/schema_validation";
 import { highlightJson } from "../utils/jsonHighlighter";
-import {
-  highlightMermaid,
-  highlightMermaidElement,
-} from "../utils/MermaidHighlighter";
-import { FaSave } from "react-icons/fa";
-import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
+import { highlightMermaid, highlightMermaidElement } from "../utils/MermaidHighlighter";
+import { FaSave, FaUndo } from "react-icons/fa";
+import { BiVerticalBottom, BiHorizontalRight } from "react-icons/bi";
 import InteractiveMarkdown from "../utils/InteractiveMarkdown";
-import { createSaveHandlers } from "../utils/SaveChanges";
 import ConfirmationDialog from "./modals/ConfirmationDialog";
 import EditorHeader from "./editor/EditorHeader";
 import ViewerControls from "./editor/ViewerControls";
 import NotificationManager from "./editor/NotificationManager";
 import FormatGuide from "./editor/FormatGuide";
+import { saveGraphChanges, revertChanges, continueEditing } from "../utils/SaveChanges";
 
 /**
  * Component for displaying and editing JSON data with multiple view modes.
@@ -77,29 +76,116 @@ function JsonViewer({
   const codeContentRef = useRef(null);
   const scrollPositionRef = useRef(null);
 
-  // Create save handlers
-  const {
-    handleSaveClick: originalHandleSaveClick,
-    handleConfirmSaveClick,
-    handleRevertChangesClick,
-    handleContinueEditingClick,
-  } = createSaveHandlers({
-    mermaidGraph,
-    selectedProcedure,
-    setShowConfirmation,
-    setNotification,
-    setOriginalMermaidGraph,
-    setData,
-    setOriginalData,
-    setJsonContent,
-    isUserEditing,
-    setIsEditing,
-    onProcedureUpdate,
-    onMermaidCodeChange,
-    originalMermaidGraph,
-    originalData,
-    setMermaidGraph,
-  });
+  // Save changes
+  const handleSaveClick = () => {
+    // Normalize and validate content
+    const normalizeContent = (content) => {
+      const normalized = content
+        .replace(/\r\n/g, '\n')
+        .trim();
+
+      const lines = normalized
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line !== '' && /\S/.test(line));
+
+      return lines.join('\n');
+    };
+
+    const normalizedContent = normalizeContent(editorContent || mermaidGraph);
+    
+    // Check for empty or whitespace-only content
+    if (!normalizedContent || !/\S/.test(normalizedContent)) {
+      setNotification({
+        show: true,
+        message: "Cannot save empty content",
+        type: "error"
+      });
+      return;
+    }
+
+    // Check for actual content (nodes or edges)
+    if (!normalizedContent.split('\n').some(line => /[A-Za-z0-9]/.test(line))) {
+      setNotification({
+        show: true,
+        message: "Graph must contain at least one node or edge definition",
+        type: "error"
+      });
+      return;
+    }
+
+    // Compare with original content after normalization
+    const normalizedOriginal = normalizeContent(originalMermaidGraph);
+    if (normalizedContent === normalizedOriginal) {
+      setNotification({
+        show: true,
+        message: "No changes to save",
+        type: "info"
+      });
+      return;
+    }
+
+    if (!isValidCode) {
+      setNotification({
+        show: true,
+        message: "Cannot save while there are validation errors",
+        type: "error"
+      });
+      return;
+    }
+
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmSaveClick = async ({ title, message }) => {
+    await saveGraphChanges({
+      mermaidGraph,
+      selectedProcedure,
+      setNotification,
+      setShowConfirmation,
+      setIsEditing,
+      isUserEditing,
+      setData,
+      setOriginalData,
+      setJsonContent,
+      onProcedureUpdate,
+      title,
+      message,
+    });
+  };
+
+  const handleRevertChangesClick = () => {
+    // Save current editor state before reverting
+    if (editorRef.current) {
+      lastScrollPosition.current = {
+        top: editorRef.current.scrollTop,
+        left: editorRef.current.scrollLeft
+      };
+    }
+
+    revertChanges({
+      originalMermaidGraph,
+      originalData,
+      setMermaidGraph,
+      setData,
+      setJsonContent,
+      isUserEditing,
+      setIsEditing,
+      setShowConfirmation,
+      onMermaidCodeChange,
+      setNotification,
+    });
+
+    // Clear editor content and reset to original
+    setEditorContent(originalMermaidGraph);
+    
+    // Reset user editing state
+    userEditedContent.current = originalMermaidGraph;
+  };
+
+  const handleContinueEditingClick = () => {
+    continueEditing(setShowConfirmation);
+  };
 
   const [isValidCode, setIsValidCode] = useState(true);
   const [undoStack, setUndoStack] = useState([]);
@@ -143,7 +229,7 @@ function JsonViewer({
 
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
-          const mermaidCode = JsonToMermaid(graphData, defaultMermaidConfig);
+          const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
           console.log("Generated Mermaid code:", mermaidCode);
           setMermaidGraph(mermaidCode);
           setOriginalMermaidGraph(mermaidCode);
@@ -456,19 +542,12 @@ function JsonViewer({
         throw new Error('Invalid content type');
       }
 
-      // Validate content structure
-      const hasValidFlowchart = /^flowchart\s+(TD|TB|BT|LR|RL)/m.test(newCode);
+      // Check for actual content
       const hasContent = newCode.split('\n')
-        .some(line => /[A-Za-z0-9]/.test(line) && !line.startsWith('flowchart'));
+        .some(line => /[A-Za-z0-9]/.test(line));
 
       // Show validation notifications
-      if (!hasValidFlowchart) {
-        setNotification({
-          show: true,
-          message: "Invalid flowchart declaration. Must start with 'flowchart' followed by TD, TB, BT, LR, or RL",
-          type: "error"
-        });
-      } else if (!hasContent) {
+      if (!hasContent) {
         setNotification({
           show: true,
           message: "Graph must contain at least one node or edge definition",
@@ -535,77 +614,6 @@ function JsonViewer({
         type: "error"
       });
     }
-  };
-
-  // Wrap the original handleSaveClick with validation
-  const handleSaveClick = () => {
-    // Normalize and validate content
-    const normalizeContent = (content) => {
-      const normalized = content
-        .replace(/\r\n/g, '\n')
-        .trim();
-
-      const lines = normalized
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line !== '' && /\S/.test(line));
-
-      return lines.join('\n');
-    };
-
-    const normalizedContent = normalizeContent(editorContent || mermaidGraph);
-    
-    // Check for empty or whitespace-only content
-    if (!normalizedContent || !/\S/.test(normalizedContent)) {
-      setNotification({
-        show: true,
-        message: "Cannot save empty content",
-        type: "error"
-      });
-      return;
-    }
-
-    // Check for valid flowchart declaration
-    if (!/^flowchart\s+(TD|TB|BT|LR|RL)/m.test(normalizedContent)) {
-      setNotification({
-        show: true,
-        message: "Invalid flowchart declaration. Must start with 'flowchart' followed by TD, TB, BT, LR, or RL",
-        type: "error"
-      });
-      return;
-    }
-
-    // Check for actual content beyond flowchart declaration
-    if (!normalizedContent.split('\n').some(line => /[A-Za-z0-9]/.test(line) && !line.startsWith('flowchart'))) {
-      setNotification({
-        show: true,
-        message: "Graph must contain at least one node or edge definition",
-        type: "error"
-      });
-      return;
-    }
-
-    // Compare with original content after normalization
-    const normalizedOriginal = normalizeContent(originalMermaidGraph);
-    if (normalizedContent === normalizedOriginal) {
-      setNotification({
-        show: true,
-        message: "No changes to save",
-        type: "info"
-      });
-      return;
-    }
-
-    if (!isValidCode) {
-      setNotification({
-        show: true,
-        message: "Cannot save while there are validation errors",
-        type: "error"
-      });
-      return;
-    }
-
-    originalHandleSaveClick();
   };
 
   // Improved cursor position restoration
@@ -737,7 +745,7 @@ function JsonViewer({
     }
   }, [mermaidGraph, isEditing, restoreCursorPosition]);
 
-  // Add function to update direction
+  // here------direction change
   const handleDirectionChange = (newDirection) => {
     if (isEditing) {
       setNotification({
@@ -748,18 +756,15 @@ function JsonViewer({
       return;
     }
     setDirection(newDirection);
-    // Update the Mermaid code with new direction
+    // Use newDirection here!
     const updatedCode = mermaidGraph.replace(
-      /flowchart\s+(TD|TB|BT|LR|RL)/,
+      /flowchart\s+(TD|LR)/,
       `flowchart ${newDirection}`,
     );
     setMermaidGraph(updatedCode);
     onMermaidCodeChange(updatedCode);
   };
-
-  const handleSaveChanges = () => {
-    handleSaveClick();
-  };
+  // here------direction change
 
   /**
    * Cleans and formats Mermaid code for rendering.
@@ -770,11 +775,11 @@ function JsonViewer({
     if (!code) return "";
 
     // Split into lines and filter out classDef lines
-    const lines = code
-      .split("\n")
-      .filter((line) => !line.trim().startsWith("classDef"))
-      .join("\n");
-
+    const lines = code.split('\n')
+      .filter(line => !line.trim().startsWith('classDef'))
+      .filter(line => !line.trim().startsWith('flowchart'))
+      .join('\n');
+    
     return lines.trim();
   };
 
@@ -1020,9 +1025,11 @@ function JsonViewer({
       <ViewerControls
         activeView={activeView}
         direction={direction}
-        isEditing={isEditing && hasChanges}
+        isEditing={isEditing}
+        hasChanges={hasChanges}
         onDirectionChange={handleDirectionChange}
         onSave={handleSaveClick}
+        onRevert={handleRevertChangesClick}
         setNotification={setNotification}
         isValidCode={isValidCode}
       />
@@ -1163,13 +1170,13 @@ function JsonViewer({
 
       <ConfirmationDialog
         show={showConfirmation}
-        title="Save Changes?"
-        message="Are you sure you want to save the changes you made to the JSON code?"
+        // title="Save Changes?"
+        // message="Are you sure you want to save the changes you made to the JSON code?"
         onConfirm={handleConfirmSaveClick}
         onContinueEditing={handleContinueEditingClick}
         onRevert={handleRevertChangesClick}
         showContinueEditing={true}
-        showRevert={true}
+        // showRevert={true}
       />
     </div>
   );

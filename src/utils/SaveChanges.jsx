@@ -10,115 +10,71 @@ import { insertProcedureGraphChanges } from "../API/api_calls";
  * Utility module for managing save and revert functionality in editors.
  */
 
-// Base save functions
-export const handleSaveChanges = (
-  mermaidGraph,
-  setNotification,
-  setShowConfirmation,
-) => {
-  try {
-    // Get current direction or default to LR
-    const directionMatch = mermaidGraph.match(/flowchart\s+(TD|TB|BT|LR|RL)/);
-    if (!directionMatch) {
-      // If no direction specified, prepend LR direction
-      const lines = mermaidGraph.split("\n");
-      const firstLine = lines[0].trim();
-      if (!firstLine.startsWith("flowchart")) {
-        throw new Error(
-          "Invalid Mermaid syntax: Must include valid flowchart direction (TD, TB, BT, LR, or RL)",
-        );
-      }
-    }
-
-    setNotification({
-      show: true,
-      message: "Validating structure...",
-      type: "info",
-    });
-
-    // Convert to JSON and validate structure
-    const jsonData = convertMermaidToJson(mermaidGraph);
-    const validationResult = validateGraph(jsonData);
-
-    if (validationResult.valid) {
-      setNotification({
-        show: true,
-        message: "Structure validation successful",
-        type: "success",
-      });
-      setTimeout(() => {
-        setShowConfirmation(true);
-      }, 1000);
-    } else {
-      throw new Error(
-        `Structural validation failed: ${validationResult.error}`,
-      );
-    }
-  } catch (error) {
-    setNotification({
-      show: true,
-      message: error.message,
-      type: "error",
-    });
-  }
-};
-
-export const handleConfirmSave = async ({
+/**
+ * Validates and saves graph changes to the database
+ * @param {Object} params - Parameters for saving changes
+ * @param {string} params.mermaidGraph - The Mermaid graph code
+ * @param {Object} params.selectedProcedure - The selected procedure
+ * @param {Function} params.setNotification - Function to set notification state
+ * @param {Function} params.setShowConfirmation - Function to set confirmation dialog state
+ * @param {Function} params.setIsEditing - Function to set editing state
+ * @param {Object} params.isUserEditing - Ref to track user editing state
+ * @param {Function} params.setData - Function to set data state
+ * @param {Function} params.setOriginalData - Function to set original data state
+ * @param {Function} params.setJsonContent - Function to set JSON content
+ * @param {Function} params.onProcedureUpdate - Callback for procedure updates
+ * @param {string} params.title - Commit title
+ * @param {string} params.message - Commit message
+ * @returns {Promise<void>}
+ */
+export const saveGraphChanges = async ({
   mermaidGraph,
   selectedProcedure,
-  setShowConfirmation,
   setNotification,
-  setOriginalMermaidGraph,
+  setShowConfirmation,
+  setIsEditing,
+  isUserEditing,
   setData,
   setOriginalData,
   setJsonContent,
-  isUserEditing,
-  setIsEditing,
   onProcedureUpdate,
-  onMermaidCodeChange,
+  title,
+  message,
 }) => {
-  setShowConfirmation(false);
-  setNotification({
-    show: true,
-    message: "Saving changes...",
-    type: "info",
-  });
-
   try {
-    // First validate the Mermaid code
+    // 1. Validate Mermaid code
     if (!validateMermaidCode(mermaidGraph)) {
       throw new Error("Invalid Mermaid syntax");
     }
 
-    // Convert to JSON and save
+    // 2. Convert to JSON and validate structure
     const graphData = convertMermaidToJson(mermaidGraph);
+    const validationResult = validateGraph(graphData);
     
-    // Add required fields to nodes and edges while preserving references
-    const enrichedGraphData = {
-      nodes: graphData.nodes.map(node => ({
-        id: node.id,
-        type: node.type === "event" ? "event" : "state",  // Must be exactly "state" or "event"
-        description: node.description || "Manually added node",
-        section_reference: node.section_reference || node.section_ref || "Manual Edit",
-        text_reference: node.text_reference || node.text_ref || "Manually edited through UI"
-      })),
-      edges: graphData.edges.map(edge => ({
-        from: edge.from,  // Using 'from' as it's aliased to 'from_node' in backend
-        to: edge.to,
-        type: edge.type === "condition" ? "condition" : "trigger",  // Must be exactly "trigger" or "condition"
-        description: edge.description || "Manually added edge",
-        section_reference: edge.section_reference || edge.section_ref || "Manual Edit",
-        text_reference: edge.text_reference || edge.text_ref || "Manually edited through UI"
-      }))
-    };
+    if (!validationResult.valid) {
+      setNotification({
+        show: true,
+        message: `Validation failed: ${validationResult.error}`,
+        type: "error",
+      });
+      return;
+    }
 
+    // 3. Show saving notification
+    setNotification({
+      show: true,
+      message: "Saving changes...",
+      type: "info",
+    });
+
+    // 4. Call API to save changes
     const result = await insertProcedureGraphChanges(
-      selectedProcedure.id || selectedProcedure.procedure_id,
+      selectedProcedure.id,
       selectedProcedure.entity,
       {
-        edited_graph: enrichedGraphData,
-        commit_title: "Manual edit",
-        commit_message: "Graph manually edited through UI"
+        edited_graph: graphData,
+        commit_title: title,
+        commit_message: message,
       }
     );
 
@@ -126,27 +82,22 @@ export const handleConfirmSave = async ({
       throw new Error("Failed to save changes");
     }
 
-    // Update both Mermaid and JSON views
-    setOriginalMermaidGraph(mermaidGraph);
-    setData(result);
-    setOriginalData(result);
-
-    // Only show the graph data in JSON view
-    const updatedGraphData = result.edited_graph || result.original_graph;
-    setJsonContent(JSON.stringify(updatedGraphData, null, 2));
-
-    isUserEditing.current = false;
-    setIsEditing(false);
-
-    // Update parent component with new data
-    onProcedureUpdate(result);
-    onMermaidCodeChange(mermaidGraph);
-
+    // 5. Update UI state
     setNotification({
       show: true,
-      message: "Changes saved successfully",
+      message: "Changes saved successfully!",
       type: "success",
     });
+    setShowConfirmation(false);
+    setIsEditing(false);
+    isUserEditing.current = false;
+
+    // 6. Update data states
+    setData(result);
+    setOriginalData(result);
+    setJsonContent(JSON.stringify(result.graph || result.edited_graph, null, 2));
+    onProcedureUpdate(result);
+
   } catch (error) {
     setNotification({
       show: true,
@@ -156,7 +107,21 @@ export const handleConfirmSave = async ({
   }
 };
 
-export const handleRevertChanges = ({
+/**
+ * Reverts changes to the original state
+ * @param {Object} params - Parameters for reverting changes
+ * @param {string} params.originalMermaidGraph - The original Mermaid graph code
+ * @param {Object} params.originalData - The original data
+ * @param {Function} params.setMermaidGraph - Function to set Mermaid graph state
+ * @param {Function} params.setData - Function to set data state
+ * @param {Function} params.setJsonContent - Function to set JSON content
+ * @param {Object} params.isUserEditing - Ref to track user editing state
+ * @param {Function} params.setIsEditing - Function to set editing state
+ * @param {Function} params.setShowConfirmation - Function to set confirmation dialog state
+ * @param {Function} params.onMermaidCodeChange - Callback for Mermaid code changes
+ * @param {Function} params.setNotification - Function to set notification state
+ */
+export const revertChanges = ({
   originalMermaidGraph,
   originalData,
   setMermaidGraph,
@@ -168,101 +133,40 @@ export const handleRevertChanges = ({
   onMermaidCodeChange,
   setNotification,
 }) => {
-  setMermaidGraph(originalMermaidGraph);
-  setData(originalData);
+  try {
+    // 1. Clear user changes and revert to original Mermaid code
+    setMermaidGraph(originalMermaidGraph);
+    onMermaidCodeChange(originalMermaidGraph);
 
-  // Only show the graph data in JSON view
-  const graphData = originalData.edited_graph || originalData.original_graph;
-  setJsonContent(JSON.stringify(graphData, null, 2));
+    // 2. Revert data states
+    setData(originalData);
+    const graphData = originalData.edited_graph || originalData.original_graph || originalData.graph;
+    setJsonContent(JSON.stringify(graphData, null, 2));
 
-  isUserEditing.current = false;
-  setIsEditing(false);
-  setShowConfirmation(false);
-  onMermaidCodeChange(originalMermaidGraph);
-  setNotification({
-    show: true,
-    message: "Changes reverted to original",
-    type: "info",
-  });
-};
+    // 3. Reset editing states
+    isUserEditing.current = false;
+    setIsEditing(false);
+    setShowConfirmation(false);
 
-export const handleContinueEditing = (setShowConfirmation) => {
-  setShowConfirmation(false);
+    // 4. Show success notification
+    setNotification({
+      show: true,
+      message: "Changes reverted to original",
+      type: "info",
+    });
+  } catch (error) {
+    setNotification({
+      show: true,
+      message: `Failed to revert changes: ${error.message}`,
+      type: "error",
+    });
+  }
 };
 
 /**
- * Creates save and revert handlers for managing editor state.
- *
- * @param {Object} options - Configuration options
- * @param {Function} options.setIsEditing - Function to update editing state
- * @param {Function} options.setData - Function to update data state
- * @param {Function} options.setMermaidCode - Function to update Mermaid code
- * @param {Function} options.onProcedureUpdate - Callback for procedure updates
- * @param {Object} options.selectedProcedure - Currently selected procedure
- * @param {Function} options.setNotification - Function to show notifications
- * @returns {Object} Object containing save and revert handler functions
+ * Continues editing without saving
+ * @param {Function} setShowConfirmation - Function to set confirmation dialog state
  */
-export const createSaveHandlers = ({
-  mermaidGraph,
-  selectedProcedure,
-  setShowConfirmation,
-  setNotification,
-  setOriginalMermaidGraph,
-  setData,
-  setOriginalData,
-  setJsonContent,
-  isUserEditing,
-  setIsEditing,
-  onProcedureUpdate,
-  onMermaidCodeChange,
-  originalMermaidGraph,
-  originalData,
-  setMermaidGraph,
-}) => {
-  const handleSaveClick = () => {
-    handleSaveChanges(mermaidGraph, setNotification, setShowConfirmation);
-  };
-
-  const handleConfirmSaveClick = async () => {
-    await handleConfirmSave({
-      mermaidGraph,
-      selectedProcedure,
-      setShowConfirmation,
-      setNotification,
-      setOriginalMermaidGraph,
-      setData,
-      setOriginalData,
-      setJsonContent,
-      isUserEditing,
-      setIsEditing,
-      onProcedureUpdate,
-      onMermaidCodeChange,
-    });
-  };
-
-  const handleRevertChangesClick = () => {
-    handleRevertChanges({
-      originalMermaidGraph,
-      originalData,
-      setMermaidGraph,
-      setData,
-      setJsonContent,
-      isUserEditing,
-      setIsEditing,
-      setShowConfirmation,
-      onMermaidCodeChange,
-      setNotification,
-    });
-  };
-
-  const handleContinueEditingClick = () => {
-    handleContinueEditing(setShowConfirmation);
-  };
-
-  return {
-    handleSaveClick,
-    handleConfirmSaveClick,
-    handleRevertChangesClick,
-    handleContinueEditingClick,
-  };
+export const continueEditing = (setShowConfirmation) => {
+  setShowConfirmation(false);
 };
