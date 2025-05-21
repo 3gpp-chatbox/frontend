@@ -1,3 +1,6 @@
+import { highlightJsonDiff } from "./jsonDiffHighlighter";
+import { highlightMermaidDiff } from "./mermaidDiffHighlighter";
+
 export const findDifferences = (oldContent, newContent) => {
   if (!oldContent || !newContent) return [];
   
@@ -41,15 +44,19 @@ export const findDifferences = (oldContent, newContent) => {
   return differences;
 };
 
-export const applyDiffHighlighting = (content, differences) => {
+export const applyDiffHighlighting = (content, differences, type = 'json') => {
+  // Split the content into lines
   const lines = content.split('\n');
+  
+  // Choose the appropriate highlighter based on content type
+  const highlighter = type === 'mermaid' ? highlightMermaidDiff : highlightJsonDiff;
   
   return lines.map((line, index) => {
     const diff = differences.find(d => d.line === index);
+    const highlightedLine = highlighter(line);
     if (diff) {
-      // Use a wrapper div with a semi-transparent background overlay
-      return `<div class="code-line"><div class="diff-overlay ${diff.type === 'added' ? 'diff-added' : 'diff-removed'}">${line}</div></div>`;
+      return `<div class="code-line"><div class="diff-overlay ${diff.type === 'added' ? 'diff-added' : 'diff-removed'}">${highlightedLine}</div></div>`;
     }
-    return `<div class="code-line">${line}</div>`;
+    return `<div class="code-line">${highlightedLine}</div>`;
   }).join('\n');
 };

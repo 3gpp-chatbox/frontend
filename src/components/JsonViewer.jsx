@@ -212,7 +212,7 @@ function JsonViewer({
         // Get the current graph data based on edited status
         const graphData =
           data.edited_graph || data.original_graph || data.graph;
-
+        
         if (!graphData) {
           console.warn("No graph data available in:", data);
           setJsonContent("");
@@ -226,7 +226,7 @@ function JsonViewer({
         const jsonString = JSON.stringify(graphData, null, 2);
         console.log("Setting JSON content:", jsonString);
         setJsonContent(jsonString);
-
+        
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
@@ -631,8 +631,8 @@ function JsonViewer({
     );
 
     let currentOffset = 0;
-    let targetNode = null;
-    let targetOffset = 0;
+      let targetNode = null;
+      let targetOffset = 0;
     let bestMatchNode = null;
     let bestMatchScore = 0;
 
@@ -646,7 +646,7 @@ function JsonViewer({
         currentOffset <= offset &&
         currentOffset + nodeText.length >= offset
       ) {
-        targetNode = node;
+            targetNode = node;
         targetOffset = offset - currentOffset;
         break;
       }
@@ -670,15 +670,15 @@ function JsonViewer({
     }
 
     // Set the cursor position
-    if (targetNode) {
-      try {
+      if (targetNode) {
+        try {
         const range = document.createRange();
-        range.setStart(targetNode, targetOffset);
+          range.setStart(targetNode, targetOffset);
         range.collapse(true);
 
         const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
+          selection.removeAllRanges();
+          selection.addRange(range);
 
         // Restore scroll position after cursor is set
         if (scrollPositionRef.current) {
@@ -747,14 +747,14 @@ function JsonViewer({
 
   // here------direction change
   const handleDirectionChange = (newDirection) => {
-    if (isEditing) {
-      setNotification({
-        show: true,
-        message: "Please save or revert your changes first",
-        type: "warning",
-      });
-      return;
-    }
+              if (isEditing) {
+                setNotification({
+                  show: true,
+                  message: "Please save or revert your changes first",
+                  type: "warning",
+                });
+                return;
+              }
     setDirection(newDirection);
     // Use newDirection here!
     const updatedCode = mermaidGraph.replace(
@@ -1066,17 +1066,17 @@ function JsonViewer({
           data ? (
             <pre className="json-content">
               {activeView === "mermaid" ? (
-                <div className="mermaid-editor">
-                  <div
+              <div className="mermaid-editor">
+                <div
                     ref={(el) => {
                       editorRef.current = el;
                       codeContentRef.current = el;
                     }}
-                    className={`code-content ${isWrapped ? "wrapped" : ""}`}
-                    contentEditable={true}
-                    onInput={handleMermaidChange}
+                  className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                  contentEditable={true}
+                  onInput={handleMermaidChange}
                     onKeyDown={handleKeyDown}
-                    onFocus={onEditorFocus}
+                  onFocus={onEditorFocus}
                     onClick={(e) => {
                       const node = e.target.closest(".node");
                       const edge = e.target.closest(".edgePath");
@@ -1125,19 +1125,19 @@ function JsonViewer({
                             });
                           }
                         }
-                      }
-                    }}
-                    dangerouslySetInnerHTML={{
+                    }
+                  }}
+                  dangerouslySetInnerHTML={{
                       __html: highlightMermaidElement(
                         highlightMermaid(
                           cleanMermaidCode(editorContent || mermaidGraph),
                         ),
                         highlightedElement,
                       ),
-                    }}
-                    spellCheck="false"
-                  />
-                </div>
+                  }}
+                  spellCheck="false"
+                />
+              </div>
               ) : (
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}

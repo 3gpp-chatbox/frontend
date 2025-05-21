@@ -4,9 +4,9 @@ import { fetchGraphVersion, fetchVersionHistory } from '../API/api_calls';
 import { JsonToMermaid, defaultMermaidConfig } from '../functions/jsonToMermaid';
 import DiagramView from '../utils/DiagramView';
 import { FaCheckCircle } from 'react-icons/fa';
-import { highlightJson } from '../utils/jsonHighlighter';
-import { highlightMermaid } from '../utils/MermaidHighlighter';
-import { findDifferences, applyDiffHighlighting } from '../utils/diffHighlighter';
+import { highlightJsonDiff } from '../functions/diffhighlighting/jsonDiffHighlighter';
+import { highlightMermaidDiff } from '../functions/diffhighlighting/mermaidDiffHighlighter';
+import { findDifferences, applyDiffHighlighting } from '../functions/diffhighlighting/diffHighlighter';
 
 function Comparison({ left, right, onClose, selectedProcedure }) {
   const [selectedTab, setSelectedTab] = useState('Mermaid');
@@ -95,8 +95,8 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
             className="panel-mermaid"
             dangerouslySetInnerHTML={{
               __html: !isLeftPanel ? 
-                applyDiffHighlighting(highlightMermaid(content), mermaidDiffs) : 
-                highlightMermaid(content)
+                applyDiffHighlighting(content, mermaidDiffs, 'mermaid') : 
+                highlightMermaidDiff(content)
             }}
           />
         );
@@ -106,9 +106,12 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
           <div 
             className="panel-json"
             dangerouslySetInnerHTML={{
-              __html: !isLeftPanel ? 
-                applyDiffHighlighting(highlightJson(jsonContent), jsonDiffs) : 
-                highlightJson(jsonContent)
+              __html: !isLeftPanel
+                ? applyDiffHighlighting(jsonContent, jsonDiffs, 'json')
+                : jsonContent
+                    .split('\n')
+                    .map(line => `<div class="code-line">${highlightJsonDiff(line)}</div>`)
+                    .join('\n')
             }}
           />
         );
