@@ -10,6 +10,10 @@ function validateMermaidSyntax(code) {
   const errors = [];
   const lines = code.split('\n');
   
+  // Track nodes and edges for duplicate checking
+  const nodes = new Set();
+  const edges = new Set();
+  
   // Updated patterns to support both state and event node formats
   let nodePattern = /^[A-Za-z0-9_]+(?:\["[^"]+"\]|\(\("[^"]+"\)\)):::(?:state|event)$/;
   let edgePattern = /^[A-Za-z0-9_]+\s*-->\|"[^"]+"\|\s*[A-Za-z0-9_]+$/;
@@ -29,8 +33,11 @@ function validateMermaidSyntax(code) {
     return null;
   };
 
-  // Track element types to ensure no duplicates
-  const elementTypes = new Map();
+  // Check for empty content
+  if (!code.trim()) {
+    errors.push("Graph must contain at least one node or edge definition");
+    return { isValid: false, errors };
+  }
 
   lines.forEach((line, index) => {
     const trimmedLine = line.trim();
@@ -40,11 +47,33 @@ function validateMermaidSyntax(code) {
         // Not a comment, should be node or edge
         if (!nodePattern.test(trimmedLine) && !edgePattern.test(trimmedLine)) {
           errors.push(`Line ${index + 1}: Invalid node or edge format - "${trimmedLine}"`);
-        } else if (nodePattern.test(trimmedLine)) {
-          // Additional validation for node type matching bracket style
-          const nodeFormatError = validateNodeFormat(trimmedLine);
-          if (nodeFormatError) {
-            errors.push(`Line ${index + 1}: ${nodeFormatError} - "${trimmedLine}"`);
+        } else {
+          // Check for duplicates
+          if (nodePattern.test(trimmedLine)) {
+            // Additional validation for node type matching bracket style
+            const nodeFormatError = validateNodeFormat(trimmedLine);
+            if (nodeFormatError) {
+              errors.push(`Line ${index + 1}: ${nodeFormatError} - "${trimmedLine}"`);
+            }
+            
+            // Check for duplicate nodes
+            const nodeMatch = trimmedLine.match(/^([A-Za-z0-9_]+)/);
+            if (nodeMatch && nodes.has(nodeMatch[1])) {
+              errors.push(`Line ${index + 1}: Duplicate node found - "${nodeMatch[1]}"`);
+            } else if (nodeMatch) {
+              nodes.add(nodeMatch[1]);
+            }
+          } else if (edgePattern.test(trimmedLine)) {
+            // Check for duplicate edges
+            const edgeMatch = trimmedLine.match(/^([A-Za-z0-9_]+)\s*-->\|"[^"]+"\|\s*([A-Za-z0-9_]+)$/);
+            if (edgeMatch) {
+              const edgeId = `${edgeMatch[1]}->${edgeMatch[2]}`;
+              if (edges.has(edgeId)) {
+                errors.push(`Line ${index + 1}: Duplicate edge found - "${edgeMatch[1]} to ${edgeMatch[2]}"`);
+              } else {
+                edges.add(edgeId);
+              }
+            }
           }
         }
       } else if (!commentPattern.test(trimmedLine)) {
@@ -104,42 +133,6 @@ function validateMermaidSyntax(code) {
         const [, metadataType, value] = metadataMatch;
         if (value.trim()) { // Only mark as present if there's actual content
           hasRequiredMetadata[metadataType] = true;
-
-          // Check type constraints
-          if (metadataType === 'Type') {
-            const typeValue = value.trim().toLowerCase();
-            
-            // For nodes (check if it's a node by looking for ::: in the element)
-            if (currentElement.includes(':::')) {
-              if (typeValue !== 'state' && typeValue !== 'event') {
-                errors.push(`Invalid node type "${value}" for element "${currentElement}". Node type must be exactly "state" or "event"`);
-              }
-              
-              // Check if we've seen this element before with a different type
-              if (elementTypes.has(currentElement)) {
-                const previousType = elementTypes.get(currentElement);
-                if (previousType !== typeValue) {
-                  errors.push(`Element "${currentElement}" has conflicting types: "${previousType}" and "${typeValue}". Nodes can only be of one type.`);
-                }
-              }
-              elementTypes.set(currentElement, typeValue);
-            }
-            // For edges (check if it's an edge by looking for --> in the element)
-            else if (currentElement.includes('-->')) {
-              if (typeValue !== 'trigger' && typeValue !== 'condition') {
-                errors.push(`Invalid edge type "${value}" for element "${currentElement}". Edge type must be exactly "trigger" or "condition"`);
-              }
-              
-              // Check if we've seen this element before with a different type
-              if (elementTypes.has(currentElement)) {
-                const previousType = elementTypes.get(currentElement);
-                if (previousType !== typeValue) {
-                  errors.push(`Element "${currentElement}" has conflicting types: "${previousType}" and "${typeValue}". Edges can only be of one type.`);
-                }
-              }
-              elementTypes.set(currentElement, typeValue);
-            }
-          }
         }
       }
     }
