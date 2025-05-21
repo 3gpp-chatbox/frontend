@@ -4,6 +4,9 @@ import { fetchGraphVersion, fetchVersionHistory } from '../API/api_calls';
 import { JsonToMermaid, defaultMermaidConfig } from '../functions/jsonToMermaid';
 import DiagramView from '../utils/DiagramView';
 import { FaCheckCircle } from 'react-icons/fa';
+import { highlightJson } from '../utils/jsonHighlighter';
+import { highlightMermaid } from '../utils/MermaidHighlighter';
+import { findDifferences, applyDiffHighlighting } from '../utils/diffHighlighter';
 
 function Comparison({ left, right, onClose, selectedProcedure }) {
   const [selectedTab, setSelectedTab] = useState('Mermaid');
@@ -17,11 +20,20 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
   const [leftVersion, setLeftVersion] = useState(null);
   // Initialize left panel content when component mounts
   useEffect(() => {
-    if (left?.mermaidContent) {
-      setLeftMermaidContent(left.mermaidContent);
-      setLeftJsonContent(left.jsonContent || ''); 
-      // version number
-      setLeftVersion(left.version);
+    if (left?.jsonContent) {
+      try {
+        // Parse JSON content
+        const jsonData = JSON.parse(left.jsonContent);
+        
+        // Convert JSON to Mermaid using JsonToMermaid
+        const mermaidCode = JsonToMermaid(jsonData, defaultMermaidConfig);
+        
+        setLeftMermaidContent(mermaidCode);
+        setLeftJsonContent(left.jsonContent);
+        setLeftVersion(left.version);
+      } catch (error) {
+        console.error('Error converting JSON to Mermaid:', error);
+      }
     }
   }, [left]);
 
@@ -74,12 +86,32 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
     setSelectedVersion(event.target.value);
   };
 
-  const renderPanelContent = (content, mermaidContent, jsonContent) => {
+  const renderPanelContent = (content, mermaidContent, jsonContent, isLeftPanel = false) => {
     switch (selectedTab) {
       case 'Mermaid':
-        return <div className="panel-mermaid">{content || 'No Mermaid content available'}</div>;
+        const mermaidDiffs = !isLeftPanel ? findDifferences(leftMermaidContent, content) : [];
+        return (
+          <div 
+            className="panel-mermaid"
+            dangerouslySetInnerHTML={{
+              __html: !isLeftPanel ? 
+                applyDiffHighlighting(highlightMermaid(content), mermaidDiffs) : 
+                highlightMermaid(content)
+            }}
+          />
+        );
       case 'JSON':
-        return <div className="panel-json">{jsonContent || 'No JSON content available'}</div>;
+        const jsonDiffs = !isLeftPanel ? findDifferences(leftJsonContent, jsonContent) : [];
+        return (
+          <div 
+            className="panel-json"
+            dangerouslySetInnerHTML={{
+              __html: !isLeftPanel ? 
+                applyDiffHighlighting(highlightJson(jsonContent), jsonDiffs) : 
+                highlightJson(jsonContent)
+            }}
+          />
+        );
       case 'Diagram':
         return (
           <div className="panel-graph" style={{ height: '100%', minHeight: '400px', position: 'relative' }}>
