@@ -495,11 +495,6 @@ function JsonViewer({
         setIsEditing(true);
         setHasChanges(false);
         isUserEditing.current = true;
-        setNotification({
-          show: true,
-          message: "Only whitespace changes detected. Save button will be enabled when actual changes are made.",
-          type: "info"
-        });
       }
       
       // Always update the editor content to maintain cursor position
@@ -1041,6 +1036,13 @@ function JsonViewer({
       />
 
       <FormatGuide isEditing={isEditing} activeView={activeView} />
+
+      {/* Add unsaved changes warning for JSON and Reference views */}
+      {activeView !== "mermaid" && isEditing && (
+        <div className="unsaved-changes-warning">
+          You have unsaved changes in the Mermaid editor
+        </div>
+      )}
 
       <div className="json-viewer-content">
         {activeView === "reference" ? (

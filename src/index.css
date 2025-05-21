@@ -2992,3 +2992,16 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   width: 100%;
   box-sizing: border-box;
 }
+
+.unsaved-changes-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ffeeba;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

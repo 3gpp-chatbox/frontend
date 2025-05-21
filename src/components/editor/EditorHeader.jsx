@@ -11,15 +11,6 @@ function EditorHeader({
 }) {
   const handleViewChange = (view) => {
     setActiveView(view);
-
-    // Show warning notification if switching views while editing
-    if (isEditing && view !== "mermaid") {
-      setNotification({
-        show: true,
-        message: "You have unsaved changes in the Mermaid editor",
-        type: "error",
-      });
-    }
   };
 
   return (
