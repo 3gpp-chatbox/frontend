@@ -456,58 +456,58 @@ function JsonViewer({
         throw new Error('Invalid content type');
       }
 
-      // Normalize line breaks and clean whitespace while preserving meaningful line breaks
-      const normalizeContent = (content) => {
-        // First, normalize line endings and remove leading/trailing whitespace
-        const normalized = content
-          .replace(/\r\n/g, '\n')
-          .trim();
+      // Validate content structure
+      const hasValidFlowchart = /^flowchart\s+(TD|TB|BT|LR|RL)/m.test(newCode);
+      const hasContent = newCode.split('\n')
+        .some(line => /[A-Za-z0-9]/.test(line) && !line.startsWith('flowchart'));
 
-        // Split into lines, trim each line, and filter out empty or whitespace-only lines
-        const lines = normalized
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line => line !== '' && /\S/.test(line)); // Keep only non-empty, non-whitespace lines
+      // Show validation notifications
+      if (!hasValidFlowchart) {
+        setNotification({
+          show: true,
+          message: "Invalid flowchart declaration. Must start with 'flowchart' followed by TD, TB, BT, LR, or RL",
+          type: "error"
+        });
+      } else if (!hasContent) {
+        setNotification({
+          show: true,
+          message: "Graph must contain at least one node or edge definition",
+          type: "error"
+        });
+      }
 
-        return lines.join('\n');
-      };
-
-      const normalizedCode = normalizeContent(newCode);
-      const normalizedOriginal = normalizeContent(originalMermaidGraph);
+      // Check if there are actual structural changes
+      console.log('Checking for structural changes...');
+      console.log('New code:', newCode);
+      console.log('Original code:', originalMermaidGraph);
       
-      // Check if content actually changed compared to original and is valid
-      const hasValidFlowchart = /^flowchart\s+(TD|TB|BT|LR|RL)/m.test(normalizedCode);
-      const hasValidContent = normalizedCode.split('\n')
-        .some(line => /[A-Za-z0-9]/.test(line) && !line.startsWith('flowchart')); // Has content beyond flowchart declaration
+      const hasActualChanges = hasGraphStructureChanges(newCode, originalMermaidGraph);
+      console.log('Has actual changes:', hasActualChanges);
       
-      const hasActualChanges = normalizedCode !== normalizedOriginal && // Different from original
-                             normalizedCode !== '' && // Not empty
-                             hasValidFlowchart && // Has valid flowchart declaration
-                             hasValidContent; // Has actual content
+      // Update states based on changes
+      if (hasActualChanges) {
+        setIsEditing(true);
+        setHasChanges(true);
+        isUserEditing.current = true;
+        console.log('Setting editing states to true due to actual changes');
+      } else if (newCode !== originalMermaidGraph) {
+        // There are changes, but they're only whitespace
+        setIsEditing(true);
+        setHasChanges(false);
+        isUserEditing.current = true;
+        setNotification({
+          show: true,
+          message: "Only whitespace changes detected. Save button will be enabled when actual changes are made.",
+          type: "info"
+        });
+      }
       
-      setHasChanges(hasActualChanges);
+      // Always update the editor content to maintain cursor position
+      setEditorContent(newCode);
       
-      // Only update if content actually changed from last state and is valid
-      if (normalizedCode !== lastContentRef.current) {
-        // Save current state for undo
-        setUndoStack([...undoStack, lastContentRef.current]);
-        setRedoStack([]);
-        
-        // Update content
-        setEditorContent(newCode); // Keep original whitespace for editing
-        lastContentRef.current = normalizedCode;
-        
-        // Only set editing state if there are actual changes
-        if (normalizedCode !== normalizeContent(mermaidGraph)) {
-          isUserEditing.current = hasActualChanges;
-          userEditedContent.current = newCode;
-          setIsEditing(hasActualChanges);
-          
-          // Update graph with debounce only if we have valid changes
-          if (debouncedUpdateRef.current && hasActualChanges) {
-            debouncedUpdateRef.current(newCode);
-          }
-        }
+      // Update the graph with debounce
+      if (debouncedUpdateRef.current) {
+        debouncedUpdateRef.current(newCode);
       }
 
       // Restore cursor and scroll position
@@ -904,6 +904,114 @@ function JsonViewer({
       editorRef.current.scrollLeft = lastScrollPosition.current.left;
     }
   }, [editorContent, mermaidGraph]);
+
+  const hasGraphStructureChanges = (newContent, originalContent) => {
+    if (!newContent || !originalContent) {
+      console.log('One of the contents is empty');
+      return false;
+    }
+
+    // Helper function to extract nodes and edges from content
+    const extractElements = (content) => {
+      const elements = {
+        nodes: new Set(),
+        edges: new Set(),
+        metadata: new Map()
+      };
+
+      const lines = content.split('\n');
+      for (let line of lines) {
+        line = line.trim();
+        
+        // Match node definitions more precisely
+        const nodeMatch = line.match(/^([A-Za-z0-9_]+)[\[\(\{\<](.*?)[\]\)\}\>](:::[\w-]+)?$/);
+        if (nodeMatch) {
+          const [fullMatch, id, label] = nodeMatch;
+          elements.nodes.add(fullMatch);
+          continue;
+        }
+
+        // Match edge definitions
+        const edgeMatch = line.match(/^([A-Za-z0-9_]+)\s*[-=][-=]+>\s*([A-Za-z0-9_]+)/);
+        if (edgeMatch) {
+          elements.edges.add(line.trim());
+          continue;
+        }
+
+        // Match metadata
+        if (line.startsWith('%%')) {
+          const currentElement = Array.from(elements.nodes).pop() || Array.from(elements.edges).pop();
+          if (currentElement) {
+            const metadata = elements.metadata.get(currentElement) || [];
+            metadata.push(line.trim());
+            elements.metadata.set(currentElement, metadata);
+          }
+        }
+      }
+
+      return elements;
+    };
+
+    const newElements = extractElements(newContent);
+    const originalElements = extractElements(originalContent);
+
+    console.log('Extracted elements:', {
+      new: {
+        nodes: Array.from(newElements.nodes),
+        edges: Array.from(newElements.edges)
+      },
+      original: {
+        nodes: Array.from(originalElements.nodes),
+        edges: Array.from(originalElements.edges)
+      }
+    });
+
+    // Compare node counts
+    if (newElements.nodes.size !== originalElements.nodes.size) {
+      console.log('Different number of nodes detected');
+      return true;
+    }
+
+    // Compare edge counts
+    if (newElements.edges.size !== originalElements.edges.size) {
+      console.log('Different number of edges detected');
+      return true;
+    }
+
+    // Compare nodes
+    for (const node of newElements.nodes) {
+      if (!originalElements.nodes.has(node)) {
+        console.log('New or modified node detected:', node);
+        return true;
+      }
+    }
+
+    // Compare edges
+    for (const edge of newElements.edges) {
+      if (!originalElements.edges.has(edge)) {
+        console.log('New or modified edge detected:', edge);
+        return true;
+      }
+    }
+
+    // Compare metadata
+    for (const [element, metadata] of newElements.metadata) {
+      const originalMetadata = originalElements.metadata.get(element) || [];
+      if (!arraysEqual(metadata, originalMetadata)) {
+        console.log('Metadata changes detected for:', element);
+        return true;
+      }
+    }
+
+    console.log('No structural changes detected');
+    return false;
+  };
+
+  // Helper function to compare arrays
+  const arraysEqual = (a, b) => {
+    if (a.length !== b.length) return false;
+    return a.every((val, index) => val === b[index]);
+  };
 
   return (
     <div className="editor-panel">
