@@ -163,19 +163,99 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
         element.style.cursor = "pointer";
         element.addEventListener("click", (e) => {
           e.stopPropagation();
-          onElementClick?.({ type: "node", id: element.id });
+          const nodeId = element.id.replace(/^flowchart-/, ''); // Remove flowchart- prefix
+          const nodeText = element.querySelector(".label")?.textContent;
+          
+          // Extract references from comments
+          let sectionRef = "";
+          let textRef = "";
+          const lines = cleanedCode.split("\n");
+          let foundNode = false;
+          
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            // Look for node definition line - match either the node ID or the node text
+            if (line.match(new RegExp(`^[A-Z]\\["${nodeText}"\\]`)) || 
+                line.match(new RegExp(`^[A-Z]\\["${nodeId}"\\]`)) ||
+                line.match(new RegExp(`^[A-Z]\\(\\("${nodeText}"\\)\\)`)) ||
+                line.match(new RegExp(`^[A-Z]\\(\\("${nodeId}"\\)\\)`))) {
+              foundNode = true;
+              continue;
+            }
+            if (foundNode) {
+              if (line.startsWith('%% Section_Reference:')) {
+                sectionRef = line.replace('%% Section_Reference:', '').trim();
+              } else if (line.startsWith('%% Text_Reference:')) {
+                // Extract the text reference and normalize it
+                textRef = line
+                  .replace(/^%%\s*Text_Reference:\s*/i, '') // Remove the prefix
+                  .replace(/^Looking for text:\s*/i, '') // Remove any "Looking for text:" prefix
+                  .trim();
+              }
+              // Break if we've found all metadata or reached next element
+              if (line.match(/^[A-Z][\[\(]/)) break;
+            }
+          }
+
+          console.log("Node click - extracted refs:", { sectionRef, textRef });
+          onElementClick?.({
+            type: "node",
+            id: nodeId,
+            text: nodeText,
+            section_ref: sectionRef,
+            text_ref: textRef
+          });
         });
       });
 
-      // Handle edge labels - we need to find the corresponding edge
+      // Handle edge labels
       newSvg.querySelectorAll(".edgeLabel").forEach((edgeLabel) => {
         edgeLabel.style.cursor = "pointer";
         
         edgeLabel.addEventListener("click", (e) => {
           e.stopPropagation();
-          console.log("Edge label clicked:", edgeLabel.textContent);
+          // Get the raw text content without HTML formatting
           const edgeLabelText = edgeLabel.textContent.trim();
-          onElementClick?.({ type: "edge", id: edgeLabelText });
+          
+          // Extract references from comments
+          let sectionRef = "";
+          let textRef = "";
+          const lines = cleanedCode.split("\n");
+          let foundEdge = false;
+          
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            // Look for edge definition line with the label - more flexible matching
+            if (line.includes("-->") && line.includes(edgeLabelText)) {
+              foundEdge = true;
+              // Look ahead for comments
+              for (let j = i + 1; j < lines.length; j++) {
+                const commentLine = lines[j].trim();
+                if (commentLine.startsWith('%% Section_Reference:')) {
+                  sectionRef = commentLine.replace('%% Section_Reference:', '').trim();
+                } else if (commentLine.startsWith('%% Text_Reference:')) {
+                  textRef = commentLine
+                    .replace(/^%%\s*Text_Reference:\s*/i, '')
+                    .replace(/^Looking for text:\s*/i, '')
+                    .trim();
+                }
+                // Break if we've found all metadata or reached next element
+                if (commentLine.match(/^[A-Z][\[\(]/) || !commentLine.startsWith('%%')) {
+                  break;
+                }
+              }
+              break;
+            }
+          }
+
+          console.log("Edge click - extracted refs:", { sectionRef, textRef });
+          onElementClick?.({
+            type: "edge",
+            id: edgeLabelText,
+            text: edgeLabelText,
+            section_ref: sectionRef,
+            text_ref: textRef
+          });
         });
       });
       
@@ -184,193 +264,6 @@ function FlowDiagram({ mermaidCode, direction = "TD", onElementClick }) {
       newSvg.style.height = "100%";
       newSvg.style.minWidth = "800px";
       newSvg.style.minHeight = "600px";
-
-      // Add click handlers for nodes
-      newSvg.querySelectorAll(".node").forEach((node) => {
-        node.style.cursor = "pointer";
-        node.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const nodeId = node.id;
-
-          // Extract the actual node text from the label
-          const labelEl = node.querySelector(".label");
-          let nodeText = "";
-          let nodeDescription = "";
-          let sectionRef = "";
-          let textRef = "";
-
-          if (labelEl) {
-            // Remove any HTML tags and get clean text
-            const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = labelEl.innerHTML;
-            nodeText = tempDiv.textContent.trim();
-            nodeText = nodeText.replace(/^["']|["']$/g, "");
-
-            // Find the node's metadata from the Mermaid comments
-            const lines = cleanedCode.split("\n");
-            let foundNode = false;
-            for (let i = 0; i < lines.length; i++) {
-              const line = lines[i].trim();
-              if (line.includes(nodeText)) {
-                foundNode = true;
-                continue;
-              }
-              if (foundNode) {
-                if (line.startsWith("%% Description:")) {
-                  nodeDescription = line.replace("%% Description:", "").trim();
-                }
-                if (line.startsWith('%% Section_Reference:')) {
-                  sectionRef = line.replace('%% Section_Reference:', '').trim();
-                }
-                else if (line.startsWith('%% Text_Reference:')) {
-                  textRef = line.replace('%% Text_Reference :', '').trim();
-                }
-                // Break if we've found all metadata or reached next node
-                if (line.match(/^[A-Z]+[\[\(]/)) break;
-              }
-            }
-          }
-
-          // Add visual feedback for clicked node
-          document
-            .querySelectorAll(".node")
-            .forEach((n) => n.classList.remove("selected"));
-          node.classList.add("selected");
-
-          onElementClick({
-            type: "node",
-            id: nodeId,
-            text: nodeText,
-            description: nodeDescription,
-            section_ref: sectionRef,
-            text_ref: textRef,
-            element: node,
-          });
-          console.log("Node clicked, passing refs:", { sectionRef, textRef });
-        });
-      });
-
-      // Add click handlers for edges
-      newSvg.querySelectorAll(".edgePath").forEach((edge) => {
-        // Function to handle edge click
-        const handleEdgeClick = (e) => {
-          e.stopPropagation();
-          const edgeId = edge.id;
-
-          // Extract source and target nodes from edge ID
-          const parts = edgeId.split("-");
-          const fromNode = parts[1];
-          const toNode = parts[parts.length - 1];
-
-          // Get the edge label and metadata
-          const edgeLabelGroup = newSvg.querySelector(`#${edgeId}-label`);
-          let edgeLabel = "";
-          let sectionRef = "";
-          let textRef = "";
-
-          if (edgeLabelGroup) {
-            const labelElement = edgeLabelGroup.querySelector(".edgeLabel");
-            if (labelElement) {
-              edgeLabel = labelElement.textContent.trim();
-              edgeLabel = edgeLabel.replace(/^[|"'\s]+|[|"'\s]+$/g, "");
-            }
-          }
-
-          // Find edge metadata in comments
-          const lines = cleanedCode.split("\n");
-          let foundEdge = false;
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            // Look for the edge definition line using the full edge ID or label
-            if (edgeLabel && line.includes(`|${edgeLabel}|`)) {
-              foundEdge = true;
-              continue;
-            }
-            if (foundEdge) {
-              if (line.startsWith('%% Section_Reference:')) {
-                sectionRef = line.replace('%% Section_Reference:', '').trim();
-              } else if (line.startsWith('%% Text_Reference:')) {
-                textRef = line.replace('%% Text_Reference:', '').trim();
-              }
-              // Break if we've found all metadata or reached next element
-              if (line.match(/^[A-Z]+/)) break; // Assuming node labels are uppercase letters
-            }
-          }
-
-          // Add visual feedback for clicked edge
-          newSvg.querySelectorAll(".edgePath").forEach((e) => {
-            e.classList.remove("selected");
-            const p = e.querySelector("path");
-            if (p) p.style.strokeWidth = "";
-          });
-
-          edge.classList.add("selected");
-          const pathEl = edge.querySelector("path");
-          if (pathEl) {
-            pathEl.style.strokeWidth = "4px";
-          }
-
-          onElementClick({
-            type: "edge",
-            id: edgeId,
-            from: fromNode,
-            to: toNode,
-            label: edgeLabel,
-            section_ref: sectionRef,
-            text_ref: textRef,
-            element: edge,
-          });
-          console.log("Edge clicked, passing refs:", { sectionRef, textRef });
-        };
-
-        // Make all parts of the edge clickable
-        const makeClickable = (element) => {
-          if (element) {
-            element.style.cursor = "pointer";
-            element.style.pointerEvents = "all";
-            element.addEventListener("click", handleEdgeClick);
-          }
-        };
-
-        // Make the edge path clickable
-        makeClickable(edge);
-        makeClickable(edge.querySelector("path"));
-        makeClickable(edge.querySelector("marker-end"));
-
-        // Make the edge label clickable
-        const edgeLabelGroup = newSvg.querySelector(`#${edge.id}-label`);
-        if (edgeLabelGroup) {
-          makeClickable(edgeLabelGroup);
-
-          // Make the label text clickable
-          const labelElement = edgeLabelGroup.querySelector(".edgeLabel");
-          if (labelElement) {
-            makeClickable(labelElement);
-          }
-
-          // Make the foreignObject and its contents clickable
-          const foreignObject = edgeLabelGroup.querySelector("foreignObject");
-          if (foreignObject) {
-            makeClickable(foreignObject);
-            foreignObject.querySelectorAll("*").forEach(makeClickable);
-          }
-        }
-
-        // Add hover effect for edges
-        const handleEdgeHover = (isHover) => {
-          if (!edge.classList.contains("selected")) {
-            const pathEl = edge.querySelector("path");
-            if (pathEl) {
-              pathEl.style.strokeWidth = isHover ? "10px" : "";
-            }
-            edge.style.opacity = isHover ? "1" : "";
-            edge.style.color = isHover ? "red" : "";
-          }
-        };
-
-        edge.addEventListener("mouseenter", () => handleEdgeHover(true));
-        edge.addEventListener("mouseleave", () => handleEdgeHover(false));
-      });
 
       // Add click handler for diagram background to deselect
       newSvg.addEventListener("click", (e) => {
