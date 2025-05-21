@@ -129,18 +129,44 @@ function InteractiveMarkdown({ content, highlightedSection }) {
         const cleanTextRef = textRef
           .toLowerCase()
           .replace(/\.\.\./g, "")
+          .replace(/^%%\s*text_reference:\s*/i, '')
+          .replace(/^looking for text:\s*/i, '')
           .trim();
         console.log("Looking for text:", cleanTextRef, "type:", section.type);
 
+        // Split the reference text into words
+        const refWords = cleanTextRef.split(/\s+/).filter(word => word.length > 0);
+        const minWordsToMatch = Math.max(3, Math.floor(refWords.length * 0.7)); // Match at least 3 words or 70% of words
+
         for (let i = sectionStartLine; i <= sectionEndLine; i++) {
           const lineContent = lineElements[i].textContent.toLowerCase();
+          const lineWords = lineContent.split(/\s+/).filter(word => word.length > 0);
 
           // For nodes, we need to be more flexible in matching since the node text might be part of a longer line
           // For edges, we want to match the exact text
           const isNode = section.type === "node";
-          const isMatch = isNode
-            ? lineContent.includes(cleanTextRef)
-            : lineContent.includes(cleanTextRef);
+          let isMatch = false;
+
+          if (isNode) {
+            // For nodes, check if the line contains the reference text
+            isMatch = lineContent.includes(cleanTextRef);
+          } else {
+            // For edges, use fuzzy matching with consecutive words
+            let maxConsecutiveMatches = 0;
+            let currentConsecutiveMatches = 0;
+
+            for (let j = 0; j < lineWords.length; j++) {
+              if (refWords.includes(lineWords[j])) {
+                currentConsecutiveMatches++;
+                maxConsecutiveMatches = Math.max(maxConsecutiveMatches, currentConsecutiveMatches);
+              } else {
+                currentConsecutiveMatches = 0;
+              }
+            }
+
+            // Match if we found enough consecutive words
+            isMatch = maxConsecutiveMatches >= minWordsToMatch;
+          }
 
           if (isMatch) {
             // Remove section highlight from this line and add orange highlight
