@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { FaSave } from "react-icons/fa";
+import { FaSave, FaUndo } from "react-icons/fa";
 import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
 
 /**
@@ -9,8 +9,10 @@ function ViewerControls({
   activeView,
   direction,
   isEditing,
+  hasChanges,
   onDirectionChange,
   onSave,
+  onRevert,
   setNotification,
   isValidCode = true,
 }) {
@@ -53,15 +55,27 @@ function ViewerControls({
       </div>
       <div className="viewer-controls-right">
         {isEditing && (
-          <button
-            className="save-button"
-            onClick={onSave}
-            disabled={!isValidCode}
-            title="Save Changes"
-          >
-            <FaSave size={16} />
-            Save
-          </button>
+          <div className="button-group">
+            <button
+              className="undo-all-button"
+              onClick={onRevert}
+              title="Undo All Changes"
+            >
+              <FaUndo size={16} />
+              Undo all
+            </button>
+            {hasChanges && (
+              <button
+                className="save-button"
+                onClick={onSave}
+                disabled={!isValidCode}
+                title="Save Changes"
+              >
+                <FaSave size={16} />
+                Save
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -72,8 +86,10 @@ ViewerControls.propTypes = {
   activeView: PropTypes.oneOf(["mermaid", "json", "reference"]).isRequired,
   direction: PropTypes.oneOf(["TD", "LR"]).isRequired,
   isEditing: PropTypes.bool.isRequired,
+  hasChanges: PropTypes.bool.isRequired,
   onDirectionChange: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  onRevert: PropTypes.func.isRequired,
   setNotification: PropTypes.func.isRequired,
   isValidCode: PropTypes.bool,
 };

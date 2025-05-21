@@ -11,15 +11,28 @@ import { validateGraph } from "./schema_validation";
  * @param {string} mermaidCode - The Mermaid diagram code to validate
  * @returns {boolean} True if the code is valid, false otherwise
  */
+
+// export function validateMermaidCode(mermaidCode) {
+//   if (!mermaidCode || typeof mermaidCode !== "string") return false;
+
+//   const lines = mermaidCode.split("\n").map((line) => line.trim());
+
+//   // Check for flowchart declaration
+//   if (!lines.some((line) => line.startsWith("flowchart"))) return false;
+
+//   return true;
+// }
+
+// Modify validateMermaidCode to not require flowchart declaration
 export function validateMermaidCode(mermaidCode) {
   if (!mermaidCode || typeof mermaidCode !== "string") return false;
-
-  const lines = mermaidCode.split("\n").map((line) => line.trim());
-
-  // Check for flowchart declaration
-  if (!lines.some((line) => line.startsWith("flowchart"))) return false;
-
-  return true;
+  
+  // Basic validation that there is some content
+  const lines = mermaidCode.split("\n")
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
+    
+  return lines.length > 0;
 }
 
 /**
