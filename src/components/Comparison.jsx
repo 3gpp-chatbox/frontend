@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { fetchGraphVersion, fetchVersionHistory } from '../API/api_calls';
 import { JsonToMermaid, defaultMermaidConfig } from '../functions/jsonToMermaid';
@@ -18,6 +18,10 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
   const [rightJsonContent, setRightJsonContent] = useState('');
   const [leftJsonContent, setLeftJsonContent] = useState('');
   const [leftVersion, setLeftVersion] = useState(null);
+  const leftPanelRef = useRef(null);
+  const rightPanelRef = useRef(null);
+  const isSyncingScroll = useRef(false);
+
   // Initialize left panel content when component mounts
   useEffect(() => {
     if (left?.jsonContent) {
@@ -84,6 +88,16 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
 
   const handleVersionChange = (event) => {
     setSelectedVersion(event.target.value);
+  };
+
+  const handleSyncScroll = (source) => (e) => {
+    if (isSyncingScroll.current) return;
+    isSyncingScroll.current = true;
+    const otherPanel = source === 'left' ? rightPanelRef.current : leftPanelRef.current;
+    if (otherPanel) {
+      otherPanel.scrollTop = e.target.scrollTop;
+    }
+    setTimeout(() => { isSyncingScroll.current = false; }, 0);
   };
 
   const renderPanelContent = (content, mermaidContent, jsonContent, isLeftPanel = false) => {
@@ -178,7 +192,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               </span>
             </div>
           </div>
-          <div className="panel-content">
+          <div className="panel-content" ref={leftPanelRef} onScroll={handleSyncScroll('left')}>
             {renderPanelContent(leftMermaidContent, leftMermaidContent, leftJsonContent)}
           </div>
         </div>
@@ -201,7 +215,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               </select>
             </div>
           </div>
-          <div className="panel-content">
+          <div className="panel-content" ref={rightPanelRef} onScroll={handleSyncScroll('right')}>
             {renderPanelContent(rightMermaidContent, rightMermaidContent, rightJsonContent)}
           </div>
         </div>
