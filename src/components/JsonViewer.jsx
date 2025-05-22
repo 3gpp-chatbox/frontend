@@ -105,10 +105,52 @@ function JsonViewer({
     }
 
     // Check for actual content (nodes or edges)
-    if (!normalizedContent.split('\n').some(line => /[A-Za-z0-9]/.test(line))) {
+    const contentLines = normalizedContent.split('\n');
+    if (!contentLines.some(line => /[A-Za-z0-9]/.test(line))) {
       setNotification({
         show: true,
         message: "Graph must contain at least one node or edge definition",
+        type: "error"
+      });
+      return;
+    }
+
+    // Check for duplicate nodes and edges
+    const nodes = new Set();
+    const edges = new Set();
+    let duplicateFound = false;
+    let duplicateMessage = "";
+
+    contentLines.forEach(line => {
+      line = line.trim();
+      
+      // Match node definitions (e.g., "A[text]", "B(text)", etc.)
+      const nodeMatch = line.match(/^([A-Za-z0-9_]+)[\[\(\{\<]/);
+      if (nodeMatch) {
+        const nodeId = nodeMatch[1];
+        if (nodes.has(nodeId)) {
+          duplicateFound = true;
+          duplicateMessage = `Duplicate node found: ${nodeId}`;
+        }
+        nodes.add(nodeId);
+      }
+
+      // Match edge definitions (e.g., "A-->B", "A==>B", etc.)
+      const edgeMatch = line.match(/^([A-Za-z0-9_]+)\s*[-=][-=]+>\s*([A-Za-z0-9_]+)/);
+      if (edgeMatch) {
+        const edgeId = `${edgeMatch[1]}->${edgeMatch[2]}`;
+        if (edges.has(edgeId)) {
+          duplicateFound = true;
+          duplicateMessage = `Duplicate edge found: ${edgeMatch[1]} to ${edgeMatch[2]}`;
+        }
+        edges.add(edgeId);
+      }
+    });
+
+    if (duplicateFound) {
+      setNotification({
+        show: true,
+        message: duplicateMessage,
         type: "error"
       });
       return;
@@ -542,18 +584,41 @@ function JsonViewer({
         throw new Error('Invalid content type');
       }
 
-      // Check for actual content
-      const hasContent = newCode.split('\n')
-        .some(line => /[A-Za-z0-9]/.test(line));
+      // Check for actual content and duplicates
+      const contentLines = newCode.split('\n');
+      const hasContent = contentLines.some(line => /[A-Za-z0-9]/.test(line));
 
-      // Show validation notifications
-      if (!hasContent) {
-        setNotification({
-          show: true,
-          message: "Graph must contain at least one node or edge definition",
-          type: "error"
-        });
-      }
+      // Check for duplicate nodes and edges
+      const nodes = new Set();
+      const edges = new Set();
+      let duplicateErrors = [];
+
+      contentLines.forEach(line => {
+        line = line.trim();
+        
+        // Match node definitions (e.g., "A[text]", "B(text)", etc.)
+        const nodeMatch = line.match(/^([A-Za-z0-9_]+)[\[\(\{\<]/);
+        if (nodeMatch) {
+          const nodeId = nodeMatch[1];
+          if (nodes.has(nodeId)) {
+            duplicateErrors.push(`Duplicate node found: ${nodeId}`);
+          }
+          nodes.add(nodeId);
+        }
+
+        // Match edge definitions (e.g., "A-->B", "A==>B", etc.)
+        const edgeMatch = line.match(/^([A-Za-z0-9_]+)\s*[-=][-=]+>\s*([A-Za-z0-9_]+)/);
+        if (edgeMatch) {
+          const edgeId = `${edgeMatch[1]}->${edgeMatch[2]}`;
+          if (edges.has(edgeId)) {
+            duplicateErrors.push(`Duplicate edge found: ${edgeMatch[1]} to ${edgeMatch[2]}`);
+          }
+          edges.add(edgeId);
+        }
+      });
+
+      // Set validation state based on duplicates
+      setIsValidCode(!duplicateErrors.length);
 
       // Check if there are actual structural changes
       console.log('Checking for structural changes...');
