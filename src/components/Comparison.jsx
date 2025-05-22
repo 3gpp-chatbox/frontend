@@ -104,31 +104,65 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
     switch (selectedTab) {
       case 'Mermaid':
         const mermaidDiffs = !isLeftPanel ? findDifferences(leftMermaidContent, content) : [];
-        return (
-          <div 
-            className="panel-mermaid"
-            dangerouslySetInnerHTML={{
-              __html: !isLeftPanel ? 
-                applyDiffHighlighting(content, mermaidDiffs, 'mermaid') : 
-                highlightMermaidDiff(content)
-            }}
-          />
-        );
+        if (!isLeftPanel) {
+          // For diff view, add line numbers to each code-line div in the diff output
+          const diffHtml = applyDiffHighlighting(content, mermaidDiffs, 'mermaid');
+          // Add line numbers to each code-line
+          return (
+            <div
+              className="panel-mermaid"
+              dangerouslySetInnerHTML={{
+                __html: diffHtml.replace(/<div class=\"code-line\">/g, (m, offset, str) => {
+                  const lineNum = (str.slice(0, offset).match(/<div class=\"code-line\">/g) || []).length + 1;
+                  return `<div class=\"code-line\"><span class=\"line-number\">${lineNum}</span>`;
+                })
+              }}
+            />
+          );
+        } else {
+          // For left panel, split and add line numbers
+          return (
+            <div
+              className="panel-mermaid"
+              dangerouslySetInnerHTML={{
+                __html: content
+                  .split('\n')
+                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightMermaidDiff(line)}</div>`)
+                  .join('\n')
+              }}
+            />
+          );
+        }
       case 'JSON':
         const jsonDiffs = !isLeftPanel ? findDifferences(leftJsonContent, jsonContent) : [];
-        return (
-          <div 
-            className="panel-json"
-            dangerouslySetInnerHTML={{
-              __html: !isLeftPanel
-                ? applyDiffHighlighting(jsonContent, jsonDiffs, 'json')
-                : jsonContent
-                    .split('\n')
-                    .map(line => `<div class="code-line">${highlightJsonDiff(line)}</div>`)
-                    .join('\n')
-            }}
-          />
-        );
+        if (!isLeftPanel) {
+          // For diff view, add line numbers to each code-line div in the diff output
+          const diffHtml = applyDiffHighlighting(jsonContent, jsonDiffs, 'json');
+          return (
+            <div
+              className="panel-json"
+              dangerouslySetInnerHTML={{
+                __html: diffHtml.replace(/<div class=\"code-line\">/g, (m, offset, str) => {
+                  const lineNum = (str.slice(0, offset).match(/<div class=\"code-line\">/g) || []).length + 1;
+                  return `<div class=\"code-line\"><span class=\"line-number\">${lineNum}</span>`;
+                })
+              }}
+            />
+          );
+        } else {
+          // For left panel, split and add line numbers
+          return (
+            <div
+              className="panel-json"
+              dangerouslySetInnerHTML={{
+                __html: jsonContent
+                  .split('\n')
+                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightJsonDiff(line)}</div>`)
+                  .join('\n')
+              }}
+            />
+          );
+        }
       case 'Diagram':
         return (
           <div className="panel-graph" style={{ height: '100%', minHeight: '400px', position: 'relative' }}>

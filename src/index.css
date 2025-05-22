@@ -2722,6 +2722,12 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--blue-600) var(--black-800);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  /* white-space: pre-wrap; */
+  overflow-x: hidden;
+  /* overflow-y: auto; */
+  /* max-height: 100%; */
 }
 
 .panel-content::-webkit-scrollbar {
@@ -2754,6 +2760,15 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   min-height: 200px;
   /* white-space: pre-wrap; */
   word-break: break-word;
+}
+.line-number {
+  display: inline-block;
+  width: 2.5em;
+  text-align: left;
+  margin-right: 0.5em;
+  color: var(--silver-300);
+  user-select: none;
+  opacity: 0.6;
 }
 
 .version-selector {
