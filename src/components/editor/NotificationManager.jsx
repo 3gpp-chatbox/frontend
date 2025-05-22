@@ -12,11 +12,13 @@ function validateMermaidSyntax(code) {
   
   // Track nodes and edges for duplicate checking
   const nodes = new Set();
+  const nodeContents = new Set();
   const edges = new Set();
+  const edgeLabels = new Set();
   
   // Updated patterns to support both state and event node formats
-  let nodePattern = /^[A-Za-z0-9_]+(?:\["[^"]+"\]|\(\("[^"]+"\)\)):::(?:state|event)$/;
-  let edgePattern = /^[A-Za-z0-9_]+\s*-->\|"[^"]+"\|\s*[A-Za-z0-9_]+$/;
+  let nodePattern = /^([A-Za-z0-9_]+)(?:\["([^"]+)"\]|\(\("([^"]+)"\)\)):::(?:state|event)$/;
+  let edgePattern = /^([A-Za-z0-9_]+)\s*-->\|"([^"]+)"\|\s*([A-Za-z0-9_]+)$/;
   let commentPattern = /^%%\s*(Type|Description|Section_Reference|Text_Reference):\s*.+$/;
 
   // Additional validation for node type matching bracket style
@@ -56,23 +58,38 @@ function validateMermaidSyntax(code) {
               errors.push(`Line ${index + 1}: ${nodeFormatError} - "${trimmedLine}"`);
             }
             
-            // Check for duplicate nodes
-            const nodeMatch = trimmedLine.match(/^([A-Za-z0-9_]+)/);
-            if (nodeMatch && nodes.has(nodeMatch[1])) {
-              errors.push(`Line ${index + 1}: Duplicate node found - "${nodeMatch[1]}"`);
-            } else if (nodeMatch) {
-              nodes.add(nodeMatch[1]);
+            // Check for duplicate nodes and node contents
+            const nodeMatch = trimmedLine.match(nodePattern);
+            if (nodeMatch) {
+              const nodeId = nodeMatch[1];
+              const nodeContent = nodeMatch[2] || nodeMatch[3]; // Handle both state and event formats
+              
+              if (nodes.has(nodeId)) {
+                errors.push(`Line ${index + 1}: Duplicate node ID found - "${nodeId}"`);
+              }
+              if (nodeContents.has(nodeContent)) {
+                errors.push(`Line ${index + 1}: Duplicate node content found - "${nodeContent}"`);
+              }
+              
+              nodes.add(nodeId);
+              nodeContents.add(nodeContent);
             }
           } else if (edgePattern.test(trimmedLine)) {
-            // Check for duplicate edges
-            const edgeMatch = trimmedLine.match(/^([A-Za-z0-9_]+)\s*-->\|"[^"]+"\|\s*([A-Za-z0-9_]+)$/);
+            // Check for duplicate edges and edge labels
+            const edgeMatch = trimmedLine.match(edgePattern);
             if (edgeMatch) {
-              const edgeId = `${edgeMatch[1]}->${edgeMatch[2]}`;
+              const [, fromNode, label, toNode] = edgeMatch;
+              const edgeId = `${fromNode}->${toNode}`;
+              
               if (edges.has(edgeId)) {
-                errors.push(`Line ${index + 1}: Duplicate edge found - "${edgeMatch[1]} to ${edgeMatch[2]}"`);
-              } else {
-                edges.add(edgeId);
+                errors.push(`Line ${index + 1}: Duplicate edge found - "${fromNode} to ${toNode}"`);
               }
+              if (edgeLabels.has(label)) {
+                errors.push(`Line ${index + 1}: Duplicate edge label found - "${label}"`);
+              }
+              
+              edges.add(edgeId);
+              edgeLabels.add(label);
             }
           }
         }
