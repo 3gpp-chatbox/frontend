@@ -69,7 +69,6 @@ function ViewerControls({
                 className="save-button"
                 onClick={onSave}
                 disabled={!isValidCode}
-                title="Save Changes"
               >
                 <FaSave size={16} />
                 Save
