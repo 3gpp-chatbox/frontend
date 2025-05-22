@@ -100,13 +100,21 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
     setTimeout(() => { isSyncingScroll.current = false; }, 0);
   };
 
+  const filterMermaidClassDef = (content) =>
+    content
+      .split('\n')
+      .filter(line => !line.trim().startsWith('classDef'))
+      .join('\n');
+
   const renderPanelContent = (content, mermaidContent, jsonContent, isLeftPanel = false) => {
     switch (selectedTab) {
       case 'Mermaid':
+        // Filter out classDef lines
         const mermaidDiffs = !isLeftPanel ? findDifferences(leftMermaidContent, content) : [];
+        const filteredContent = filterMermaidClassDef(content);
         if (!isLeftPanel) {
           // For diff view, add line numbers to each code-line div in the diff output
-          const diffHtml = applyDiffHighlighting(content, mermaidDiffs, 'mermaid');
+          const diffHtml = applyDiffHighlighting(filteredContent, mermaidDiffs, 'mermaid');
           // Add line numbers to each code-line
           return (
             <div
