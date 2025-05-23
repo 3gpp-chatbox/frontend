@@ -134,19 +134,24 @@ export const revertChanges = ({
   setNotification,
 }) => {
   try {
-    // 1. Clear user changes and revert to original Mermaid code
-    setMermaidGraph(originalMermaidGraph);
-    onMermaidCodeChange(originalMermaidGraph);
-
-    // 2. Revert data states
-    setData(originalData);
-    const graphData = originalData.edited_graph || originalData.original_graph || originalData.graph;
-    setJsonContent(JSON.stringify(graphData, null, 2));
-
-    // 3. Reset editing states
+    // 1. Reset all editing states first
     isUserEditing.current = false;
     setIsEditing(false);
     setShowConfirmation(false);
+
+    // 2. Clear and reset Mermaid code
+    setMermaidGraph(originalMermaidGraph || "");
+    onMermaidCodeChange(originalMermaidGraph || "");
+
+    // 3. Reset data states
+    if (originalData) {
+      setData(originalData);
+      const graphData = originalData.edited_graph || originalData.original_graph || originalData.graph;
+      setJsonContent(JSON.stringify(graphData, null, 2));
+    } else {
+      setData(null);
+      setJsonContent("");
+    }
 
     // 4. Show success notification
     setNotification({
@@ -155,6 +160,11 @@ export const revertChanges = ({
       type: "info",
     });
   } catch (error) {
+    // Reset states even if there's an error
+    isUserEditing.current = false;
+    setIsEditing(false);
+    setShowConfirmation(false);
+    
     setNotification({
       show: true,
       message: `Failed to revert changes: ${error.message}`,

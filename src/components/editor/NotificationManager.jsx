@@ -14,7 +14,6 @@ function validateMermaidSyntax(code) {
   const nodes = new Set();
   const nodeContents = new Set();
   const edges = new Set();
-  const edgeLabels = new Set();
   
   // Updated patterns to support both state and event node formats
   let nodePattern = /^([A-Za-z0-9_]+)(?:\["([^"]+)"\]|\(\("([^"]+)"\)\)):::(?:state|event)$/;
@@ -75,21 +74,17 @@ function validateMermaidSyntax(code) {
               nodeContents.add(nodeContent);
             }
           } else if (edgePattern.test(trimmedLine)) {
-            // Check for duplicate edges and edge labels
+            // Check only for duplicate edges based on fromNode->toNode
             const edgeMatch = trimmedLine.match(edgePattern);
             if (edgeMatch) {
-              const [, fromNode, label, toNode] = edgeMatch;
+              const [, fromNode, , toNode] = edgeMatch;
               const edgeId = `${fromNode}->${toNode}`;
               
               if (edges.has(edgeId)) {
                 errors.push(`Line ${index + 1}: Duplicate edge found - "${fromNode} to ${toNode}"`);
               }
-              if (edgeLabels.has(label)) {
-                errors.push(`Line ${index + 1}: Duplicate edge label found - "${label}"`);
-              }
               
               edges.add(edgeId);
-              edgeLabels.add(label);
             }
           }
         }

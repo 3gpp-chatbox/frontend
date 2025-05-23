@@ -298,24 +298,7 @@ function JsonViewer({
     const loadProcedureData = async () => {
       if (!selectedProcedure?.id) {
         console.log("No procedure ID provided");
-        return;
-      }
-
-      console.log("Loading procedure data for ID:", selectedProcedure.id);
-
-      // Don't reload if user is currently editing
-      if (isUserEditing.current) {
-        setNotification({
-          show: true,
-          message:
-            "Please save or discard your changes before switching procedures",
-          type: "warning",
-        });
-        return;
-      }
-
-      try {
-        // Clear previous data
+        // Clear all states when no procedure is selected
         setData(null);
         setOriginalData(null);
         setMermaidGraph("");
@@ -323,6 +306,21 @@ function JsonViewer({
         setJsonContent("");
         setIsEditing(false);
         isUserEditing.current = false;
+        return;
+      }
+
+      console.log("Loading procedure data for ID:", selectedProcedure.id);
+
+      try {
+        // Clear previous data first
+        setData(null);
+        setOriginalData(null);
+        setMermaidGraph("");
+        setOriginalMermaidGraph("");
+        setJsonContent("");
+        setIsEditing(false);
+        isUserEditing.current = false;
+        setEditorContent("");
 
         const procedureData = await fetchProcedure(
           selectedProcedure.id,
@@ -337,6 +335,16 @@ function JsonViewer({
         // Store complete data for state management
         setData(procedureData);
         setOriginalData(procedureData);
+
+        // Generate and set initial Mermaid code
+        const graphData = procedureData.edited_graph || procedureData.original_graph || procedureData.graph;
+        if (graphData) {
+          const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
+          setMermaidGraph(mermaidCode);
+          setOriginalMermaidGraph(mermaidCode);
+          onMermaidCodeChange(mermaidCode);
+          setEditorContent(mermaidCode);
+        }
       } catch (error) {
         console.error("Error loading procedure data:", error);
         setNotification({
