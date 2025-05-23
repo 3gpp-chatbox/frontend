@@ -483,6 +483,16 @@ function JsonViewer({
         editorRef.current.textContent = prevState;
         setEditorContent(prevState);
         
+        // Check if we've returned to original state
+        const hasActualChanges = hasGraphStructureChanges(prevState, originalMermaidGraph);
+        setHasChanges(hasActualChanges);
+        
+        // Keep isEditing true unless we're back to original
+        if (!hasActualChanges && prevState === originalMermaidGraph) {
+          setIsEditing(false);
+          isUserEditing.current = false;
+        }
+        
         // Update Mermaid graph
         if (debouncedUpdateRef.current) {
           debouncedUpdateRef.current(prevState);
