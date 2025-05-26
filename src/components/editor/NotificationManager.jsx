@@ -15,10 +15,13 @@ function validateMermaidSyntax(code) {
   const nodeContents = new Set();
   const edges = new Set();
   
+  // Track metadata for duplicate checking
+  const elementMetadata = new Map(); // Map to store metadata for each element
+  
   // Updated patterns to support both state and event node formats
   let nodePattern = /^([A-Za-z0-9_]+)(?:\["([^"]+)"\]|\(\("([^"]+)"\)\)):::(?:state|event)$/;
   let edgePattern = /^([A-Za-z0-9_]+)\s*-->\|"([^"]+)"\|\s*([A-Za-z0-9_]+)$/;
-  let commentPattern = /^%%\s*(Type|Description|Section_Reference|Text_Reference):\s*.+$/;
+  let commentPattern = /^%%\s*(Type|Description|Section_Reference|Text_Reference):\s*(.+)$/;
 
   // Additional validation for node type matching bracket style
   const validateNodeFormat = (line) => {
@@ -40,63 +43,36 @@ function validateMermaidSyntax(code) {
     return { isValid: false, errors };
   }
 
+  // First pass: collect all metadata and validate duplicates within same element
+  let currentElement = null;
   lines.forEach((line, index) => {
     const trimmedLine = line.trim();
-    if (trimmedLine && !trimmedLine.startsWith('flowchart')) {
-      // Skip empty lines and flowchart declaration
-      if (!trimmedLine.startsWith('%%')) {
-        // Not a comment, should be node or edge
-        if (!nodePattern.test(trimmedLine) && !edgePattern.test(trimmedLine)) {
-          errors.push(`Line ${index + 1}: Invalid node or edge format - "${trimmedLine}"`);
+    
+    if (!trimmedLine || trimmedLine.startsWith('flowchart')) {
+      return;
+    }
+
+    if (nodePattern.test(trimmedLine) || edgePattern.test(trimmedLine)) {
+      currentElement = trimmedLine;
+      if (!elementMetadata.has(currentElement)) {
+        elementMetadata.set(currentElement, new Map());
+      }
+    } else if (trimmedLine.startsWith('%%') && currentElement) {
+      const metadataMatch = trimmedLine.match(commentPattern);
+      if (metadataMatch) {
+        const [, metadataType, value] = metadataMatch;
+        const elementMeta = elementMetadata.get(currentElement);
+        if (elementMeta.has(metadataType)) {
+          errors.push(`Line ${index + 1}: Duplicate ${metadataType} metadata for element "${currentElement}"`);
         } else {
-          // Check for duplicates
-          if (nodePattern.test(trimmedLine)) {
-            // Additional validation for node type matching bracket style
-            const nodeFormatError = validateNodeFormat(trimmedLine);
-            if (nodeFormatError) {
-              errors.push(`Line ${index + 1}: ${nodeFormatError} - "${trimmedLine}"`);
-            }
-            
-            // Check for duplicate nodes and node contents
-            const nodeMatch = trimmedLine.match(nodePattern);
-            if (nodeMatch) {
-              const nodeId = nodeMatch[1];
-              const nodeContent = nodeMatch[2] || nodeMatch[3]; // Handle both state and event formats
-              
-              if (nodes.has(nodeId)) {
-                errors.push(`Line ${index + 1}: Duplicate node ID found - "${nodeId}"`);
-              }
-              if (nodeContents.has(nodeContent)) {
-                errors.push(`Line ${index + 1}: Duplicate node content found - "${nodeContent}"`);
-              }
-              
-              nodes.add(nodeId);
-              nodeContents.add(nodeContent);
-            }
-          } else if (edgePattern.test(trimmedLine)) {
-            // Check only for duplicate edges based on fromNode->toNode
-            const edgeMatch = trimmedLine.match(edgePattern);
-            if (edgeMatch) {
-              const [, fromNode, , toNode] = edgeMatch;
-              const edgeId = `${fromNode}->${toNode}`;
-              
-              if (edges.has(edgeId)) {
-                errors.push(`Line ${index + 1}: Duplicate edge found - "${fromNode} to ${toNode}"`);
-              }
-              
-              edges.add(edgeId);
-            }
-          }
+          elementMeta.set(metadataType, value.trim());
         }
-      } else if (!commentPattern.test(trimmedLine)) {
-        // Invalid comment format
-        errors.push(`Line ${index + 1}: Invalid comment format. Comments should be Type, Description, Section_Reference, or Text_Reference`);
       }
     }
   });
 
-  // Check for required metadata for nodes and edges
-  let currentElement = null;
+  // Second pass: validate nodes, edges, and required metadata
+  currentElement = null;
   let hasRequiredMetadata = {
     Type: false,
     Description: false,
@@ -107,12 +83,10 @@ function validateMermaidSyntax(code) {
   lines.forEach((line, index) => {
     const trimmedLine = line.trim();
     
-    // Skip empty lines and flowchart declaration
     if (!trimmedLine || trimmedLine.startsWith('flowchart')) {
       return;
     }
 
-    // Check if line is a node or edge definition
     if (nodePattern.test(trimmedLine) || edgePattern.test(trimmedLine)) {
       // Check if previous element had all required metadata
       if (currentElement) {
@@ -129,8 +103,38 @@ function validateMermaidSyntax(code) {
           errors.push(`Missing Text_Reference metadata for element "${currentElement}"`);
         }
       }
-      
-      // Start tracking new element
+
+      // Check node/edge duplicates
+      if (nodePattern.test(trimmedLine)) {
+        const nodeMatch = trimmedLine.match(nodePattern);
+        if (nodeMatch) {
+          const nodeId = nodeMatch[1];
+          const nodeContent = nodeMatch[2] || nodeMatch[3];
+          
+          if (nodes.has(nodeId)) {
+            errors.push(`Line ${index + 1}: Duplicate node ID found - "${nodeId}"`);
+          }
+          if (nodeContents.has(nodeContent)) {
+            errors.push(`Line ${index + 1}: Duplicate node content found - "${nodeContent}"`);
+          }
+          
+          nodes.add(nodeId);
+          nodeContents.add(nodeContent);
+        }
+      } else if (edgePattern.test(trimmedLine)) {
+        const edgeMatch = trimmedLine.match(edgePattern);
+        if (edgeMatch) {
+          const [, fromNode, , toNode] = edgeMatch;
+          const edgeId = `${fromNode}->${toNode}`;
+          
+          if (edges.has(edgeId)) {
+            errors.push(`Line ${index + 1}: Duplicate edge found - "${fromNode} to ${toNode}"`);
+          }
+          
+          edges.add(edgeId);
+        }
+      }
+
       currentElement = trimmedLine;
       hasRequiredMetadata = {
         Type: false,
@@ -139,13 +143,14 @@ function validateMermaidSyntax(code) {
         Text_Reference: false
       };
     } else if (trimmedLine.startsWith('%%')) {
-      // Check metadata comments
-      const metadataMatch = trimmedLine.match(/^%%\s*(Type|Description|Section_Reference|Text_Reference):\s*(.+)$/);
+      const metadataMatch = trimmedLine.match(commentPattern);
       if (metadataMatch && currentElement) {
         const [, metadataType, value] = metadataMatch;
-        if (value.trim()) { // Only mark as present if there's actual content
+        if (value.trim()) {
           hasRequiredMetadata[metadataType] = true;
         }
+      } else if (!commentPattern.test(trimmedLine)) {
+        errors.push(`Line ${index + 1}: Invalid comment format. Comments should be Type, Description, Section_Reference, or Text_Reference`);
       }
     }
   });
