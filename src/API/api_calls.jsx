@@ -90,3 +90,13 @@ export const fetchGraphVersion = async (procedureId, entity, graphId) => {
   }
   
 };
+
+export const deleteProcedureGraph = async (procedureId, entity) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/procedures/${procedureId}/${entity}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting procedure graph:", error);
+    throw error;
+  }
+};
