@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { fetchGraphVersion, fetchVersionHistory } from '../API/api_calls';
 import { JsonToMermaid, defaultMermaidConfig } from '../functions/jsonToMermaid';
 import DiagramView from '../utils/DiagramView';
 import { FaCheckCircle } from 'react-icons/fa';
+import { highlightJsonDiff } from '../functions/diffhighlighting/jsonDiffHighlighter';
+import { highlightMermaidDiff } from '../functions/diffhighlighting/mermaidDiffHighlighter';
+import { findDifferences, applyDiffHighlighting } from '../functions/diffhighlighting/diffHighlighter';
 
 function Comparison({ left, right, onClose, selectedProcedure }) {
   const [selectedTab, setSelectedTab] = useState('Mermaid');
@@ -15,37 +18,56 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
   const [rightJsonContent, setRightJsonContent] = useState('');
   const [leftJsonContent, setLeftJsonContent] = useState('');
   const [leftVersion, setLeftVersion] = useState(null);
+  const leftPanelRef = useRef(null);
+  const rightPanelRef = useRef(null);
+  const isSyncingScroll = useRef(false);
+
   // Initialize left panel content when component mounts
   useEffect(() => {
-    if (left?.mermaidContent) {
-      setLeftMermaidContent(left.mermaidContent);
-      setLeftJsonContent(left.jsonContent || ''); 
-      // version number
-      setLeftVersion(left.version);
+    if (left?.jsonContent) {
+      try {
+        // Parse JSON content
+        const jsonData = JSON.parse(left.jsonContent);
+        
+        // Convert JSON to Mermaid using JsonToMermaid
+        const mermaidCode = JsonToMermaid(jsonData, defaultMermaidConfig);
+        
+        setLeftMermaidContent(mermaidCode);
+        setLeftJsonContent(left.jsonContent);
+        setLeftVersion(left.version);
+      } catch (error) {
+        console.error('Error parsing JSON:', error);
+      }
     }
   }, [left]);
 
-  // Fetch versions when component mounts
+  // Fetch versions when component mounts or when procedure changes
   useEffect(() => {
     if (selectedProcedure?.id) {
       fetchVersions();
     }
-  }, [selectedProcedure]);
+  }, [selectedProcedure?.id, selectedProcedure?.version]);
 
   // Fetch selected version data when version changes
   useEffect(() => {
     if (selectedVersion && selectedProcedure?.id) {
       fetchVersionData();
     }
-  }, [selectedVersion, selectedProcedure]);
+  }, [selectedVersion, selectedProcedure?.id]);
 
   const fetchVersions = async () => {
     try {
+      setVersions([]); 
       const data = await fetchVersionHistory(
         selectedProcedure.id,
         selectedProcedure.entity
       );
       setVersions(data || []);
+      // Reset selected version when versions change
+      setSelectedVersion(null);
+      setRightGraphData(null);
+      setRightMermaidContent('');
+      setRightJsonContent('');
     } catch (error) {
       console.error('Error fetching versions:', error);
     }
@@ -74,12 +96,87 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
     setSelectedVersion(event.target.value);
   };
 
-  const renderPanelContent = (content, mermaidContent, jsonContent) => {
+  const handleSyncScroll = (source) => (e) => {
+    if (isSyncingScroll.current) return;
+    isSyncingScroll.current = true;
+    const otherPanel = source === 'left' ? rightPanelRef.current : leftPanelRef.current;
+    if (otherPanel) {
+      otherPanel.scrollTop = e.target.scrollTop;
+    }
+    setTimeout(() => { isSyncingScroll.current = false; }, 0);
+  };
+
+  const filterMermaidClassDef = (content) =>
+    content
+      .split('\n')
+      .filter(line => !line.trim().startsWith('classDef'))
+      .join('\n');
+
+  const renderPanelContent = (content, mermaidContent, jsonContent, isLeftPanel = false) => {
     switch (selectedTab) {
       case 'Mermaid':
-        return <div className="panel-mermaid">{content || 'No Mermaid content available'}</div>;
+        // Filter out classDef lines
+        const mermaidDiffs = !isLeftPanel ? findDifferences(leftMermaidContent, content) : [];
+        const filteredContent = filterMermaidClassDef(content);
+        if (!isLeftPanel) {
+          // For diff view, add line numbers to each code-line div in the diff output
+          const diffHtml = applyDiffHighlighting(filteredContent, mermaidDiffs, 'mermaid');
+          // Add line numbers to each code-line
+          return (
+            <div
+              className="panel-mermaid"
+              dangerouslySetInnerHTML={{
+                __html: diffHtml.replace(/<div class=\"code-line\">/g, (m, offset, str) => {
+                  const lineNum = (str.slice(0, offset).match(/<div class=\"code-line\">/g) || []).length + 1;
+                  return `<div class=\"code-line\"><span class=\"line-number\">${lineNum}</span>`;
+                })
+              }}
+            />
+          );
+        } else {
+          // For left panel, split and add line numbers
+          return (
+            <div
+              className="panel-mermaid"
+              dangerouslySetInnerHTML={{
+                __html: content
+                  .split('\n')
+                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightMermaidDiff(line)}</div>`)
+                  .join('\n')
+              }}
+            />
+          );
+        }
       case 'JSON':
-        return <div className="panel-json">{jsonContent || 'No JSON content available'}</div>;
+        const jsonDiffs = !isLeftPanel ? findDifferences(leftJsonContent, jsonContent) : [];
+        if (!isLeftPanel) {
+          // For diff view, add line numbers to each code-line div in the diff output
+          const diffHtml = applyDiffHighlighting(jsonContent, jsonDiffs, 'json');
+          return (
+            <div
+              className="panel-json"
+              dangerouslySetInnerHTML={{
+                __html: diffHtml.replace(/<div class=\"code-line\">/g, (m, offset, str) => {
+                  const lineNum = (str.slice(0, offset).match(/<div class=\"code-line\">/g) || []).length + 1;
+                  return `<div class=\"code-line\"><span class=\"line-number\">${lineNum}</span>`;
+                })
+              }}
+            />
+          );
+        } else {
+          // For left panel, split and add line numbers
+          return (
+            <div
+              className="panel-json"
+              dangerouslySetInnerHTML={{
+                __html: jsonContent
+                  .split('\n')
+                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightJsonDiff(line)}</div>`)
+                  .join('\n')
+              }}
+            />
+          );
+        }
       case 'Diagram':
         return (
           <div className="panel-graph" style={{ height: '100%', minHeight: '400px', position: 'relative' }}>
@@ -104,7 +201,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
     <div className="comparison-view">
       <div className="comparison-header">
         <div className="comparison-header-left">
-          <span>Baseline Version Comparison</span>
+        <span>Baseline Version Comparison</span>
           <div className="comparison-tabs">
             <button 
               className={selectedTab === 'Mermaid' ? 'active' : ''} 
@@ -143,7 +240,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               </span>
             </div>
           </div>
-          <div className="panel-content">
+          <div className="panel-content" ref={leftPanelRef} onScroll={handleSyncScroll('left')}>
             {renderPanelContent(leftMermaidContent, leftMermaidContent, leftJsonContent)}
           </div>
         </div>
@@ -166,7 +263,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               </select>
             </div>
           </div>
-          <div className="panel-content">
+          <div className="panel-content" ref={rightPanelRef} onScroll={handleSyncScroll('right')}>
             {renderPanelContent(rightMermaidContent, rightMermaidContent, rightJsonContent)}
           </div>
         </div>

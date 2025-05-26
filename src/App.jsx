@@ -3,7 +3,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
 import ProcedureList from "./components/ProcedureList";
-// import Description from "./components/Descriptions";
 import ProcedureTitle from "./components/procedureTitle";
 import { mapElementToReference } from "./utils/referenceMapper";
 import Comparison from "./components/Comparison";
@@ -74,11 +73,15 @@ function App() {
    */
 
   const handleProcedureUpdate = (updatedData) => {
-    console.log("App: Procedure data updated:", updatedData);
-    setProcedureData({
+    const updatedProcedure = {
       ...selectedProcedure,
       ...updatedData,
-    });
+      id: selectedProcedure?.id,
+      entity: selectedProcedure?.entity,
+      name: selectedProcedure?.name
+    };
+    setProcedureData(updatedProcedure);
+    setSelectedProcedure(updatedProcedure);
   };
 
   /**
@@ -209,7 +212,7 @@ function App() {
       document.removeEventListener("mousemove", resize);
       document.removeEventListener("mouseup", stopResizing);
     };
-  }, [showComparison]); // Add showComparison to dependencies
+  }, [showComparison]); 
 
   return (
     <div className="container">
@@ -241,12 +244,6 @@ function App() {
             <PanelGroup direction="horizontal">
               <Panel defaultSize={50} minSize={30}>
                 <div className="procedure-container-left">
-                  {/* description panel */}
-                  {/* <Description
-            procedure={procedureData} 
-            onProcedureUpdate={handleProcedureUpdate}
-            onMermaidCodeChange={handleMermaidCodeChange}
-                    /> */}
           {/* JSON/Mermaid Editor Panel */}
             <JsonViewer
               onMermaidCodeChange={handleMermaidCodeChange}

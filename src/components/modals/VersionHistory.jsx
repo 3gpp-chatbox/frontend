@@ -1,23 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import { fetchVersionHistory } from '../../API/api_calls';
 
-function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
+const VersionHistory = forwardRef(({ isOpen, onClose, onOpenComparison, procedure }, ref) => {
   const [expandedCommit, setExpandedCommit] = useState(null);
   const [versionHistory, setVersionHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  useEffect(() => {
-    if (isOpen && procedure?.id && procedure?.entity) {
+  const fetchHistory = async () => {
+    if (procedure?.id && procedure?.entity) {
       setLoading(true);
       setError(null);
-      fetchVersionHistory(procedure.id, procedure.entity)
-        .then((data) => setVersionHistory(data || []))
-        .catch((err) => setError("Failed to load version history"))
-        .finally(() => setLoading(false));
+      try {
+        const data = await fetchVersionHistory(procedure.id, procedure.entity);
+        setVersionHistory(data || []);
+      } catch (err) {
+        setError("Failed to load version history");
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [isOpen, procedure?.id, procedure?.entity]);
+  };
+
+  // Expose refresh function to parent component
+  useImperativeHandle(ref, () => ({
+    refresh: fetchHistory
+  }));
+
+  useEffect(() => {
+    if (isOpen) {
+      setVersionHistory([]); 
+      fetchHistory();
+    }
+  }, [isOpen, procedure?.id, procedure?.version]); 
 
   const handleToggleExpand = (id) => {
     setExpandedCommit(expandedCommit === id ? null : id);
@@ -47,7 +63,7 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
                     <div className="timeline-content">
                       <div className="timeline-header-row">
                         <span className="timeline-title">
-                          {`V${event.version}: ${event.commit_title}`}
+                          {`Version ${event.version} : ${event.commit_title}`}
                         </span>
                         <span className="commit-timestamp">
                           {new Date(event.created_at).toLocaleString()}
@@ -108,7 +124,7 @@ function VersionHistory({ isOpen, onClose, onOpenComparison, procedure }) {
       </div> 
     </div>
   );
-}
+});
 
 VersionHistory.propTypes = {
   isOpen: PropTypes.bool.isRequired,
