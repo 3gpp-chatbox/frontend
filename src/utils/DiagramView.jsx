@@ -102,21 +102,18 @@ function DiagramView({ mermaidCode }) {
     if (mermaidRef.current) {
       mermaidRef.current.innerHTML = "";
     }
-    if (renderedId) {
-      try {
-        mermaid.contentLoaded();
-      } catch (err) {
-        console.error("Error cleaning up mermaid:", err);
-      }
+    try {
+      mermaid.contentLoaded();
+    } catch (err) {
+      console.error("Error cleaning up mermaid:", err);
     }
-  }, [renderedId]);
+  }, []);
 
   // Render diagram when code changes
   useEffect(() => {
-    cleanup();
     renderDiagram();
-    return cleanup;
-  }, [renderDiagram, cleanup]);
+    return () => cleanup();
+  }, [mermaidCode, renderDiagram, cleanup]);
 
   // Handle zooming
   const handleWheel = useCallback(
@@ -182,9 +179,20 @@ function DiagramView({ mermaidCode }) {
         <span>Zoom: {zoomLevel}%</span>
         <button
           onClick={() => {
+            // Reset all transform-related state
             setScale(1);
             setZoomLevel(100);
             setPosition({ x: 0, y: 0 });
+            // Force a re-render of the diagram
+            if (mermaidRef.current) {
+              const currentContent = mermaidRef.current.innerHTML;
+              mermaidRef.current.innerHTML = "";
+              requestAnimationFrame(() => {
+                if (mermaidRef.current) {
+                  mermaidRef.current.innerHTML = currentContent;
+                }
+              });
+            }
           }}
         >
           <FaRedo className="reset-icon" />
