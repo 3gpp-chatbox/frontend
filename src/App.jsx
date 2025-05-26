@@ -149,6 +149,11 @@ function App() {
   // Handler to close comparison view
   const handleCloseComparison = () => {
     setShowComparison(false);
+    // Reset any comparison-related state
+    setHighlightedElement(null);
+    setHighlightedSection(null);
+    // Force a re-render of the flow diagram
+    setMermaidCode(prev => prev);
   };
 
 
