@@ -16,6 +16,7 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [response, setResponse] = useState(null);
 
   const handleDetailsClick = () => {
     setIsDescriptionModalOpen(true);
@@ -57,7 +58,7 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
 
     setIsDeleting(true);
     try {
-      await deleteProcedureGraph(selectedProcedure.id, selectedProcedure.entity);
+      const response = await deleteProcedureGraph(selectedProcedure.id, selectedProcedure.entity);
       // Show success notification
       setShowSuccessNotification(true);
       // Close the modal and reset state
@@ -69,6 +70,7 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
         // Refresh the page
         window.location.reload();
       }, 3000);
+      setResponse(response);
     } catch (error) {
       console.error("Error deleting procedure:", error);
     } finally {
@@ -126,7 +128,10 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
       {/* Success Notification */}
       {showSuccessNotification && (
         <div className="notification success">
-          Successfully deleted procedure graphs for {selectedProcedure?.entity} side of "{selectedProcedure?.name.replace(`${selectedProcedure?.entity}-`, '')}"
+          {response?.procedure_deleted 
+            ? `Successfully deleted procedure '${response.procedure_name}' and all its graphs`
+            : `Successfully deleted procedure graphs for ${selectedProcedure?.entity} side of "${selectedProcedure?.name.replace(`${selectedProcedure?.entity}-`, '')}"`
+          }
         </div>
       )}
 
