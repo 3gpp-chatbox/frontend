@@ -4,9 +4,9 @@ import { fetchGraphVersion, fetchVersionHistory } from '../API/api_calls';
 import { JsonToMermaid, defaultMermaidConfig } from '../functions/jsonToMermaid';
 import DiagramView from '../utils/DiagramView';
 import { FaCheckCircle } from 'react-icons/fa';
-import { highlightJsonDiff } from '../functions/diffhighlighting/jsonDiffHighlighter';
-import { highlightMermaidDiff } from '../functions/diffhighlighting/mermaidDiffHighlighter';
-import { findDifferences, applyDiffHighlighting } from '../functions/diffhighlighting/diffHighlighter';
+import { highlightJson } from '../utils/jsonHighlighter';
+import { highlightMermaid } from '../utils/MermaidHighlighter';
+import { findDifferences, applyDiffHighlighting } from '../functions/diffHighlighter';
 
 function Comparison({ left, right, onClose, selectedProcedure }) {
   const [selectedTab, setSelectedTab] = useState('Mermaid');
@@ -51,7 +51,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
 
   // Fetch selected version data when version changes
   useEffect(() => {
-    setIsRightPanelReady(false); // Reset when version changes
+    // setIsRightPanelReady(false); // Reset when version changes
     if (selectedVersion && selectedProcedure?.id) {
       fetchVersionData();
     }
@@ -144,7 +144,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               dangerouslySetInnerHTML={{
                 __html: content
                   .split('\n')
-                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightMermaidDiff(line)}</div>`)
+                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightMermaid(line)}</div>`)
                   .join('\n')
               }}
             />
@@ -174,7 +174,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               dangerouslySetInnerHTML={{
                 __html: jsonContent
                   .split('\n')
-                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightJsonDiff(line)}</div>`)
+                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightJson(line)}</div>`)
                   .join('\n')
               }}
             />
@@ -190,6 +190,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
                 showControls={true}
                 showZoomLevel={true}
                 side={side}
+                highlightedElement={null}
               />
             ) : (
               'No graph content available'

@@ -2,12 +2,12 @@ export const highlightJson = (json, highlightedElement) => {
   if (!json) return "";
 
   // Parse and re-stringify to ensure proper formatting
-  try {
-    const parsed = JSON.parse(json);
-    json = JSON.stringify(parsed, null, 2);
-  } catch (e) {
-    console.warn("JSON parsing failed, using original string");
-  }
+  // try {
+  //   const parsed = JSON.parse(json);
+  //   json = JSON.stringify(parsed, null, 2);
+  // } catch (e) {
+  //   console.warn("JSON parsing failed, using original string");
+  // }
 
   let lines = json.split("\n");
   let result = [];

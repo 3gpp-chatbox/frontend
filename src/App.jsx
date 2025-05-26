@@ -44,7 +44,6 @@ function App() {
    * @param {string} procedure.name - Procedure name
    */
   const handleProcedureSelect = (procedure) => {
-    console.log("Selected procedure:", procedure);
     setSelectedProcedure(procedure);
     setProcedureData(procedure);
   };
@@ -57,7 +56,6 @@ function App() {
    */
 
   const handleMermaidCodeChange = (newCode) => {
-    console.log("App: Mermaid code updated:", newCode);
     setMermaidCode(newCode);
     if (newCode !== mermaidCode) {
       setHighlightedElement(null);
@@ -98,8 +96,6 @@ function App() {
    */
 
   const handleElementClick = (element) => {
-    console.log("Diagram element clicked:", element);
-
     // Only update if we have a new element to highlight
     // Don't clear highlighting when element is null (clicking empty space)
     if (element) {
@@ -116,7 +112,6 @@ function App() {
           },
           type: element.type,
         };
-        console.log("Setting highlighted section:", referenceSection);
         setHighlightedSection(referenceSection);
       } else {
         // If no section_ref or markdown content, clear the highlighted section

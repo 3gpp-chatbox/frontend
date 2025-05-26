@@ -1,5 +1,5 @@
-import { highlightJsonDiff } from "./jsonDiffHighlighter";
-import { highlightMermaidDiff } from "./mermaidDiffHighlighter";
+import { highlightJson } from "../utils/jsonHighlighter";
+import { highlightMermaid } from "../utils/MermaidHighlighter";
 
 export const findDifferences = (oldContent, newContent) => {
   if (!oldContent || !newContent) return [];
@@ -49,7 +49,7 @@ export const applyDiffHighlighting = (content, differences, type = 'json') => {
   const lines = content.split('\n');
   
   // Choose the appropriate highlighter based on content type
-  const highlighter = type === 'mermaid' ? highlightMermaidDiff : highlightJsonDiff;
+  const highlighter = type === 'mermaid' ? highlightMermaid : highlightJson;
   
   return lines.map((line, index) => {
     const diff = differences.find(d => d.line === index);

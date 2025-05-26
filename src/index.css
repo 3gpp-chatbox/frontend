@@ -1438,6 +1438,8 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   cursor: pointer;
   color: var(--silver-100);
   transition: all 0.2s ease;
+  font-size: 14px;
+  gap: 6px;
 }
 
 .save-button:hover:not(:disabled) {
@@ -3091,7 +3093,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 8px;
   font-size: 14px;
   font-weight: 500;
   border-radius: 4px;

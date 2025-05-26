@@ -75,7 +75,6 @@ function DiagramView({ mermaidCode, side }) {
 
   const renderDiagram = useCallback(async () => {
     if (!mermaidRef.current || !mermaidCode) {
-      console.log("No ref or code available");
       return;
     }
 
@@ -90,7 +89,6 @@ function DiagramView({ mermaidCode, side }) {
 
       // Render the diagram
       const { svg } = await mermaid.render(uniqueId, mermaidCode);
-      console.log(`Diagram rendered successfully for ${side} panel`);
 
       // Create a temporary container
       const tempDiv = document.createElement("div");
