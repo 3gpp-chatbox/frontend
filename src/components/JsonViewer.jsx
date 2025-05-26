@@ -482,108 +482,18 @@ function JsonViewer({
     return null;
   };
 
-  // Add keydown handler for better line break control and undo/redo
-  const handleKeyDown = (event) => {
-    // Handle undo
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      if (undoStack.length > 0) {
-        const prevState = undoStack[undoStack.length - 1];
-        const currentContent = editorRef.current.textContent;
-        
-        // Update stacks
-        setUndoStack(undoStack.slice(0, -1));
-        setRedoStack([currentContent, ...redoStack]);
-        
-        // Update content
-        editorRef.current.textContent = prevState;
-        setEditorContent(prevState);
-        
-        // Update Mermaid graph
-        if (debouncedUpdateRef.current) {
-          debouncedUpdateRef.current(prevState);
-        }
-      }
-      return;
-    }
-    
-    // Handle redo (Ctrl+Y or Ctrl+Shift+Z)
-    if ((event.ctrlKey || event.metaKey) && (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      if (redoStack.length > 0) {
-        const nextState = redoStack[0];
-        const currentContent = editorRef.current.textContent;
-        
-        // Update stacks
-        setRedoStack(redoStack.slice(1));
-        setUndoStack([...undoStack, currentContent]);
-        
-        // Update content
-        editorRef.current.textContent = nextState;
-        setEditorContent(nextState);
-        
-        // Update Mermaid graph
-        if (debouncedUpdateRef.current) {
-          debouncedUpdateRef.current(nextState);
-        }
-      }
-      return;
-    }
-
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      
-      // Save scroll position
-      if (editorRef.current) {
-        scrollPositionRef.current = {
-          top: editorRef.current.scrollTop,
-          left: editorRef.current.scrollLeft
-        };
-      }
-      
-      const selection = window.getSelection();
-      if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const currentContent = editorRef.current.textContent;
-        
-        // Create a new text node with a line break
-        const textNode = document.createTextNode('\n');
-        range.insertNode(textNode);
-        
-        // Move cursor to the new line
-        range.setStart(textNode, 1);
-        range.setEnd(textNode, 1);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        // Save state for undo
-        setUndoStack([...undoStack, currentContent]);
-        setRedoStack([]);
-        
-        // Trigger change event
-        const changeEvent = new Event('input', { bubbles: true });
-        editorRef.current.dispatchEvent(changeEvent);
-
-        // Restore scroll position
-        requestAnimationFrame(() => {
-          if (editorRef.current && scrollPositionRef.current) {
-            editorRef.current.scrollTop = scrollPositionRef.current.top;
-            editorRef.current.scrollLeft = scrollPositionRef.current.left;
-          }
-        });
-      }
-    }
-  };
-
-  // Modify handleMermaidChange to track actual changes
+  // Modify handleMermaidChange to save states for undo
   const handleMermaidChange = (event) => {
     try {
       const newCode = event.currentTarget.textContent;
       
+      // Save current state to undo stack before making changes
+      if (lastContentRef.current !== newCode) {
+        setUndoStack([...undoStack, lastContentRef.current]);
+        setRedoStack([]); // Clear redo stack on new changes
+        lastContentRef.current = newCode;
+      }
+
       // Save scroll position before any changes
       if (editorRef.current) {
         scrollPositionRef.current = {
@@ -704,6 +614,98 @@ function JsonViewer({
         message: `Error updating content: ${error.message}`,
         type: "error"
       });
+    }
+  };
+
+  // Modify handleKeyDown for proper undo behavior
+  const handleKeyDown = (event) => {
+    // Handle undo
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      if (undoStack.length > 0) {
+        const prevState = undoStack[undoStack.length - 1];
+        const currentContent = editorRef.current.textContent;
+        
+        // Update stacks
+        setUndoStack(undoStack.slice(0, -1));  // Remove the last state
+        setRedoStack([currentContent, ...redoStack]);  // Add current state to redo
+        
+        // Update content
+        editorRef.current.textContent = prevState;
+        setEditorContent(prevState);
+        lastContentRef.current = prevState;  // Update last content reference
+        
+        // Check if we've returned to original state
+        const hasActualChanges = hasGraphStructureChanges(prevState, originalMermaidGraph);
+        const isOriginalState = prevState === originalMermaidGraph;
+        
+        // Update editing states
+        setHasChanges(hasActualChanges);
+        if (isOriginalState) {
+          setIsEditing(false);
+          isUserEditing.current = false;
+        } else {
+          setIsEditing(hasActualChanges);
+          isUserEditing.current = hasActualChanges;
+        }
+        
+        // Update Mermaid graph
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current(prevState);
+        }
+      }
+      return;
+    }
+
+    // Handle Enter key to also save state for undo
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      
+      const currentContent = editorRef.current.textContent;
+      
+      // Save current state to undo stack
+      if (lastContentRef.current !== currentContent) {
+        setUndoStack([...undoStack, lastContentRef.current]);
+        setRedoStack([]);
+        lastContentRef.current = currentContent;
+      }
+      
+      // Save scroll position
+      if (editorRef.current) {
+        scrollPositionRef.current = {
+          top: editorRef.current.scrollTop,
+          left: editorRef.current.scrollLeft
+        };
+      }
+      
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        
+        // Create a new text node with a line break
+        const textNode = document.createTextNode('\n');
+        range.insertNode(textNode);
+        
+        // Move cursor to the new line
+        range.setStart(textNode, 1);
+        range.setEnd(textNode, 1);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Trigger change event
+        const changeEvent = new Event('input', { bubbles: true });
+        editorRef.current.dispatchEvent(changeEvent);
+
+        // Restore scroll position
+        requestAnimationFrame(() => {
+          if (editorRef.current && scrollPositionRef.current) {
+            editorRef.current.scrollTop = scrollPositionRef.current.top;
+            editorRef.current.scrollLeft = scrollPositionRef.current.left;
+          }
+        });
+      }
     }
   };
 

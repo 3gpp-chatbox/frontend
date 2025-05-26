@@ -48,7 +48,7 @@ const VersionHistory = forwardRef(({ isOpen, onClose, onOpenComparison, procedur
           <h3>Version History Summary</h3>
           <button className="modal-close-btn" onClick={onClose}>×</button>
         </div>
-        <div className="modal-body version-history-modal-body" style={{ position: 'relative', minHeight: '400px' }}>
+        <div className="modal-body version-history-modal-body" style={{ position: 'relative'}}>
           {loading ? (
             <div>Loading...</div>
           ) : error ? (
