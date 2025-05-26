@@ -39,7 +39,7 @@ mermaid.initialize({
   },
 });
 
-function DiagramView({ mermaidCode }) {
+function DiagramView({ mermaidCode, side }) {
   const mermaidRef = useRef(null);
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -50,6 +50,29 @@ function DiagramView({ mermaidCode }) {
   const [zoomLevel, setZoomLevel] = useState(100);
   const [renderedId, setRenderedId] = useState(null);
 
+  const cleanup = useCallback(() => {
+    if (mermaidRef.current) {
+      mermaidRef.current.innerHTML = '';
+      
+      // Reset all transform-related state
+      setScale(1);
+      setZoomLevel(100);
+      setPosition({ x: 0, y: 0 });
+      
+      // Clear any applied styles
+      if (mermaidRef.current.firstChild) {
+        mermaidRef.current.firstChild.style = '';
+      }
+    }
+    
+    // Clear mermaid's internal state for this diagram
+    try {
+      mermaid.contentLoaded();
+    } catch (err) {
+      console.error('Error cleaning up mermaid:', err);
+    }
+  }, []);
+
   const renderDiagram = useCallback(async () => {
     if (!mermaidRef.current || !mermaidCode) {
       console.log("No ref or code available");
@@ -57,17 +80,17 @@ function DiagramView({ mermaidCode }) {
     }
 
     try {
-      // Clear previous content
-      mermaidRef.current.innerHTML = "";
+      // Clean up before rendering
+      cleanup();
       setError(null);
 
-      // Generate a unique ID for this render
-      const uniqueId = `modal-mermaid-${Date.now()}`;
+      // Generate a unique ID for this render that includes the side
+      const uniqueId = `diagram-${side}-${Date.now()}`;
       setRenderedId(uniqueId);
 
       // Render the diagram
       const { svg } = await mermaid.render(uniqueId, mermaidCode);
-      console.log("Diagram rendered successfully");
+      console.log(`Diagram rendered successfully for ${side} panel`);
 
       // Create a temporary container
       const tempDiv = document.createElement("div");
@@ -84,32 +107,21 @@ function DiagramView({ mermaidCode }) {
       newSvg.style.minWidth = "800px";
       newSvg.style.minHeight = "600px";
       newSvg.style.display = "block";
+      newSvg.setAttribute('data-side', side); // Add side identifier
 
       // Clear any existing content and append the new SVG
       mermaidRef.current.innerHTML = "";
       mermaidRef.current.appendChild(newSvg);
     } catch (err) {
-      console.error("Error rendering diagram:", err);
+      console.error(`Error rendering diagram for ${side} panel:`, err);
       setError(err.message || "Error rendering diagram");
       if (mermaidRef.current) {
         mermaidRef.current.innerHTML = "";
       }
     }
-  }, [mermaidCode]);
+  }, [mermaidCode, side, cleanup]);
 
-  // Cleanup function
-  const cleanup = useCallback(() => {
-    if (mermaidRef.current) {
-      mermaidRef.current.innerHTML = "";
-    }
-    try {
-      mermaid.contentLoaded();
-    } catch (err) {
-      console.error("Error cleaning up mermaid:", err);
-    }
-  }, []);
-
-  // Render diagram when code changes
+  // Cleanup and render when code changes or component unmounts
   useEffect(() => {
     renderDiagram();
     return () => cleanup();
@@ -174,25 +186,13 @@ function DiagramView({ mermaidCode }) {
   }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
 
   return (
-    <div className="comparison-diagram-container">
+    <div className={`comparison-diagram-container ${side}-panel`}>
       <div className="comparison-diagram-controls">
         <span>Zoom: {zoomLevel}%</span>
         <button
           onClick={() => {
-            // Reset all transform-related state
-            setScale(1);
-            setZoomLevel(100);
-            setPosition({ x: 0, y: 0 });
-            // Force a re-render of the diagram
-            if (mermaidRef.current) {
-              const currentContent = mermaidRef.current.innerHTML;
-              mermaidRef.current.innerHTML = "";
-              requestAnimationFrame(() => {
-                if (mermaidRef.current) {
-                  mermaidRef.current.innerHTML = currentContent;
-                }
-              });
-            }
+            cleanup();
+            renderDiagram();
           }}
         >
           <FaRedo className="reset-icon" />
@@ -202,6 +202,7 @@ function DiagramView({ mermaidCode }) {
       <div
         ref={containerRef}
         className={`comparison-diagram-view-area ${isDragging ? 'dragging' : ''}`}
+        style={{ position: 'relative', width: '100%', height: '100%' }}
       >
         {error ? (
           <div className="comparison-diagram-error-overlay">
@@ -213,9 +214,15 @@ function DiagramView({ mermaidCode }) {
         ) : (
           <div
             ref={mermaidRef}
-            className="comparison-diagram-mermaid-container"
+            className={`comparison-diagram-mermaid-container ${side}-diagram`}
             style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
+              transformOrigin: 'center center',
+              width: '100%',
+              height: '100%'
             }}
           />
         )}
@@ -226,6 +233,7 @@ function DiagramView({ mermaidCode }) {
 
 DiagramView.propTypes = {
   mermaidCode: PropTypes.string.isRequired,
+  side: PropTypes.oneOf(['left', 'right']).isRequired,
 };
 
 export default DiagramView;

@@ -15,12 +15,13 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
   const [rightJsonContent, setRightJsonContent] = useState('');
   const [leftJsonContent, setLeftJsonContent] = useState('');
   const [leftVersion, setLeftVersion] = useState(null);
+  const [isRightPanelReady, setIsRightPanelReady] = useState(false);
+
   // Initialize left panel content when component mounts
   useEffect(() => {
     if (left?.mermaidContent) {
       setLeftMermaidContent(left.mermaidContent);
       setLeftJsonContent(left.jsonContent || ''); 
-      // version number
       setLeftVersion(left.version);
     }
   }, [left]);
@@ -34,6 +35,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
 
   // Fetch selected version data when version changes
   useEffect(() => {
+    setIsRightPanelReady(false); // Reset when version changes
     if (selectedVersion && selectedProcedure?.id) {
       fetchVersionData();
     }
@@ -64,6 +66,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
         const mermaidCode = JsonToMermaid(data.graph || data, defaultMermaidConfig);
         setRightMermaidContent(mermaidCode);
         setRightJsonContent(JSON.stringify(data.graph || data, null, 2));
+        setIsRightPanelReady(true); // Mark right panel as ready after data is loaded
       }
     } catch (error) {
       console.error('Error fetching version data:', error);
@@ -74,7 +77,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
     setSelectedVersion(event.target.value);
   };
 
-  const renderPanelContent = (content, mermaidContent, jsonContent) => {
+  const renderPanelContent = (content, mermaidContent, jsonContent, side) => {
     switch (selectedTab) {
       case 'Mermaid':
         return <div className="panel-mermaid">{content || 'No Mermaid content available'}</div>;
@@ -85,10 +88,11 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
           <div className="panel-graph" style={{ height: '100%', minHeight: '400px', position: 'relative' }}>
             {mermaidContent ? (
               <DiagramView 
-                key={`mermaid-${Date.now()}`}
+                key={`mermaid-${side}-${selectedTab}-${mermaidContent.length}`}
                 mermaidCode={mermaidContent}
                 showControls={true}
                 showZoomLevel={true}
+                side={side}
               />
             ) : (
               'No graph content available'
@@ -129,11 +133,11 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
         <button className="close-btn" onClick={onClose}>×<span className="close-btn-text">Close</span></button>
       </div>
       <div className="comparison-panels">
-        {/* Left Panel - verified version */}
+        {/* Left Panel */}
         <div className="comparison-panel">
           <div className="panel-header">
             <div className="panel-title">
-            <span>{`${left?.title} - ${leftVersion}`}<FaCheckCircle 
+              <span>{`${left?.title} - ${leftVersion}`}<FaCheckCircle 
                 style={{ 
                   color: '#3b82f6',
                   marginLeft: '8px',
@@ -144,11 +148,11 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
             </div>
           </div>
           <div className="panel-content">
-            {renderPanelContent(leftMermaidContent, leftMermaidContent, leftJsonContent)}
+            {renderPanelContent(leftMermaidContent, leftMermaidContent, leftJsonContent, 'left')}
           </div>
         </div>
 
-        {/* Right Panel - version selection */}
+        {/* Right Panel */}
         <div className="comparison-panel">
           <div className="panel-header">
             <div className="version-selector">
@@ -167,7 +171,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
             </div>
           </div>
           <div className="panel-content">
-            {renderPanelContent(rightMermaidContent, rightMermaidContent, rightJsonContent)}
+            {isRightPanelReady && renderPanelContent(rightMermaidContent, rightMermaidContent, rightJsonContent, 'right')}
           </div>
         </div>
       </div>
