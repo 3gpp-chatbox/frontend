@@ -187,6 +187,11 @@ button {
   width: 18px;
   height: 18px;
 }
+.delete-button {
+  background-color: var(--orange-700) !important;
+  color: white !important;
+  border-color: var(--orange-700) !important;
+}
 .menu-bar.disabled {
   opacity: 0.6;
   pointer-events: auto; /* allow hover for tooltip */
@@ -3234,4 +3239,91 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 .diff-modified .mermaid-direction,
 .diff-modified .mermaid-edge {
   color: #ca8a04;
+}
+
+/* Delete Confirmation Modal Styles */
+
+.warning-text {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.delete-confirm-input {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.delete-confirm-button {
+  background-color: var(--danger-color) !important;
+  color: white !important;
+  border-color: var(--danger-color) !important;
+}
+
+.delete-confirm-button:hover {
+  background-color: var(--danger-color-hover) !important;
+  border-color: var(--danger-color-hover) !important;
+}
+
+.delete-confirm-button:disabled {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+
+.cancel-button:hover {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Delete Modal Customization */
+
+.delete-confirm-input {
+  width: 50%;
+  padding: 10px;
+  border: 1.5px solid var(--orange-400);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  background: var(--black-700);
+  color: var(--silver-100);
+  font-size: 1em;
+  transition: border-color 0.2s;
+}
+
+.delete-confirm-input:focus {
+  border-color: var(--orange-500);
+  outline: none;
+}
+
+.delete-confirm-button {
+  background-color: var(--orange-700) !important;
+  color: white !important;
+  border-color: var(--orange-700) !important;
+  transition: background 0.2s, color 0.2s;
+}
+
+.delete-confirm-button:disabled {
+  background-color: var(--orange-400) !important;
+  border-color: var(--orange-400) !important;
+  color: var(--silver-200) !important;
+  opacity: 0.7;
+  cursor: not-allowed;
 }
