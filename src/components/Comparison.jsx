@@ -6,7 +6,34 @@ import DiagramView from '../utils/DiagramView';
 import { FaCheckCircle } from 'react-icons/fa';
 import { highlightJson } from '../utils/jsonHighlighter';
 import { highlightMermaid } from '../utils/MermaidHighlighter';
-import { findDifferences, applyDiffHighlighting } from '../functions/diffHighlighter';
+import { computeLineDiffs } from '../functions/diffHighlighter';
+
+// Helper to render a diff panel (left or right)
+const renderDiffPanel = (diffs, side, highlighter) => (
+  <div className="panel-mermaid">
+    {diffs.map((diff, idx) => {
+      let line, type;
+      if (side === 'left') {
+        line = diff.left;
+        type = diff.type === 'added' ? 'empty' : diff.type;
+      } else {
+        line = diff.right;
+        type = diff.type === 'removed' ? 'empty' : diff.type;
+      }
+      if (type === 'empty') return <div className="code-line" key={idx}><span className="line-number">{idx+1}</span>&nbsp;</div>;
+      let className = 'code-line';
+      if (type === 'added') className += ' diff-added';
+      if (type === 'removed') className += ' diff-removed';
+      if (type === 'modified') className += (side === 'left' ? ' diff-removed' : ' diff-added');
+      return (
+        <div className={className} key={idx}>
+          <span className="line-number">{idx+1}</span>
+          <span dangerouslySetInnerHTML={{ __html: highlighter(line) }} />
+        </div>
+      );
+    })}
+  </div>
+);
 
 function Comparison({ left, right, onClose, selectedProcedure }) {
   const [selectedTab, setSelectedTab] = useState('Mermaid');
@@ -115,85 +142,43 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
       .filter(line => !line.trim().startsWith('classDef'))
       .join('\n');
 
-  const renderPanelContent = (content, mermaidContent, jsonContent, side, isLeftPanel = false) => {
+  const renderPanelContent = (side) => {
     switch (selectedTab) {
-      case 'Mermaid':
-        // Filter out classDef lines
-        const mermaidDiffs = !isLeftPanel ? findDifferences(leftMermaidContent, content) : [];
-        const filteredContent = filterMermaidClassDef(content);
-        if (!isLeftPanel) {
-          // For diff view, add line numbers to each code-line div in the diff output
-          const diffHtml = applyDiffHighlighting(filteredContent, mermaidDiffs, 'mermaid');
-          // Add line numbers to each code-line
-          return (
-            <div
-              className="panel-mermaid"
-              dangerouslySetInnerHTML={{
-                __html: diffHtml.replace(/<div class=\"code-line\">/g, (m, offset, str) => {
-                  const lineNum = (str.slice(0, offset).match(/<div class=\"code-line\">/g) || []).length + 1;
-                  return `<div class=\"code-line\"><span class=\"line-number\">${lineNum}</span>`;
-                })
-              }}
-            />
-          );
-        } else {
-          // For left panel, split and add line numbers
-          return (
-            <div
-              className="panel-mermaid"
-              dangerouslySetInnerHTML={{
-                __html: content
-                  .split('\n')
-                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightMermaid(line)}</div>`)
-                  .join('\n')
-              }}
-            />
-          );
-        }
-      case 'JSON':
-        const jsonDiffs = !isLeftPanel ? findDifferences(leftJsonContent, jsonContent) : [];
-        if (!isLeftPanel) {
-          // For diff view, add line numbers to each code-line div in the diff output
-          const diffHtml = applyDiffHighlighting(jsonContent, jsonDiffs, 'json');
-          return (
-            <div
-              className="panel-json"
-              dangerouslySetInnerHTML={{
-                __html: diffHtml.replace(/<div class=\"code-line\">/g, (m, offset, str) => {
-                  const lineNum = (str.slice(0, offset).match(/<div class=\"code-line\">/g) || []).length + 1;
-                  return `<div class=\"code-line\"><span class=\"line-number\">${lineNum}</span>`;
-                })
-              }}
-            />
-          );
-        } else {
-          // For left panel, split and add line numbers
-          return (
-            <div
-              className="panel-json"
-              dangerouslySetInnerHTML={{
-                __html: jsonContent
-                  .split('\n')
-                  .map((line, idx) => `<div class=\"code-line\"><span class=\"line-number\">${idx + 1}</span>${highlightJson(line)}</div>`)
-                  .join('\n')
-              }}
-            />
-          );
-        }
+      case 'Mermaid': {
+        const leftFiltered = filterMermaidClassDef(leftMermaidContent);
+        const rightFiltered = filterMermaidClassDef(rightMermaidContent);
+        const diffs = computeLineDiffs(leftFiltered, rightFiltered);
+        return renderDiffPanel(diffs, side, highlightMermaid);
+      }
+      case 'JSON': {
+        const diffs = computeLineDiffs(leftJsonContent, rightJsonContent);
+        return renderDiffPanel(diffs, side, highlightJson);
+      }
       case 'Diagram':
         return (
           <div className="panel-graph" style={{ height: '100%', minHeight: '400px', position: 'relative' }}>
-            {mermaidContent ? (
-              <DiagramView 
-                key={`mermaid-${side}-${selectedTab}-${mermaidContent.length}`}
-                mermaidCode={mermaidContent}
-                showControls={true}
-                showZoomLevel={true}
-                side={side}
-                highlightedElement={null}
-              />
+            {side === 'left' ? (
+              leftMermaidContent ? (
+                <DiagramView 
+                  key={`mermaid-left-${selectedTab}-${leftMermaidContent.length}`}
+                  mermaidCode={leftMermaidContent}
+                  showControls={true}
+                  showZoomLevel={true}
+                  side={side}
+                  highlightedElement={null}
+                />
+              ) : 'No graph content available'
             ) : (
-              'No graph content available'
+              rightMermaidContent ? (
+                <DiagramView 
+                  key={`mermaid-right-${selectedTab}-${rightMermaidContent.length}`}
+                  mermaidCode={rightMermaidContent}
+                  showControls={true}
+                  showZoomLevel={true}
+                  side={side}
+                  highlightedElement={null}
+                />
+              ) : 'No graph content available'
             )}
           </div>
         );
@@ -246,7 +231,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
             </div>
           </div>
           <div className="panel-content" ref={leftPanelRef} onScroll={handleSyncScroll('left')}>
-            {renderPanelContent(leftMermaidContent, leftMermaidContent, leftJsonContent)}
+            {renderPanelContent('left')}
           </div>
         </div>
 
@@ -269,7 +254,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
             </div>
           </div>
           <div className="panel-content" ref={rightPanelRef} onScroll={handleSyncScroll('right')}>
-            {renderPanelContent(rightMermaidContent, rightMermaidContent, rightJsonContent)}
+            {renderPanelContent('right')}
           </div>
         </div>
       </div>

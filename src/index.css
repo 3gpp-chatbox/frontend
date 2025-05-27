@@ -3172,6 +3172,8 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 .diff-overlay {
   position: relative;
   width: 100%;
+  padding: 2px 4px;
+  border-radius: 4px;
 }
 
 .diff-added {
@@ -3184,7 +3186,23 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   border-left: 3px solid #ef4444;
 }
 
-/* Ensure diff overlays don't break syntax highlighting */
+.diff-modified {
+  background-color: rgba(234, 179, 8, 0.1);
+  border-left: 3px solid #eab308;
+}
+
+.diff-old {
+  color: #ef4444;
+  text-decoration: line-through;
+  opacity: 0.7;
+  margin-bottom: 2px;
+}
+
+.diff-new {
+  color: #22c55e;
+}
+
+/* Ensure Mermaid syntax highlighting works with diffs */
 .diff-overlay .mermaid-keyword,
 .diff-overlay .mermaid-direction,
 .diff-overlay .mermaid-node-id,
@@ -3197,4 +3215,23 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 .diff-overlay .mermaid-class {
   position: relative;
   z-index: 1;
+}
+
+/* Ensure proper contrast for diff colors */
+.diff-added .mermaid-keyword,
+.diff-added .mermaid-direction,
+.diff-added .mermaid-edge {
+  color: #16a34a;
+}
+
+.diff-removed .mermaid-keyword,
+.diff-removed .mermaid-direction,
+.diff-removed .mermaid-edge {
+  color: #dc2626;
+}
+
+.diff-modified .mermaid-keyword,
+.diff-modified .mermaid-direction,
+.diff-modified .mermaid-edge {
+  color: #ca8a04;
 }
