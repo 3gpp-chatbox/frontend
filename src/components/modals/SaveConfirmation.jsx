@@ -10,7 +10,7 @@ function ConfirmationDialog({
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const TITLE_MAX_LENGTH = 72;
-  const MESSAGE_MAX_LENGTH = 500;
+  const MESSAGE_MAX_LENGTH = 1000;
 
   const clearContent = () => {
     setTitle("");

@@ -4,6 +4,7 @@ import DescriptionModal from './modals/DescriptionModal';
 import VersionHistory from './modals/VersionHistory';
 import { fetchOriginalGraph, deleteProcedureGraph } from "../API/api_calls";
 import { MdInfo, MdHistory, MdDelete } from 'react-icons/md';
+import DeleteConfirmation from './modals/DeleteConfirmation';
 
 function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
@@ -77,14 +78,6 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
           {selectedProcedure?.id && (
             <div className="procedure-actions">
               <button 
-                className="action-button delete-button"
-                onClick={handleDeleteClick}
-                title="Delete Procedure"
-              >
-                <MdDelete className="action-icon" />
-                Delete
-              </button>
-              <button 
                 className="action-button"
                 onClick={handleDetailsClick}
                 title="View Details"
@@ -100,6 +93,14 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
               >
                 <MdHistory className="action-icon" />
                 {isLoading ? 'Loading...' : 'Version History'}
+              </button>
+              <button 
+                className="action-button delete-button"
+                onClick={handleDeleteClick}
+                title="Delete Procedure"
+              >
+                <MdDelete className="action-icon" />
+                Delete
               </button>
             </div>
           )}
@@ -129,61 +130,16 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
         procedure={selectedProcedure}
       />
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>Delete Procedure</h3>
-              <button 
-                className="modal-close-btn"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeleteConfirmText("");
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="modal-section">
-                <p className="warning-text">
-                  This action cannot be undone. This will permanently delete all graphs for the {selectedProcedure?.entity} side of procedure "{selectedProcedure?.name.replace(`${selectedProcedure?.entity}-`, '')}".
-                </p>
-                <p className="warning-text">
-                  Please type <strong>I confirm to delete</strong> to confirm.
-                </p>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type 'I confirm to delete'"
-                  className="delete-confirm-input"
-                />
-                <div className="dialog-buttons">
-                  <button
-                    className="action-button cancel-button"
-                    onClick={() => {
-                      setShowDeleteModal(false);
-                      setDeleteConfirmText("");
-                    }}
-                    disabled={isDeleting}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="action-button delete-confirm-button"
-                    onClick={handleDeleteConfirm}
-                    disabled={deleteConfirmText !== "I confirm to delete" || isDeleting}
-                  >
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmation
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+        confirmText={deleteConfirmText}
+        setConfirmText={setDeleteConfirmText}
+        procedureName={selectedProcedure?.name.replace(`${selectedProcedure?.entity}-`, '')}
+        entity={selectedProcedure?.entity}
+      />
     </>
   );
 }
