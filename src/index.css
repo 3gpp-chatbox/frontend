@@ -3196,3 +3196,60 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   position: relative;
   z-index: 1;
 }
+
+/* Delete Button Styles */
+.procedure-actions .delete-button {
+  /* Using default action-button styles */
+}
+
+/* Delete Confirmation Modal Styles */
+.warning-text {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.delete-confirm-input {
+  width: 100%;
+  padding: 0.5rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.delete-confirm-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.delete-confirm-button {
+  background-color: var(--danger-color) !important;
+  color: white !important;
+  border-color: var(--danger-color) !important;
+}
+
+.delete-confirm-button:hover {
+  background-color: var(--danger-color-hover) !important;
+  border-color: var(--danger-color-hover) !important;
+}
+
+.delete-confirm-button:disabled {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+
+.cancel-button:hover {
+  background-color: var(--bg-secondary) !important;
+}
