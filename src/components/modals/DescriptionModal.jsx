@@ -2,18 +2,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 function DescriptionModal({ isOpen, onClose, procedure }) {
-
   // Format date for display
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";  // Handle undefined or empty date
-    
-    const date = new Date(dateString);  // Parse ISO 8601 format
-    
-    if (isNaN(date.getTime())) return "Invalid Date";  // Handle invalid date
-    
-    return date.toLocaleString();  // Format to a readable string
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid Date"; 
+    return date.toLocaleString();
   };
-  
 
   // Format accuracy as percentage
   const formatAccuracy = (accuracy) => {
@@ -21,7 +16,6 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
     const value = accuracy > 1 ? accuracy : accuracy * 100;
     return `${value.toFixed(1)}%`;
   };
-
 
   if (!isOpen) return null;
 
@@ -37,17 +31,15 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
             <h4>Baseline Graph Information</h4>
               <div className="detail-line">
                 <span className="detail-label">Entity:</span>
-                <span className="detail-value">
-                {procedure.entity}
-                </span>
+                <span className="detail-value">{procedure?.entity}</span>
               </div>
               <div className="detail-line">
-                <text className="detail-label">Version:</text>
-                <text className="detail-value">{procedure.version}</text>
+                <span className="detail-label">Version:</span>
+                <span className="detail-value">{procedure?.version}</span>
               </div>
               <div className="detail-line">
-                <text className="detail-label">Status:</text>
-                <text className="detail-value">{procedure.status}</text>
+                <span className="detail-label">Status:</span>
+                <span className="detail-value">{procedure?.status}</span>
               </div>
           </div>
           <div className="description-section">
@@ -55,25 +47,25 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
               <div className="detail-line">
                 <span className="detail-label">Document:</span>
                 <span className="detail-value">
-                  {procedure.document_name || "N/A"}
+                  {procedure?.document_name || "N/A"}
                 </span>
               </div>
           </div>
           <div className="description-section">
             <h4>Original Graph Extraction Information</h4>
               <div className="detail-line">
-                <text className="detail-label">LLM Model:</text>
-                <text className="detail-value">{procedure.model_name || "N/A"}</text>
+                <span className="detail-label">LLM Model:</span>
+                <span className="detail-value">{procedure?.model_name || "N/A"}</span>
               </div>
               <div className="detail-line">
-                <text className="detail-label">Accuracy Method:</text>
-                <text className="detail-value">{procedure.extraction_method || "N/A"}</text>
+                <span className="detail-label">Accuracy Method:</span>
+                <span className="detail-value">{procedure?.extraction_method || "N/A"}</span>
               </div>
               <div className="detail-line">
-                <text className="detail-label">Accuracy:</text>
-                <text className="detail-value">
-                  {formatAccuracy(procedure.accuracy)}
-                </text>
+                <span className="detail-label">Accuracy:</span>
+                <span className="detail-value">
+                  {formatAccuracy(procedure?.accuracy)}
+                </span>
               </div>
           </div>
           <div className="description-section">
@@ -81,13 +73,13 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
               <div className="detail-line">
                 <span className="detail-label">Extracted:</span>
                 <span className="detail-value">
-                  {formatDate(procedure.extracted_at)}
+                  {formatDate(procedure?.extracted_at)}
                 </span>
               </div>
               <div className="detail-line">
                 <span className="detail-label">Last Edited:</span>
                 <span className="detail-value">
-                  {formatDate(procedure.created_at)}
+                  {formatDate(procedure?.created_at)}
                 </span>
               </div>
           </div>

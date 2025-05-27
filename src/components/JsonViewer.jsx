@@ -180,20 +180,38 @@ function JsonViewer({
   };
 
   const handleConfirmSaveClick = async ({ title, message }) => {
-    await saveGraphChanges({
-      mermaidGraph,
-      selectedProcedure,
-      setNotification,
-      setShowConfirmation,
-      setIsEditing,
-      isUserEditing,
-      setData,
-      setOriginalData,
-      setJsonContent,
-      onProcedureUpdate,
-      title,
-      message,
-    });
+    try {
+      await saveGraphChanges({
+        mermaidGraph,
+        selectedProcedure,
+        setNotification,
+        setShowConfirmation,
+        setIsEditing,
+        isUserEditing,
+        setData,
+        setOriginalData,
+        setJsonContent,
+        onProcedureUpdate,
+        title,
+        message,
+      });
+
+      // Fetch the latest procedure data after saving
+      if (selectedProcedure?.id && selectedProcedure?.entity) {
+        const updatedProcedure = await fetchProcedure(selectedProcedure.id, selectedProcedure.entity);
+        if (updatedProcedure) {
+          // Update the procedure data in the parent component
+          onProcedureUpdate(updatedProcedure);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving changes:", error);
+          setNotification({
+            show: true,
+        message: "Error saving changes. Please try again.",
+            type: "error"
+          });
+    }
   };
 
   const handleRevertChangesClick = () => {
@@ -254,7 +272,7 @@ function JsonViewer({
         // Get the current graph data based on edited status
         const graphData =
           data.edited_graph || data.original_graph || data.graph;
-
+        
         if (!graphData) {
           console.warn("No graph data available in:", data);
           setJsonContent("");
@@ -268,7 +286,7 @@ function JsonViewer({
         const jsonString = JSON.stringify(graphData, null, 2);
         console.log("Setting JSON content:", jsonString);
         setJsonContent(jsonString);
-
+        
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
@@ -464,108 +482,18 @@ function JsonViewer({
     return null;
   };
 
-  // Add keydown handler for better line break control and undo/redo
-  const handleKeyDown = (event) => {
-    // Handle undo
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      if (undoStack.length > 0) {
-        const prevState = undoStack[undoStack.length - 1];
-        const currentContent = editorRef.current.textContent;
-        
-        // Update stacks
-        setUndoStack(undoStack.slice(0, -1));
-        setRedoStack([currentContent, ...redoStack]);
-        
-        // Update content
-        editorRef.current.textContent = prevState;
-        setEditorContent(prevState);
-        
-        // Update Mermaid graph
-        if (debouncedUpdateRef.current) {
-          debouncedUpdateRef.current(prevState);
-        }
-      }
-      return;
-    }
-    
-    // Handle redo (Ctrl+Y or Ctrl+Shift+Z)
-    if ((event.ctrlKey || event.metaKey) && (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))) {
-      event.preventDefault();
-      event.stopPropagation();
-      
-      if (redoStack.length > 0) {
-        const nextState = redoStack[0];
-        const currentContent = editorRef.current.textContent;
-        
-        // Update stacks
-        setRedoStack(redoStack.slice(1));
-        setUndoStack([...undoStack, currentContent]);
-        
-        // Update content
-        editorRef.current.textContent = nextState;
-        setEditorContent(nextState);
-        
-        // Update Mermaid graph
-        if (debouncedUpdateRef.current) {
-          debouncedUpdateRef.current(nextState);
-        }
-      }
-      return;
-    }
-
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      
-      // Save scroll position
-      if (editorRef.current) {
-        scrollPositionRef.current = {
-          top: editorRef.current.scrollTop,
-          left: editorRef.current.scrollLeft
-        };
-      }
-      
-      const selection = window.getSelection();
-      if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const currentContent = editorRef.current.textContent;
-        
-        // Create a new text node with a line break
-        const textNode = document.createTextNode('\n');
-        range.insertNode(textNode);
-        
-        // Move cursor to the new line
-        range.setStart(textNode, 1);
-        range.setEnd(textNode, 1);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        // Save state for undo
-        setUndoStack([...undoStack, currentContent]);
-        setRedoStack([]);
-        
-        // Trigger change event
-        const changeEvent = new Event('input', { bubbles: true });
-        editorRef.current.dispatchEvent(changeEvent);
-
-        // Restore scroll position
-        requestAnimationFrame(() => {
-          if (editorRef.current && scrollPositionRef.current) {
-            editorRef.current.scrollTop = scrollPositionRef.current.top;
-            editorRef.current.scrollLeft = scrollPositionRef.current.left;
-          }
-        });
-      }
-    }
-  };
-
-  // Modify handleMermaidChange to track actual changes
+  // Modify handleMermaidChange to save states for undo
   const handleMermaidChange = (event) => {
     try {
       const newCode = event.currentTarget.textContent;
       
+      // Save current state to undo stack before making changes
+      if (lastContentRef.current !== newCode) {
+        setUndoStack([...undoStack, lastContentRef.current]);
+        setRedoStack([]); // Clear redo stack on new changes
+        lastContentRef.current = newCode;
+      }
+
       // Save scroll position before any changes
       if (editorRef.current) {
         scrollPositionRef.current = {
@@ -689,6 +617,98 @@ function JsonViewer({
     }
   };
 
+  // Modify handleKeyDown for proper undo behavior
+  const handleKeyDown = (event) => {
+    // Handle undo
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      if (undoStack.length > 0) {
+        const prevState = undoStack[undoStack.length - 1];
+        const currentContent = editorRef.current.textContent;
+        
+        // Update stacks
+        setUndoStack(undoStack.slice(0, -1));  // Remove the last state
+        setRedoStack([currentContent, ...redoStack]);  // Add current state to redo
+        
+        // Update content
+        editorRef.current.textContent = prevState;
+        setEditorContent(prevState);
+        lastContentRef.current = prevState;  // Update last content reference
+        
+        // Check if we've returned to original state
+        const hasActualChanges = hasGraphStructureChanges(prevState, originalMermaidGraph);
+        const isOriginalState = prevState === originalMermaidGraph;
+        
+        // Update editing states
+        setHasChanges(hasActualChanges);
+        if (isOriginalState) {
+          setIsEditing(false);
+          isUserEditing.current = false;
+        } else {
+          setIsEditing(hasActualChanges);
+          isUserEditing.current = hasActualChanges;
+        }
+        
+        // Update Mermaid graph
+        if (debouncedUpdateRef.current) {
+          debouncedUpdateRef.current(prevState);
+        }
+      }
+      return;
+    }
+
+    // Handle Enter key to also save state for undo
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      
+      const currentContent = editorRef.current.textContent;
+      
+      // Save current state to undo stack
+      if (lastContentRef.current !== currentContent) {
+        setUndoStack([...undoStack, lastContentRef.current]);
+        setRedoStack([]);
+        lastContentRef.current = currentContent;
+      }
+      
+      // Save scroll position
+      if (editorRef.current) {
+        scrollPositionRef.current = {
+          top: editorRef.current.scrollTop,
+          left: editorRef.current.scrollLeft
+        };
+      }
+      
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        
+        // Create a new text node with a line break
+        const textNode = document.createTextNode('\n');
+        range.insertNode(textNode);
+        
+        // Move cursor to the new line
+        range.setStart(textNode, 1);
+        range.setEnd(textNode, 1);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Trigger change event
+        const changeEvent = new Event('input', { bubbles: true });
+        editorRef.current.dispatchEvent(changeEvent);
+
+        // Restore scroll position
+        requestAnimationFrame(() => {
+          if (editorRef.current && scrollPositionRef.current) {
+            editorRef.current.scrollTop = scrollPositionRef.current.top;
+            editorRef.current.scrollLeft = scrollPositionRef.current.left;
+          }
+        });
+      }
+    }
+  };
+
   // Improved cursor position restoration
   const restoreCursorPosition = useCallback(() => {
     if (!editorRef.current || !cursorPositionRef.current) return;
@@ -704,8 +724,8 @@ function JsonViewer({
     );
 
     let currentOffset = 0;
-    let targetNode = null;
-    let targetOffset = 0;
+      let targetNode = null;
+      let targetOffset = 0;
     let bestMatchNode = null;
     let bestMatchScore = 0;
 
@@ -719,7 +739,7 @@ function JsonViewer({
         currentOffset <= offset &&
         currentOffset + nodeText.length >= offset
       ) {
-        targetNode = node;
+            targetNode = node;
         targetOffset = offset - currentOffset;
         break;
       }
@@ -743,15 +763,15 @@ function JsonViewer({
     }
 
     // Set the cursor position
-    if (targetNode) {
-      try {
+      if (targetNode) {
+        try {
         const range = document.createRange();
-        range.setStart(targetNode, targetOffset);
+          range.setStart(targetNode, targetOffset);
         range.collapse(true);
 
         const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
+          selection.removeAllRanges();
+          selection.addRange(range);
 
         // Restore scroll position after cursor is set
         if (scrollPositionRef.current) {
@@ -820,14 +840,14 @@ function JsonViewer({
 
   // here------direction change
   const handleDirectionChange = (newDirection) => {
-    if (isEditing) {
-      setNotification({
-        show: true,
-        message: "Please save or revert your changes first",
-        type: "warning",
-      });
-      return;
-    }
+              if (isEditing) {
+                setNotification({
+                  show: true,
+                  message: "Please save or revert your changes first",
+                  type: "warning",
+                });
+                return;
+              }
     setDirection(newDirection);
     // Use newDirection here!
     const updatedCode = mermaidGraph.replace(
@@ -1139,17 +1159,17 @@ function JsonViewer({
           data ? (
             <pre className="json-content">
               {activeView === "mermaid" ? (
-                <div className="mermaid-editor">
-                  <div
+              <div className="mermaid-editor">
+                <div
                     ref={(el) => {
                       editorRef.current = el;
                       codeContentRef.current = el;
                     }}
-                    className={`code-content ${isWrapped ? "wrapped" : ""}`}
-                    contentEditable={true}
-                    onInput={handleMermaidChange}
+                  className={`code-content ${isWrapped ? "wrapped" : ""}`}
+                  contentEditable={true}
+                  onInput={handleMermaidChange}
                     onKeyDown={handleKeyDown}
-                    onFocus={onEditorFocus}
+                  onFocus={onEditorFocus}
                     onClick={(e) => {
                       const node = e.target.closest(".node");
                       const edge = e.target.closest(".edgePath");
@@ -1198,19 +1218,19 @@ function JsonViewer({
                             });
                           }
                         }
-                      }
-                    }}
-                    dangerouslySetInnerHTML={{
+                    }
+                  }}
+                  dangerouslySetInnerHTML={{
                       __html: highlightMermaidElement(
                         highlightMermaid(
                           cleanMermaidCode(editorContent || mermaidGraph),
                         ),
                         highlightedElement,
                       ),
-                    }}
-                    spellCheck="false"
-                  />
-                </div>
+                  }}
+                  spellCheck="false"
+                />
+              </div>
               ) : (
                 <div
                   className={`code-content ${isWrapped ? "wrapped" : ""}`}

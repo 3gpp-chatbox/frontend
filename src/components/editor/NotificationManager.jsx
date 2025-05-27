@@ -43,111 +43,96 @@ function validateMermaidSyntax(code) {
     return { isValid: false, errors };
   }
 
-  // First pass: collect all metadata and validate duplicates within same element
+  // Process lines to group elements with their metadata
   let currentElement = null;
+  let currentMetadata = new Map();
+  const elementGroups = new Map(); // Store each element with its metadata
+
   lines.forEach((line, index) => {
     const trimmedLine = line.trim();
     
-    if (!trimmedLine || trimmedLine.startsWith('flowchart')) {
+    if (!trimmedLine) {
       return;
     }
 
-    if (nodePattern.test(trimmedLine) || edgePattern.test(trimmedLine)) {
-      currentElement = trimmedLine;
-      if (!elementMetadata.has(currentElement)) {
-        elementMetadata.set(currentElement, new Map());
+    // Check for flowchart declaration
+    if (trimmedLine.startsWith('flowchart')) {
+      if (!/^flowchart\s+(TD|LR)$/.test(trimmedLine)) {
+        errors.push(`Line ${index + 1}: Invalid flowchart declaration. Use 'flowchart TD' or 'flowchart LR'`);
       }
-    } else if (trimmedLine.startsWith('%%') && currentElement) {
+      return;
+    }
+
+    // Check for invalid/gibberish content that's not a comment
+    if (!trimmedLine.startsWith('%%')) {
+      // Check if it looks like a node definition attempt
+      if (trimmedLine.includes('[') || trimmedLine.includes('(')) {
+        if (!nodePattern.test(trimmedLine)) {
+          errors.push(`Line ${index + 1}: Invalid node definition. Expected format: 'ID["Text"]:::state' or 'ID(("Text")):::event'`);
+        } else {
+          // Check for duplicate nodes immediately
+          const nodeMatch = trimmedLine.match(nodePattern);
+          if (nodeMatch) {
+            const nodeId = nodeMatch[1];
+            const nodeContent = nodeMatch[2] || nodeMatch[3];
+            
+            if (nodes.has(nodeId)) {
+              errors.push(`Line ${index + 1}: Duplicate node ID found - "${nodeId}"`);
+            }
+            if (nodeContents.has(nodeContent)) {
+              errors.push(`Line ${index + 1}: Duplicate node content found - "${nodeContent}"`);
+            }
+            
+            nodes.add(nodeId);
+            nodeContents.add(nodeContent);
+          }
+        }
+      }
+      // Check if it looks like an edge definition attempt
+      else if (trimmedLine.includes('-->')) {
+        if (!edgePattern.test(trimmedLine)) {
+          errors.push(`Line ${index + 1}: Invalid edge definition. Expected format: 'FromNode-->|"Description"|ToNode'`);
+        } else {
+          // Check for duplicate edges immediately
+          const edgeMatch = trimmedLine.match(edgePattern);
+          if (edgeMatch) {
+            const [, fromNode, , toNode] = edgeMatch;
+            const edgeId = `${fromNode}->${toNode}`;
+            
+            if (edges.has(edgeId)) {
+              errors.push(`Line ${index + 1}: Duplicate edge found - "${fromNode} to ${toNode}"`);
+            }
+            
+            edges.add(edgeId);
+          }
+        }
+      }
+      // If it's not empty and not a valid node/edge/comment, it's probably gibberish
+      else if (trimmedLine.length > 0 && !nodePattern.test(trimmedLine) && !edgePattern.test(trimmedLine)) {
+        errors.push(`Line ${index + 1}: Invalid syntax. Line must be a node definition, edge definition, or comment`);
+      }
+    }
+
+    // Check if line is a node or edge definition
+    if (nodePattern.test(trimmedLine) || edgePattern.test(trimmedLine)) {
+      // If we had a previous element, save its metadata
+      if (currentElement) {
+        elementGroups.set(currentElement, new Map(currentMetadata));
+      }
+      
+      // Start tracking new element
+      currentElement = trimmedLine;
+      currentMetadata = new Map();
+    } 
+    // Check if line is metadata for current element
+    else if (trimmedLine.startsWith('%%') && currentElement) {
       const metadataMatch = trimmedLine.match(commentPattern);
       if (metadataMatch) {
         const [, metadataType, value] = metadataMatch;
-        const elementMeta = elementMetadata.get(currentElement);
-        if (elementMeta.has(metadataType)) {
+        if (currentMetadata.has(metadataType)) {
           errors.push(`Line ${index + 1}: Duplicate ${metadataType} metadata for element "${currentElement}"`);
         } else {
-          elementMeta.set(metadataType, value.trim());
-        }
-      }
-    }
-  });
-
-  // Second pass: validate nodes, edges, and required metadata
-  currentElement = null;
-  let hasRequiredMetadata = {
-    Type: false,
-    Description: false,
-    Section_Reference: false,
-    Text_Reference: false
-  };
-
-  lines.forEach((line, index) => {
-    const trimmedLine = line.trim();
-    
-    if (!trimmedLine || trimmedLine.startsWith('flowchart')) {
-      return;
-    }
-
-    if (nodePattern.test(trimmedLine) || edgePattern.test(trimmedLine)) {
-      // Check if previous element had all required metadata
-      if (currentElement) {
-        if (!hasRequiredMetadata.Type) {
-          errors.push(`Missing Type metadata for element "${currentElement}"`);
-        }
-        if (!hasRequiredMetadata.Description) {
-          errors.push(`Missing Description metadata for element "${currentElement}"`);
-        }
-        if (!hasRequiredMetadata.Section_Reference) {
-          errors.push(`Missing Section_Reference metadata for element "${currentElement}"`);
-        }
-        if (!hasRequiredMetadata.Text_Reference) {
-          errors.push(`Missing Text_Reference metadata for element "${currentElement}"`);
-        }
-      }
-
-      // Check node/edge duplicates
-      if (nodePattern.test(trimmedLine)) {
-        const nodeMatch = trimmedLine.match(nodePattern);
-        if (nodeMatch) {
-          const nodeId = nodeMatch[1];
-          const nodeContent = nodeMatch[2] || nodeMatch[3];
-          
-          if (nodes.has(nodeId)) {
-            errors.push(`Line ${index + 1}: Duplicate node ID found - "${nodeId}"`);
-          }
-          if (nodeContents.has(nodeContent)) {
-            errors.push(`Line ${index + 1}: Duplicate node content found - "${nodeContent}"`);
-          }
-          
-          nodes.add(nodeId);
-          nodeContents.add(nodeContent);
-        }
-      } else if (edgePattern.test(trimmedLine)) {
-        const edgeMatch = trimmedLine.match(edgePattern);
-        if (edgeMatch) {
-          const [, fromNode, , toNode] = edgeMatch;
-          const edgeId = `${fromNode}->${toNode}`;
-          
-          if (edges.has(edgeId)) {
-            errors.push(`Line ${index + 1}: Duplicate edge found - "${fromNode} to ${toNode}"`);
-          }
-          
-          edges.add(edgeId);
-        }
-      }
-
-      currentElement = trimmedLine;
-      hasRequiredMetadata = {
-        Type: false,
-        Description: false,
-        Section_Reference: false,
-        Text_Reference: false
-      };
-    } else if (trimmedLine.startsWith('%%')) {
-      const metadataMatch = trimmedLine.match(commentPattern);
-      if (metadataMatch && currentElement) {
-        const [, metadataType, value] = metadataMatch;
-        if (value.trim()) {
-          hasRequiredMetadata[metadataType] = true;
+          currentMetadata.set(metadataType, value.trim());
         }
       } else if (!commentPattern.test(trimmedLine)) {
         errors.push(`Line ${index + 1}: Invalid comment format. Comments should be Type, Description, Section_Reference, or Text_Reference`);
@@ -155,21 +140,27 @@ function validateMermaidSyntax(code) {
     }
   });
 
-  // Check last element's metadata
+  // Don't forget to save metadata for the last element
   if (currentElement) {
-    if (!hasRequiredMetadata.Type) {
-      errors.push(`Missing Type metadata for element "${currentElement}"`);
-    }
-    if (!hasRequiredMetadata.Description) {
-      errors.push(`Missing Description metadata for element "${currentElement}"`);
-    }
-    if (!hasRequiredMetadata.Section_Reference) {
-      errors.push(`Missing Section_Reference metadata for element "${currentElement}"`);
-    }
-    if (!hasRequiredMetadata.Text_Reference) {
-      errors.push(`Missing Text_Reference metadata for element "${currentElement}"`);
-    }
+    elementGroups.set(currentElement, new Map(currentMetadata));
   }
+
+  // Validate metadata requirements
+  elementGroups.forEach((metadata, element) => {
+    // Check for required metadata
+    if (!metadata.has('Type')) {
+      errors.push(`Missing Type metadata for element "${element}"`);
+    }
+    if (!metadata.has('Description')) {
+      errors.push(`Missing Description metadata for element "${element}"`);
+    }
+    if (!metadata.has('Section_Reference')) {
+      errors.push(`Missing Section_Reference metadata for element "${element}"`);
+    }
+    if (!metadata.has('Text_Reference')) {
+      errors.push(`Missing Text_Reference metadata for element "${element}"`);
+    }
+  });
 
   return {
     isValid: errors.length === 0,

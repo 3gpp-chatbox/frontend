@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import DescriptionModal from './modals/DescriptionModal';
-import OriginalDataModal from './modals/Archieve_OriginalDataModal';
 import VersionHistory from './modals/VersionHistory';
 import { fetchOriginalGraph, deleteProcedureGraph } from "../API/api_calls";
 import { MdInfo, MdHistory, MdDelete } from 'react-icons/md';
 
 function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
-  const [isOriginalGraphModalOpen, setIsOriginalGraphModalOpen] = useState(false);
-  const [originalData, setOriginalData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [versionHistoryKey, setVersionHistoryKey] = useState(0);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -22,24 +20,8 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
     setIsDescriptionModalOpen(true);
   };
 
-  const handleOriginalGraphClick = async () => {
-    if (!selectedProcedure?.id) return;
-    
-    setIsLoading(true);
-    try {
-      const response = await fetchOriginalGraph(selectedProcedure.id);
-      if (response && response.original_graph) {
-        setOriginalData(response.original_graph);
-        setIsOriginalGraphModalOpen(true);
-      }
-    } catch (error) {
-      console.error("Error fetching original data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleVersionHistoryClick = () => {
+    setVersionHistoryKey(prev => prev + 1);
     setShowVersionHistory(true);
   };
 
@@ -78,7 +60,8 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
     }
   };
 
-  // Handler to open comparison from VersionHistory
+ 
+
   const handleOpenComparison = () => {
     setShowVersionHistory(false);
     if (onOpenComparison) {
@@ -91,9 +74,9 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
       <div className="procedure-title-bar">
         <div className="procedure-title-content">
           <span className="procedure-name">
-            {selectedProcedure ? selectedProcedure.name : 'Select a procedure'}
+            {selectedProcedure?.name || 'Select a procedure'}
           </span>
-          {selectedProcedure && (
+          {selectedProcedure?.id && (
             <div className="procedure-actions">
               <button 
                 className="action-button delete-button"
@@ -140,15 +123,8 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
         onClose={() => setIsDescriptionModalOpen(false)}
         procedure={selectedProcedure}
       />
-      <OriginalDataModal
-        isOpen={isOriginalGraphModalOpen}
-        onClose={() => {
-          setIsOriginalGraphModalOpen(false);
-          setOriginalData(null);
-        }}
-        originalData={originalData}
-      />
       <VersionHistory
+        key={versionHistoryKey}
         isOpen={showVersionHistory}
         onClose={handleCloseVersionHistory}
         onOpenComparison={handleOpenComparison}
