@@ -230,8 +230,10 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               </span>
             </div>
           </div>
-          <div className="panel-content" ref={leftPanelRef} onScroll={handleSyncScroll('left')}>
-            {renderPanelContent('left')}
+          <div className="panel-wrapper">
+            <div className="panel-content" ref={leftPanelRef} onScroll={handleSyncScroll('left')}>
+              {renderPanelContent('left')}
+            </div>
           </div>
         </div>
 
@@ -253,8 +255,10 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               </select>
             </div>
           </div>
+          <div className="panel-wrapper">
           <div className="panel-content" ref={rightPanelRef} onScroll={handleSyncScroll('right')}>
             {renderPanelContent('right')}
+          </div>
           </div>
         </div>
       </div>
