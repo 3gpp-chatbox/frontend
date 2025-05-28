@@ -563,7 +563,9 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   position: relative;
   padding: 2px 4px 2px 24px;
   font-family: "Consolas", "Monaco", monospace;
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.5;
 }
 
@@ -765,7 +767,9 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   position: relative;
   padding: 2px 4px 2px 24px;
   font-family: "Consolas", "Monaco", monospace;
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.5;
 }
 
@@ -2723,18 +2727,22 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   flex: 1;
   background: var(--black-800);
   color: var(--silver-100);
-  padding: 24px 20px;
+  padding: 10px;
   font-family: "Consolas", "Monaco", monospace;
   font-size: 1rem;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--blue-600) var(--black-800);
   word-break: break-word;
   overflow-wrap: break-word;
-  /* white-space: pre-wrap; */
-  overflow-x: hidden;
-  /* overflow-y: auto; */
-  /* max-height: 100%; */
+}
+.panel-wrapper {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .panel-content::-webkit-scrollbar {
@@ -2838,15 +2846,24 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
     min-height: 60vh;
   }
   .comparison-panels {
-    flex-direction: column;
-  }
-  .comparison-panel {
-    border-right: none;
-    border-bottom: 1.5px solid var(--black-600);
-  }
-  .comparison-panel:last-child {
-    border-bottom: none;
-  }
+  display: flex;
+  flex: 1;
+  height: 100%;
+  background: var(--black-800);
+}
+
+.comparison-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1.5px solid var(--black-600);
+  background: var(--black-700);
+  min-width: 0;
+}
+
+.comparison-panel:last-child {
+  border-right: none;
+}
   .comparison-header-left {
     flex-direction: column;
     align-items: flex-start;
