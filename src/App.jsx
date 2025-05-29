@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
-import ProcedureList from "./components/ProcedureList";
+// import ProcedureList from "./components/ProcedureList";
 import ProcedureTitle from "./components/procedureTitle";
 import { mapElementToReference } from "./utils/referenceMapper";
 import Comparison from "./components/Comparison";
-
+import SearchProcedure from "./components/SearchProcedure";
 /**
  * Main application component for the 3GPP Flow Editor.
  * Manages the overall application state and layout, including:
@@ -131,8 +131,10 @@ function App() {
 
   // Current version data for the left panel of comparison view
   const leftVersion = {
-    title: selectedProcedure?.name + ' - Version',
-    mermaidContent: mermaidCode,
+    title: selectedProcedure
+      ? `${selectedProcedure.procedure_name} (${selectedProcedure.entity}) TS ${selectedProcedure.document_spec} v${selectedProcedure.document_version} - Baseline Version`
+      : 'Select a procedure',
+    // mermaidContent: mermaidCode,
     jsonContent: JSON.stringify(procedureData?.graph || {}, null, 2),
     version: selectedProcedure?.version,
   };
@@ -218,17 +220,25 @@ function App() {
     <div className="container">
       <div className="title-bar-container">
         {/* title bar */}
-        <header className="title">3GPP Procedure Insights</header>
-          <ProcedureList
+        <div className="title">3GPP Procedure Insights</div>
+        <SearchProcedure 
+          onProcedureSelect={handleProcedureSelect} 
+          selectedProcedure={selectedProcedure}
+          disabled={showComparison}
+        />
+          {/* <ProcedureList
             selectedProcedure={selectedProcedure}
             onProcedureSelect={handleProcedureSelect}
             disabled={showComparison}
-          />
+          /> */}
         </div>
       {/* grid layout */}
       <div className="grid-layout">
         {/* procedure title bar */}
-        <ProcedureTitle selectedProcedure={selectedProcedure} onOpenComparison={handleOpenComparison} />
+        <ProcedureTitle 
+          selectedProcedure={selectedProcedure} 
+          onOpenComparison={handleOpenComparison} 
+        />
 
         {/* Render comparison view if toggled */}
         {showComparison ? (

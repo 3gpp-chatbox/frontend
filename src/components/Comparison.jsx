@@ -62,7 +62,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
         
         setLeftMermaidContent(mermaidCode);
         setLeftJsonContent(left.jsonContent);
-        setLeftVersion(left.version);
+        setLeftVersion(left.version); // Baseline version
       } catch (error) {
         console.error('Error parsing JSON:', error);
       }
