@@ -155,7 +155,7 @@ function SearchProcedure({ onProcedureSelect }) {
         <input
           className="search-procedure-input"
           type="text"
-          placeholder="Search by procedure name (eg.'Initial Registration') or document spec (eg.'24.501')"
+          placeholder="Search by procedure name or document spec"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={handleFocus}

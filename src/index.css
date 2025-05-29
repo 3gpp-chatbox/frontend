@@ -132,7 +132,7 @@ button {
 /* SearchProcedure styles */
 .search-procedure-container {
   position: relative;
-  width: 500px;
+  width: 400px;
   z-index: 100;
 }
 
@@ -160,9 +160,9 @@ button {
   padding: 10px 16px;
   border-radius: 6px;
   border: 1.5px solid var(--silver-300);
-  font-size: 0.75rem;
-  background: var(--silver-100);
-  color: var(--black-900);
+  font-size: 0.8rem;
+  background: var(--black-300);
+  color: var(--silver-100);
   outline: none;
   transition: border 0.2s;
   box-sizing: border-box;
@@ -170,7 +170,6 @@ button {
 
 .search-procedure-input:focus {
   border: 1.5px solid var(--blue-500);
-  background: var(--silver-100);
 }
 
 .search-procedure-dropdown {
@@ -178,7 +177,7 @@ button {
   top: 110%;
   left: 0;
   width: 100%;
-  background: var(--silver-100);
+  background: var(--black-700);
   border: 1.5px solid var(--silver-300);
   border-radius: 6px;
   max-height: 260px;
@@ -190,6 +189,7 @@ button {
 
 .search-procedure-item {
   padding: 12px 16px;
+  color: var(--silver-100);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -212,30 +212,21 @@ button {
 
 .search-procedure-name {
   font-weight: 500;
-  color: var(--black-900);
-  margin-right: 8px;
+  margin-right: 5px;
 }
 
 .search-procedure-entity {
-  /* background: var(--blue-300); */
-  color: var(--black-900);
+  
   border-radius: 4px;
   border: 2px solid var(--blue-300);
   padding: 2px 8px;
   font-size: 0.95em;
-  margin-right: 8px;
 }
 
-.search-procedure-spec {
-  color: var(--black-700);
+.search-procedure-spec ,.search-procedure-version  {
   font-size: 0.8em;
-  margin-right: 8px;
 }
 
-.search-procedure-version {
-  color: var(--black-700);
-  font-size: 0.8em;
-}
 
 .search-procedure-no-results {
   padding: 12px 16px;
@@ -276,9 +267,9 @@ button {
 .procedure-entity-badge {
   display: inline-block;
   margin-left: 8px;
-  background: var(--silver-300);
-  color: var(--black-900);
+  color: var(--silver-100);
   border-radius: 4px;
+  border: 2px solid var(--silver-300);
   padding: 2px 8px;
   font-size: 0.95em;
   font-weight: 500;
@@ -287,9 +278,9 @@ button {
 .procedure-doc-badge {
   display: inline-block;
   margin-left: 12px;
-  background: var(--blue-300);
-  color: var(--black-900);
+  color: var(--silver-100);
   border-radius: 4px;
+  border: 2px solid var(--blue-300);
   padding: 2px 8px;
   font-size: 0.95em;
   font-weight: 500;
