@@ -11,6 +11,7 @@
     "test": "vitest",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
+    "test:file": "vitest --testNamePattern",
     "prepare": "cd .. && pre-commit install",
     "format": "prettier --write .",
     "lint-staged": "lint-staged"
