@@ -1,6 +1,5 @@
 export const highlightMermaidElement = (mermaidCode, highlightedElement) => {
   if (!mermaidCode || !highlightedElement) {
-    console.log("No code or highlighted element provided");
     return mermaidCode;
   }
 

@@ -306,7 +306,6 @@ function JsonViewer({
 
   // Log isWrapped state changes
   useEffect(() => {
-    console.log("isWrapped state changed:", isWrapped);
   }, [isWrapped]);
 
   // Update when selected procedure changes
@@ -324,9 +323,6 @@ function JsonViewer({
         isUserEditing.current = false;
         return;
       }
-
-      console.log("Loading procedure data for ID:", selectedProcedure.id);
-
       try {
         // Clear previous data first
         setData(null);
@@ -342,8 +338,6 @@ function JsonViewer({
           selectedProcedure.id,
           selectedProcedure.entity,
         );
-        console.log("Received procedure data:", procedureData);
-
         if (!procedureData) {
           throw new Error("No data received from server");
         }
