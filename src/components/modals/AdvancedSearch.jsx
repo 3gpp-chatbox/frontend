@@ -223,10 +223,11 @@ function flattenProcedures(data) {
                 >
                   <div className="advanced-search-list-title">
                     {item.procedure_name}
-                    <span className="advanced-search-entity">{item.entity}</span>
                   </div>
                   <div className="advanced-search-list-meta">
-                  <span className="spec">TS {item.document_spec}</span> <span className="doc-version">V{item.document_version}</span>
+                    <span className="advanced-search-entity">{item.entity}</span>
+                    <span className="spec">TS {item.document_spec}</span>
+                    <span className="doc-version">V{item.document_version}</span>
                   </div>
                 </div>
               ))
