@@ -46,21 +46,22 @@ function AdvancedSearch({ isOpen, onClose, onSelect }) {
       .finally(() => setLoading(false));
   }, [isOpen]);
 
-  function flattenProcedures(data) {
-    return data.flatMap((doc) =>
-      doc.document_procedures.flatMap((proc) =>
-        proc.entity.map((entity) => ({
-          procedure_id: proc.procedure_id,
-          procedure_name: proc.procedure_name,
-          entity,
-          document_spec: doc.document_spec,
-          document_version: doc.document_version,
-          document_release: doc.document_release,
-          document_id: doc.document_id,
-        }))
-      )
-    );
-  }
+function flattenProcedures(data) {
+  return data.flatMap((doc) =>
+    (Array.isArray(doc.document_procedures) ? doc.document_procedures : []).flatMap((proc) =>
+      (Array.isArray(proc.entity) ? proc.entity : []).map((entity) => ({
+        procedure_id: proc.procedure_id,
+        procedure_name: proc.procedure_name,
+        entity,
+        document_spec: doc.document_spec,
+        document_version: doc.document_version,
+        document_release: doc.document_release,
+        document_id: doc.document_id,
+      }))
+    )
+  );
+}
+
 
   function getUniqueProcedureNames(data) {
     return Array.from(
