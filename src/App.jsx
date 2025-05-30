@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
-import ProcedureList from "./components/ProcedureList";
 import ProcedureTitle from "./components/procedureTitle";
 import { mapElementToReference } from "./utils/referenceMapper";
 import Comparison from "./components/Comparison";
-
+import SearchProcedure from "./components/SearchProcedure";
+import AdvancedSearch from "./components/modals/AdvancedSearch";
+import { LuSettings2 } from "react-icons/lu";
 /**
  * Main application component for the 3GPP Flow Editor.
  * Manages the overall application state and layout, including:
@@ -27,6 +28,7 @@ function App() {
   const [markdownContent, setMarkdownContent] = useState("");
   const [showComparison, setShowComparison] = useState(false);
   const [highlightedSection, setHighlightedSection] = useState(null);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   // Update markdown content when procedure data changes
   useEffect(() => {
@@ -76,7 +78,8 @@ function App() {
       ...updatedData,
       id: selectedProcedure?.id,
       entity: selectedProcedure?.entity,
-      name: selectedProcedure?.name
+      name: selectedProcedure?.name,
+      version: selectedProcedure?.version
     };
     setProcedureData(updatedProcedure);
     setSelectedProcedure(updatedProcedure);
@@ -131,8 +134,10 @@ function App() {
 
   // Current version data for the left panel of comparison view
   const leftVersion = {
-    title: selectedProcedure?.name + ' - Version',
-    mermaidContent: mermaidCode,
+    title: selectedProcedure
+      ? `${selectedProcedure.procedure_name} (${selectedProcedure.entity}) - Baseline Version ${selectedProcedure.version}`
+      : 'Select a procedure',
+    // mermaidContent: mermaidCode,
     jsonContent: JSON.stringify(procedureData?.graph || {}, null, 2),
     version: selectedProcedure?.version,
   };
@@ -218,17 +223,36 @@ function App() {
     <div className="container">
       <div className="title-bar-container">
         {/* title bar */}
-        <header className="title">3GPP Procedure Insights</header>
-          <ProcedureList
-            selectedProcedure={selectedProcedure}
-            onProcedureSelect={handleProcedureSelect}
-            disabled={showComparison}
-          />
+        <div className="title">3GPP Procedure Insights</div>
+        <SearchProcedure 
+          onProcedureSelect={handleProcedureSelect} 
+          selectedProcedure={selectedProcedure}
+          disabled={showComparison}
+        />
+        <button
+          className="advanced-search-btn"
+          onClick={() => setShowAdvancedSearch(true)}
+          type="button"
+        >
+          <LuSettings2 className="action-icon advanced-search-icon" />
+          Advanced Search
+        </button>
+        <AdvancedSearch
+          isOpen={showAdvancedSearch}
+          onClose={() => setShowAdvancedSearch(false)}
+          onSelect={(proc) => {
+            handleProcedureSelect(proc);
+            setShowAdvancedSearch(false);
+          }}
+        />
         </div>
       {/* grid layout */}
       <div className="grid-layout">
         {/* procedure title bar */}
-        <ProcedureTitle selectedProcedure={selectedProcedure} onOpenComparison={handleOpenComparison} />
+        <ProcedureTitle 
+          selectedProcedure={selectedProcedure} 
+          onOpenComparison={handleOpenComparison} 
+        />
 
         {/* Render comparison view if toggled */}
         {showComparison ? (

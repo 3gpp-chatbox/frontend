@@ -73,7 +73,14 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
       <div className="procedure-title-bar">
         <div className="procedure-title-content">
           <span className="procedure-name">
-            {selectedProcedure?.name || 'Select a procedure'}
+            {selectedProcedure ? (
+              <>
+                {selectedProcedure.procedure_name}
+                <span className="procedure-entity-badge">{selectedProcedure.entity}</span>
+                <span className="procedure-doc-badge">TS {selectedProcedure.document_spec}</span>
+                <span className="procedure-doc-badge">V{selectedProcedure.document_version}</span>
+              </>
+            ) : 'Select a procedure'}
           </span>
           {selectedProcedure?.id && (
             <div className="procedure-actions">

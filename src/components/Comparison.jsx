@@ -62,7 +62,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
         
         setLeftMermaidContent(mermaidCode);
         setLeftJsonContent(left.jsonContent);
-        setLeftVersion(left.version);
+        setLeftVersion(left.version); // Baseline version
       } catch (error) {
         console.error('Error parsing JSON:', error);
       }
@@ -220,7 +220,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
         <div className="comparison-panel">
           <div className="panel-header">
             <div className="panel-title">
-              <span>{`${left?.title} - ${leftVersion}`}<FaCheckCircle 
+              <span>{`${left?.title}`}<FaCheckCircle 
                 style={{ 
                   color: '#3b82f6',
                   marginLeft: '8px',
@@ -230,8 +230,10 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
               </span>
             </div>
           </div>
-          <div className="panel-content" ref={leftPanelRef} onScroll={handleSyncScroll('left')}>
-            {renderPanelContent('left')}
+          <div className="panel-wrapper">
+            <div className="panel-content" ref={leftPanelRef} onScroll={handleSyncScroll('left')}>
+              {renderPanelContent('left')}
+            </div>
           </div>
         </div>
 
@@ -247,14 +249,16 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
                 <option value="">Select a version</option>
                 {versions.map((version) => (
                   <option key={version.graph_id} value={version.graph_id}>
-                    {`${selectedProcedure?.name || 'Unknown'} - Version ${version.version}`}
+                    {`${selectedProcedure?.name || 'Unknown'} (${selectedProcedure?.entity}) - Baseline Version${version.version}`}
                   </option>
                 ))}
               </select>
             </div>
           </div>
+          <div className="panel-wrapper">
           <div className="panel-content" ref={rightPanelRef} onScroll={handleSyncScroll('right')}>
             {renderPanelContent('right')}
+          </div>
           </div>
         </div>
       </div>

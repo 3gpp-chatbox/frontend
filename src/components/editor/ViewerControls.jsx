@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { FaSave, FaUndo } from "react-icons/fa";
-import { BiVerticalTop, BiHorizontalLeft } from "react-icons/bi";
+import { BiVerticalBottom, BiHorizontalRight } from "react-icons/bi";
 
 /**
  * Controls component for the editor panel with direction switching and save functionality
@@ -41,7 +41,7 @@ function ViewerControls({
             disabled={isEditing}
             title="Top to Bottom"
           >
-            <BiVerticalTop size={20} />
+            <BiVerticalBottom size={20} />
           </button>
           <button
             className={`direction-button ${direction === "LR" ? "active" : ""}`}
@@ -49,7 +49,7 @@ function ViewerControls({
             disabled={isEditing}
             title="Left to Right"
           >
-            <BiHorizontalLeft size={20} />
+            <BiHorizontalRight size={20} />
           </button>
         </div>
       </div>
