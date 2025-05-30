@@ -45,9 +45,9 @@ function DescriptionModal({ isOpen, onClose, procedure }) {
           <div className="description-section">
             <h4>Reference Document Information</h4>
               <div className="detail-line">
-                <span className="detail-label">Document Name :</span>
+                <span className="detail-label">Document Specification :</span>
                 <span className="detail-value">
-                  {procedure?.document_spec || "N/A"}
+                  {"TS "+procedure?.document_spec || "N/A"}
                 </span>
               </div>
               <div className="detail-line">

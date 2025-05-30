@@ -105,7 +105,6 @@ function SearchProcedure({ onProcedureSelect }) {
           spec: item.document_spec,
           release: item.document_release,
           doc_version: item.document_version,
-          version: item.version,
         });
       }
     } catch (err) {

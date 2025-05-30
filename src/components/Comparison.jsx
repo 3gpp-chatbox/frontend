@@ -220,7 +220,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
         <div className="comparison-panel">
           <div className="panel-header">
             <div className="panel-title">
-              <span>{`${left?.title} - ${leftVersion}`}<FaCheckCircle 
+              <span>{`${left?.title}`}<FaCheckCircle 
                 style={{ 
                   color: '#3b82f6',
                   marginLeft: '8px',
@@ -249,7 +249,7 @@ function Comparison({ left, right, onClose, selectedProcedure }) {
                 <option value="">Select a version</option>
                 {versions.map((version) => (
                   <option key={version.graph_id} value={version.graph_id}>
-                    {`${selectedProcedure?.name || 'Unknown'} - Version ${version.version}`}
+                    {`${selectedProcedure?.name || 'Unknown'} (${selectedProcedure?.entity}) - Baseline Version${version.version}`}
                   </option>
                 ))}
               </select>

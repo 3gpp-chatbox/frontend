@@ -77,9 +77,8 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
               <>
                 {selectedProcedure.procedure_name}
                 <span className="procedure-entity-badge">{selectedProcedure.entity}</span>
-                <span className="procedure-doc-badge">
-                  TS {selectedProcedure.document_spec} V{selectedProcedure.document_version}
-                </span>
+                <span className="procedure-doc-badge">TS {selectedProcedure.document_spec}</span>
+                <span className="procedure-doc-badge">V{selectedProcedure.document_version}</span>
               </>
             ) : 'Select a procedure'}
           </span>
