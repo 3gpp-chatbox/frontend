@@ -284,13 +284,11 @@ function JsonViewer({
 
         // Update JSON content
         const jsonString = JSON.stringify(graphData, null, 2);
-        console.log("Setting JSON content:", jsonString);
         setJsonContent(jsonString);
         
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
-          console.log("Generated Mermaid code:", mermaidCode);
           setMermaidGraph(mermaidCode);
           setOriginalMermaidGraph(mermaidCode);
           onMermaidCodeChange(mermaidCode);
