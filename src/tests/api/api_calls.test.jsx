@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import axios from "axios";
+// Do not import or mock axios at the top
 import {
   fetchProcedures,
   fetchProcedure,
@@ -29,9 +29,6 @@ import {
   fetchGraphVersion,
 } from "../../API/api_calls";
 
-// Mock axios
-vi.mock("axios");
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 describe("api_calls", () => {
@@ -39,29 +36,31 @@ describe("api_calls", () => {
   const entity = "amf";
 
   beforeEach(() => {
-    // Clear all mocks before each test
-    vi.clearAllMocks();
+    global.axiosGetMock.mockReset();
+    global.axiosPostMock.mockReset();
+    global.axiosDeleteMock.mockReset();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    global.axiosGetMock.mockReset();
+    global.axiosPostMock.mockReset();
+    global.axiosDeleteMock.mockReset();
   });
 
   describe("fetchProcedures", () => {
     it("should fetch procedures successfully", async () => {
       const mockData = [{ id: 1, name: "Procedure A" }];
-      axios.get.mockResolvedValueOnce({ data: mockData });
+      global.axiosGetMock.mockResolvedValueOnce({ data: mockData });
 
       const result = await fetchProcedures();
-      
       expect(result).toEqual(mockData);
-      expect(axios.get).toHaveBeenCalledWith(`${API_BASE_URL}/procedures`);
-      expect(axios.get).toHaveBeenCalledTimes(1);
+      expect(global.axiosGetMock).toHaveBeenCalledWith(`/procedures`);
+      expect(global.axiosGetMock).toHaveBeenCalledTimes(1);
     });
 
     it("should handle network errors", async () => {
       const error = new Error("Network error");
-      axios.get.mockRejectedValueOnce(error);
+      global.axiosGetMock.mockRejectedValueOnce(error);
 
       await expect(fetchProcedures()).rejects.toThrow("Network error");
     });
@@ -70,13 +69,12 @@ describe("api_calls", () => {
   describe("fetchProcedure", () => {
     it("should fetch a specific procedure successfully", async () => {
       const mockData = { id: 2, name: "Procedure B" };
-      axios.get.mockResolvedValueOnce({ data: mockData });
+      global.axiosGetMock.mockResolvedValueOnce({ data: mockData });
 
       const result = await fetchProcedure(procedureId, entity);
-      
       expect(result).toEqual(mockData);
-      expect(axios.get).toHaveBeenCalledWith(
-        `${API_BASE_URL}/procedures/${procedureId}/${entity}`
+      expect(global.axiosGetMock).toHaveBeenCalledWith(
+        `/procedures/${procedureId}/${entity}`
       );
     });
 
@@ -94,13 +92,12 @@ describe("api_calls", () => {
 
     it("should insert changes successfully", async () => {
       const mockResponse = { success: true };
-      axios.post.mockResolvedValueOnce({ data: mockResponse });
+      global.axiosPostMock.mockResolvedValueOnce({ data: mockResponse });
 
       const result = await insertProcedureGraphChanges(procedureId, entity, changes);
-      
       expect(result).toEqual(mockResponse);
-      expect(axios.post).toHaveBeenCalledWith(
-        `${API_BASE_URL}/procedures/${procedureId}/${entity}`,
+      expect(global.axiosPostMock).toHaveBeenCalledWith(
+        `/procedures/${procedureId}/${entity}`,
         {
           edited_graph: changes.edited_graph,
           commit_title: changes.commit_title,
@@ -118,14 +115,14 @@ describe("api_calls", () => {
 
   describe("fetchOriginalGraph", () => {
     it("should return null on error", async () => {
-      axios.get.mockRejectedValueOnce(new Error("Failed to fetch"));
+      global.axiosGetMock.mockRejectedValueOnce(new Error("Failed to fetch"));
       const result = await fetchOriginalGraph(procedureId, entity);
       expect(result).toBeNull();
     });
 
     it("should handle successful response", async () => {
       const mockGraph = { nodes: [], edges: [] };
-      axios.get.mockResolvedValueOnce({ data: mockGraph });
+      global.axiosGetMock.mockResolvedValueOnce({ data: mockGraph });
       const result = await fetchOriginalGraph(procedureId, entity);
       expect(result).toEqual(mockGraph);
     });
@@ -134,13 +131,11 @@ describe("api_calls", () => {
   describe("fetchVersionHistory", () => {
     it("should fetch version history successfully", async () => {
       const mockHistory = [{ version: "1.0" }, { version: "1.1" }];
-      axios.get.mockResolvedValueOnce({ data: mockHistory });
-      
+      global.axiosGetMock.mockResolvedValueOnce({ data: mockHistory });
       const result = await fetchVersionHistory(procedureId, entity);
-      
       expect(result).toEqual(mockHistory);
-      expect(axios.get).toHaveBeenCalledWith(
-        `${API_BASE_URL}/procedures/${procedureId}/${entity}/history`
+      expect(global.axiosGetMock).toHaveBeenCalledWith(
+        `/procedures/${procedureId}/${entity}/history`
       );
     });
   });
@@ -150,13 +145,11 @@ describe("api_calls", () => {
 
     it("should fetch specific version successfully", async () => {
       const mockVersion = { version: "1.0", data: {} };
-      axios.get.mockResolvedValueOnce({ data: mockVersion });
-      
+      global.axiosGetMock.mockResolvedValueOnce({ data: mockVersion });
       const result = await fetchGraphVersion(procedureId, entity, graphId);
-      
       expect(result).toEqual(mockVersion);
-      expect(axios.get).toHaveBeenCalledWith(
-        `${API_BASE_URL}/procedures/${procedureId}/${entity}/history/${graphId}`
+      expect(global.axiosGetMock).toHaveBeenCalledWith(
+        `/procedures/${procedureId}/${entity}/history/${graphId}`
       );
     });
   });
