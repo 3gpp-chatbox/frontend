@@ -129,13 +129,15 @@ function ProcedureTitle({ selectedProcedure, onOpenComparison }) {
         onClose={() => setIsDescriptionModalOpen(false)}
         procedure={selectedProcedure}
       />
-      <VersionHistory
-        key={versionHistoryKey}
-        isOpen={showVersionHistory}
-        onClose={handleCloseVersionHistory}
-        onOpenComparison={handleOpenComparison}
-        procedure={selectedProcedure}
-      />
+      {selectedProcedure && (
+        <VersionHistory
+          key={versionHistoryKey}
+          isOpen={showVersionHistory}
+          onClose={handleCloseVersionHistory}
+          onOpenComparison={handleOpenComparison}
+          procedure={selectedProcedure}
+        />
+      )}
 
       <DeleteConfirmation
         isOpen={showDeleteModal}

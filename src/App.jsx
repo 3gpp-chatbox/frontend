@@ -99,8 +99,6 @@ function App() {
    */
 
   const handleElementClick = (element) => {
-    // Only update if we have a new element to highlight
-    // Don't clear highlighting when element is null (clicking empty space)
     if (element) {
     setHighlightedElement(element);
     

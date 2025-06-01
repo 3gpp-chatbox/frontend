@@ -38,11 +38,11 @@ import { saveGraphChanges, revertChanges, continueEditing } from "../utils/SaveC
  */
 function JsonViewer({
   onMermaidCodeChange,
-  selectedProcedure,
+  selectedProcedure = null,
   onProcedureUpdate,
-  highlightedElement,
+  highlightedElement = null,
   setHighlightedElement,
-  highlightedSection,
+  highlightedSection = null,
   markdownContent,
   onEditorFocus,
   setHighlightedSection,
@@ -1287,12 +1287,6 @@ JsonViewer.propTypes = {
   markdownContent: PropTypes.string.isRequired,
   onEditorFocus: PropTypes.func.isRequired,
   setHighlightedSection: PropTypes.func.isRequired,
-};
-
-JsonViewer.defaultProps = {
-  selectedProcedure: null,
-  highlightedElement: null,
-  highlightedSection: null,
 };
 
 export default JsonViewer;
