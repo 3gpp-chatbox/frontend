@@ -3,7 +3,6 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import JsonViewer from "./components/JsonViewer";
 import FlowDiagram from "./components/FlowDiagram";
 import ProcedureTitle from "./components/procedureTitle";
-import { mapElementToReference } from "./utils/referenceMapper";
 import Comparison from "./components/Comparison";
 import SearchProcedure from "./components/SearchProcedure";
 import AdvancedSearch from "./components/modals/AdvancedSearch";
@@ -115,7 +114,6 @@ function App() {
         };
         setHighlightedSection(referenceSection);
       } else {
-        // If no section_ref or markdown content, clear the highlighted section
         setHighlightedSection(null);
       }
     }
@@ -135,7 +133,6 @@ function App() {
     title: selectedProcedure
       ? `${selectedProcedure.procedure_name} (${selectedProcedure.entity}) - Baseline Version ${selectedProcedure.version}`
       : 'Select a procedure',
-    // mermaidContent: mermaidCode,
     jsonContent: JSON.stringify(procedureData?.graph || {}, null, 2),
     version: selectedProcedure?.version,
   };
@@ -147,10 +144,8 @@ function App() {
   // Handler to close comparison view
   const handleCloseComparison = () => {
     setShowComparison(false);
-    // Reset any comparison-related state
     setHighlightedElement(null);
     setHighlightedSection(null);
-    // Force a re-render of the flow diagram
     setMermaidCode(prev => prev);
   };
 
@@ -261,7 +256,6 @@ function App() {
             selectedProcedure={selectedProcedure}
           />
         ) : (
-          // ... existing procedure container ...
           <div className="procedure-container">
             <PanelGroup direction="horizontal">
               <Panel defaultSize={50} minSize={30}>

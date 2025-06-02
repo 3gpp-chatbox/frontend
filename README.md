@@ -1,4 +1,4 @@
-# 3GPP Flow Editor Frontend
+# 3GPP Procedure Insights
 
 A modern web application for visualizing and editing 3GPP procedure flows using interactive diagrams. This tool helps in understanding, analyzing, and modifying 3GPP protocol procedures through an intuitive visual interface.
 
@@ -66,7 +66,7 @@ Before you begin, ensure you have the following installed:
    yarn dev
    ```
 
-5. Open your browser and navigate to `http://localhost:3000`
+5. Open your browser and navigate to `http://localhost:3000` 
 
 ## 💻 Usage
 
@@ -97,21 +97,84 @@ Before you begin, ensure you have the following installed:
    - Node Selection: Click to highlight in code
    - Edge Selection: Click to view connections
 
-## 🔧 Configuration
 
-### Environment Variables
-- `VITE_API_BASE_URL`: Backend API URL
+### Project Structure & Key Folders
 
-### Project Structure
 ```
 frontend/
-├── src/
-│   ├── components/     # React components
-│   ├── API/           # API integration
-│   ├── functions/        # functions used
-│   └── utils/         # Utility components
-├── APP.jsx           # main app
-└── index.css            # CSS and styling
+└── src/
+    ├── components/
+    │   ├── modals/
+    │   ├── editor/
+    │   ├── FlowDiagram.jsx
+    │   ├── JsonViewer.jsx
+    │   ├── Comparison.jsx
+    │   ├── procedureTitle.jsx
+    │   └── SearchProcedure.jsx
+    ├── functions/
+    │   ├── mermaidToJson.jsx
+    │   ├── jsonToMermaid.jsx
+    │   ├── diffHighlighter.jsx
+    │   └── schema_validation.jsx
+    ├── utils/
+    │   ├── jsonHighlighter.jsx
+    │   ├── MermaidHighlighter.jsx
+    │   ├── referenceMapper.jsx
+    │   ├── mermaidValidator.js
+    │   ├── SaveChanges.jsx
+    │   ├── InteractiveMarkdown.jsx
+    │   └── DiagramView.jsx
+    ├── API/
+    ├── tests/
+    │   ├── setup.js
+    │   ├── api/
+    │   └── components/
+    └── index.css
+```
+
+The `src/` directory is organized for clarity and scalability. Here are the main folders and their roles:
+
+### `components/`
+Reusable React components for the UI, organized by feature or type. This includes:
+- **modals/**: Modal dialogs for confirmations, editing, and more.
+- **editor/**: Editor-related UI components.
+- **FlowDiagram.jsx**: Main diagram visualization component.
+- **JsonViewer.jsx**: JSON data viewer with syntax highlighting and folding.
+- **Comparison.jsx**: Version comparison UI.
+- **procedureTitle.jsx**: Procedure title bar and controls.
+- **SearchProcedure.jsx**: Search bar and advanced search UI.
+
+### `functions/`
+Pure functions and logic helpers, typically for data transformation, validation, or conversion. Examples:
+- **mermaidToJson.jsx**: Converts Mermaid diagrams to JSON.
+- **jsonToMermaid.jsx**: Converts JSON to Mermaid syntax.
+- **diffHighlighter.jsx**: Highlights differences between versions.
+- **schema_validation.jsx**: Validates JSON schema for diagrams.
+
+
+### `utils/`
+Utility components and helpers for cross-cutting concerns, such as:
+- **jsonHighlighter.jsx**: Syntax highlighting for JSON.
+- **MermaidHighlighter.jsx**: Syntax highlighting for Mermaid code.
+- **referenceMapper.jsx**: Maps references for documentation.
+- **mermaidValidator.js**: Validates Mermaid syntax.
+- **SaveChanges.jsx**: Save changes dialog/component.
+- **InteractiveMarkdown.jsx**: Renders interactive markdown content.
+- **DiagramView.jsx**: Diagram view utilities.
+
+
+### `tests/`
+Contains all test files and folders for unit and integration testing.
+- **setup.js**: Test environment setup.
+- **api/**: API integration tests.
+- **components/**: Component unit tests.
+
+**Usage:**
+Run all tests with:
+```bash
+npm test
+# or
+yarn test
 ```
 
 ## 🎨 Customization
@@ -153,15 +216,6 @@ Modify colors and styles in `src/index.css`:
   --orange-700: #b45309;
 ```
 
-## 🧪 Testing
-
-Run tests using:
-```bash
-npm test
-# or
-yarn test
-```
-
 ## 📝 Code Style
 
 This project follows strict code style guidelines:
@@ -173,7 +227,6 @@ This project follows strict code style guidelines:
 ## 📚 Documentation
 
 - [Component Documentation](docs/components.md)
-- [User Guide](docs/user-guide.md)
 
 ## 🙏 Acknowledgments
 
