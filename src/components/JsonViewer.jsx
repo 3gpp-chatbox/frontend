@@ -38,11 +38,11 @@ import { saveGraphChanges, revertChanges, continueEditing } from "../utils/SaveC
  */
 function JsonViewer({
   onMermaidCodeChange,
-  selectedProcedure,
+  selectedProcedure = null,
   onProcedureUpdate,
-  highlightedElement,
+  highlightedElement = null,
   setHighlightedElement,
-  highlightedSection,
+  highlightedSection = null,
   markdownContent,
   onEditorFocus,
   setHighlightedSection,
@@ -284,13 +284,11 @@ function JsonViewer({
 
         // Update JSON content
         const jsonString = JSON.stringify(graphData, null, 2);
-        console.log("Setting JSON content:", jsonString);
         setJsonContent(jsonString);
         
         // Only update Mermaid code if not actively editing
         if (!isEditing) {
           const mermaidCode = JsonToMermaid(graphData, { ...defaultMermaidConfig, direction });
-          console.log("Generated Mermaid code:", mermaidCode);
           setMermaidGraph(mermaidCode);
           setOriginalMermaidGraph(mermaidCode);
           onMermaidCodeChange(mermaidCode);
@@ -308,7 +306,6 @@ function JsonViewer({
 
   // Log isWrapped state changes
   useEffect(() => {
-    console.log("isWrapped state changed:", isWrapped);
   }, [isWrapped]);
 
   // Update when selected procedure changes
@@ -326,9 +323,6 @@ function JsonViewer({
         isUserEditing.current = false;
         return;
       }
-
-      console.log("Loading procedure data for ID:", selectedProcedure.id);
-
       try {
         // Clear previous data first
         setData(null);
@@ -344,8 +338,6 @@ function JsonViewer({
           selectedProcedure.id,
           selectedProcedure.entity,
         );
-        console.log("Received procedure data:", procedureData);
-
         if (!procedureData) {
           throw new Error("No data received from server");
         }
@@ -1295,12 +1287,6 @@ JsonViewer.propTypes = {
   markdownContent: PropTypes.string.isRequired,
   onEditorFocus: PropTypes.func.isRequired,
   setHighlightedSection: PropTypes.func.isRequired,
-};
-
-JsonViewer.defaultProps = {
-  selectedProcedure: null,
-  highlightedElement: null,
-  highlightedSection: null,
 };
 
 export default JsonViewer;

@@ -207,13 +207,14 @@ button {
 .search-procedure-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   width: 100%;
 }
 
 .search-procedure-name {
   font-weight: 500;
   margin-right: 5px;
+  font-size: 0.8em;
 }
 
 .search-procedure-entity {
@@ -295,7 +296,6 @@ button {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  /* background-color: var(--black-600); */
   background-color: var(--blue-500);
   color: var(--silver-300);
   border: 1px solid var(--blue-500);
@@ -345,7 +345,7 @@ button {
 }
 .menu-bar.disabled {
   opacity: 0.6;
-  pointer-events: auto; /* allow hover for tooltip */
+  pointer-events: auto; 
   position: relative;
 }
 
@@ -392,151 +392,6 @@ button {
   font-size: 16px;
   font-weight: 500;
   color: var(--silver-100);
-}
-
-.menu-item:hover {
-  text-decoration: none;
-}
-
-.menu-item-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--silver-100);
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.menu-item-text::after {
-  content: "▼";
-  font-size: 12px;
-  margin-left: 8px;
-  transition: transform 0.3s ease;
-}
-
-.menu-item:hover .menu-item-text::after {
-  transform: rotate(180deg);
-  text-decoration: none;
-}
-
-.dropdown-content {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  min-width: 300px;
-  max-height: 600px; /* Set maximum height */
-  background-color: var(--black-700);
-  border: 1px solid var(--black-500);
-  border-radius: 4px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
-  overflow-y: auto; /* Enable vertical scrolling */
-}
-
-/* Custom scrollbar styles for dropdown content */
-.dropdown-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.dropdown-content::-webkit-scrollbar-track {
-  background: var(--black-800);
-  border-radius: 4px;
-}
-
-.dropdown-content::-webkit-scrollbar-thumb {
-  background-color: var(--blue-600);
-  border-radius: 4px;
-  border: 2px solid var(--black-800);
-}
-
-.dropdown-content::-webkit-scrollbar-thumb:hover {
-  background-color: var(--blue-500);
-}
-
-/* Firefox scrollbar styles */
-.dropdown-content {
-  scrollbar-width: thin;
-  scrollbar-color: var(--blue-600) var(--black-800);
-}
-
-.menu-item:hover .dropdown-content {
-  display: block;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.dropdown-item {
-  display: block;
-  padding: 12px 16px;
-  color: var(--silver-100);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  font-size: 14px;
-  border-bottom: 1px solid var(--black-500);
-}
-
-.dropdown-item:last-child {
-  border-bottom: none;
-}
-
-.dropdown-item:hover {
-  color: var(--blue-400);
-  padding-left: 20px;
-  text-decoration: none;
-}
-
-.dropdown-item:active {
-  background-color: var(--black-500);
-}
-
-/* Add a subtle animation for the dropdown items */
-.dropdown-content {
-  animation: dropdownFade 0.3s ease;
-}
-
-@keyframes dropdownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Remove the underline animation */
-.menu-item::before {
-  display: none;
-}
-
-/* Add a subtle hover effect for the menu item */
-.menu-item::before {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: var(--blue-500);
-  transform: scaleX(0);
-  transition: transform 0.3s ease;
-}
-
-.menu-item:hover::before {
-  transform: scaleX(1);
-}
-
-.grid-layout {
-  /* display: grid;
-  grid-template-columns: repeat(12, 1fr); */
-  /* border: 1px solid var(--blue-600); */
-  /* gap: 12px; */
-  /* padding-top: 12px;  */
 }
 
 .panel {
@@ -610,9 +465,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   display: flex;
   flex-direction: column;
   background: var(--black-800);
-  /* border-radius: 8px; */
   overflow: hidden;
-  /* border: 1px solid var(--blue-700); */
 }
 
 .section-header {
@@ -630,7 +483,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   overflow-y: auto;
   min-height: 0;
   background-color: var(--black-800);
-  height: calc(100% - 48px); /* Subtract header height */
+  height: calc(100% - 48px); 
   display: flex;
   flex-direction: column;
 }
@@ -640,7 +493,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   padding: 0;
   overflow: hidden;
   position: relative;
-  height: calc(100% - 48px); /* Subtract header height */
+  height: calc(100% - 48px); 
   touch-action: none;
 }
 
@@ -650,7 +503,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   flex: 1;
   min-height: 0;
   position: relative;
-  height: calc(100vh - 160px); /* Adjust for title bar and padding */
+  height: calc(100vh - 160px); 
 }
 
 .procedure-container-left,
@@ -670,7 +523,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden; /* Change from auto to hidden */
+  overflow: hidden; 
 }
 
 .diagram-panel {
@@ -982,14 +835,14 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 .json-viewer-content,
 .json-content,
 .code-content {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none; 
 }
 
 .json-viewer-content::-webkit-scrollbar,
 .json-content::-webkit-scrollbar,
 .code-content::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none; 
 }
 
 .wrap-toggle {
@@ -1379,38 +1232,38 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 
 .modal-mermaid-content .flowchart,
 .flowchart {
-  color: var(--blue-500); /* Electric blue for flowchart declarations */
+  color: var(--blue-500); 
 }
 
 .modal-mermaid-content .node-id,
 .node-id {
-  color: var(--blue-300); /* Light blue for node IDs */
+  color: var(--blue-300); 
 }
 
 .modal-mermaid-content .node-text,
 .node-text {
-  color: var(--orange-400); /* Orange for node text */
+  color: var(--orange-400); 
 }
 
 .modal-mermaid-content .arrow,
 .arrow {
-  color: var(--blue-400); /* Mid blue for arrows */
+  color: var(--blue-400); 
 }
 
 .modal-mermaid-content .comment,
 .comment {
-  color: var(--silver-500); /* Gray for comments */
+  color: var(--silver-500); 
   font-style: italic;
 }
 
 .modal-mermaid-content .type,
 .type {
-  color: var(--orange-500); /* Orange for types */
+  color: var(--orange-500); 
 }
 
 .modal-mermaid-content .description,
 .description {
-  color: var(--silver-300); /* Light gray for descriptions */
+  color: var(--silver-300); 
 }
 
 .mermaid-editor {
@@ -2715,7 +2568,6 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  /* background-color: var(--black-600); */
   background-color: var(--blue-500);
   color: var(--silver-300);
   border: 1px solid var(--blue-500);
@@ -2727,7 +2579,8 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 }
 
 .version-history-button:hover {
-  background-color: var(--blue-500);
+  background-color: var(--black-500);
+  border-color: var(--blue-500);
 }
 
 /* Comparison View Styles */
@@ -3503,7 +3356,8 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   border-radius: 8px;
   width: 700px;
   max-width: 98vw;
-  min-height: 380px;
+  min-height: 300px;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -3566,6 +3420,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   overflow-y: auto;
   min-width: 260px;
   max-width: 100%;
+  max-height:500px;
   display: flex;
   flex-direction: column;
   gap: 8px;

@@ -15,8 +15,11 @@
  * Tests ensure proper endpoint URL construction and response handling.
  */
 
-import { describe, test, expect, beforeEach, vi } from "vitest";
-import axios from "axios";
+// Set env before import
+if (!import.meta.env) import.meta.env = {};
+import.meta.env.VITE_API_BASE_URL = 'http://localhost:3000';
+
+import { describe, test, expect, beforeEach } from "vitest";
 import {
   fetchGraphVersion,
   fetchVersionHistory,
@@ -24,12 +27,13 @@ import {
   fetchProcedure,
 } from "../../API/api_calls";
 
-// Mock axios
-vi.mock("axios");
+import * as api from '../../API/api_calls';
 
 describe("API Integration Tests", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    global.axiosGetMock.mockReset();
+    global.axiosPostMock.mockReset();
+    global.axiosDeleteMock.mockReset();
   });
 
   describe("Procedure workflow", () => {
@@ -56,7 +60,7 @@ describe("API Integration Tests", () => {
 
     test("complete procedure selection and version comparison flow", async () => {
       // Mock API responses
-      axios.get
+      global.axiosGetMock
         .mockResolvedValueOnce({ data: mockProcedures }) // fetchProcedures
         .mockResolvedValueOnce({ data: mockProcedure }) // fetchProcedure
         .mockResolvedValueOnce({ data: mockVersions }) // fetchVersionHistory
@@ -79,19 +83,17 @@ describe("API Integration Tests", () => {
       expect(versionData).toEqual({ graph: mockProcedure.graph });
 
       // Verify all API calls were made in correct order
-      const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-      expect(axios.get.mock.calls).toEqual([
-        [`${baseUrl}/procedures`],
-        [`${baseUrl}/procedures/1/AMF`],
-        [`${baseUrl}/procedures/1/AMF/history`],
-        [`${baseUrl}/procedures/1/AMF/history/2.0`],
+      expect(global.axiosGetMock.mock.calls).toEqual([
+        [`/procedures`],
+        [`/procedures/1/AMF`],
+        [`/procedures/1/AMF/history`],
+        [`/procedures/1/AMF/history/2.0`],
       ]);
     });
 
     test("handles concurrent API requests", async () => {
       // Mock API responses with delays
-      axios.get
+      global.axiosGetMock
         .mockImplementationOnce(
           () =>
             new Promise((resolve) =>
@@ -120,7 +122,7 @@ describe("API Integration Tests", () => {
       const error = new Error("Request aborted");
       error.code = "ECONNABORTED";
 
-      axios.get.mockRejectedValueOnce(error);
+      global.axiosGetMock.mockRejectedValueOnce(error);
 
       // Cancel the request
       controller.abort();
@@ -134,7 +136,7 @@ describe("API Integration Tests", () => {
       const networkError = new Error("Network error");
 
       // Mock first call to fail, second to succeed
-      axios.get
+      global.axiosGetMock
         .mockRejectedValueOnce(networkError)
         .mockResolvedValueOnce({ data: [] });
 
@@ -156,7 +158,7 @@ describe("API Integration Tests", () => {
         },
       };
 
-      axios.get.mockRejectedValueOnce(validationError);
+      global.axiosGetMock.mockRejectedValueOnce(validationError);
 
       await expect(fetchProcedure("invalid-id", "AMF")).rejects.toThrow(
         "Validation failed",
@@ -170,7 +172,7 @@ describe("API Integration Tests", () => {
         data: { message: "Rate limit exceeded" },
       };
 
-      axios.get.mockRejectedValueOnce(rateLimitError);
+      global.axiosGetMock.mockRejectedValueOnce(rateLimitError);
 
       await expect(fetchProcedures()).rejects.toThrow("Too many requests");
     });
@@ -190,7 +192,7 @@ describe("API Integration Tests", () => {
       };
 
       // Mock responses
-      axios.get
+      global.axiosGetMock
         .mockResolvedValueOnce({ data: mockProcedure })
         .mockResolvedValueOnce({ data: [mockVersion] });
 
@@ -214,7 +216,7 @@ describe("API Integration Tests", () => {
         graph: { nodes: [], edges: [] },
       };
 
-      axios.get
+      global.axiosGetMock
         .mockResolvedValueOnce({ data: mockProcedure })
         .mockResolvedValueOnce({ data: mockVersionData });
 

@@ -173,6 +173,8 @@ function SearchProcedure({ onProcedureSelect }) {
             >
               <div className="search-procedure-row">
                 <span className="search-procedure-name">{item.procedure_name}</span>
+              </div>
+              <div className="search-procedure-row">
                 <span className="search-procedure-entity">{item.entity}</span>
                 <span className="search-procedure-spec">TS {item.document_spec}</span>
                 <span className="search-procedure-version">V{item.document_version}</span>
