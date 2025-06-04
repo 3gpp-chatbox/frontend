@@ -3404,6 +3404,45 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
 .advanced-search-filters input[type="text"]:focus {
   border: 1.5px solid var(--blue-500);
 }
+.advanced-search-filters select {
+  max-height: 200px; 
+  overflow-y: auto; 
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue-500) var(--black-700);
+}
+
+.advanced-search-filters select::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.advanced-search-filters select::-webkit-scrollbar-track {
+  background: var(--black-700);
+  border-radius: 4px;
+}
+
+.advanced-search-filters select::-webkit-scrollbar-thumb {
+  background: var(--blue-500);
+  border-radius: 4px;
+  border: 2px solid var(--black-700);
+}
+
+.advanced-search-filters select::-webkit-scrollbar-thumb:hover {
+  background: var(--blue-400);
+}
+
+.advanced-search-filters select option {
+  background-color: var(--black-700);
+  color: var(--silver-100);
+  padding: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.advanced-search-filters select option:hover {
+  background-color: var(--black-600);
+}
 
 .advanced-search-error {
   color: var(--orange-400);
@@ -3443,15 +3482,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   background: var(--silver-300);
   border: 1.5px solid var(--blue-400);
 }
-.advanced-search-filters select option {
-  background-color: var(--black-700);
-  color: var(--silver-100);
-  padding: 8px;
-}
 
-.advanced-search-filters select option:hover {
-  background-color: var(--black-600);
-}
 .advanced-search-list-title {
   font-weight: 500;
   color: var(--black-900);
@@ -3492,9 +3523,7 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
     width: 98vw;
     min-width: 0;
   }
-  /* .advanced-search-body {
-    flex-direction: column;
-  } */
+ 
   .advanced-search-filters, .advanced-search-list {
     min-width: 0;
     max-width: 100vw;
@@ -3545,4 +3574,92 @@ Custom scrollbar for horizontal scroll .description-panel::-webkit-scrollbar {
   outline: none;
   border: 2px solid var(--orange-600);
   transform: translateY(-1px);
+}
+
+/* Custom Select Styles */
+.custom-select {
+  position: relative;
+  width: 100%;
+  font-size: 1em;
+}
+
+.custom-select-header {
+  background: var(--black-300);
+  color: var(--silver-100);
+  border: 1.5px solid var(--silver-300);
+  border-radius: 4px;
+  padding: 7px 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border 0.2s;
+}
+
+.custom-select-header:hover {
+  border-color: var(--blue-500);
+}
+
+.custom-select-header .placeholder {
+  color: var(--silver-400);
+}
+
+.custom-select-arrow {
+  font-size: 0.8em;
+  color: var(--silver-400);
+  transition: transform 0.2s;
+}
+
+.custom-select-header:hover .custom-select-arrow {
+  color: var(--silver-300);
+}
+
+.custom-select-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--black-700);
+  border: 1.5px solid var(--silver-300);
+  border-radius: 4px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-select-options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-select-options::-webkit-scrollbar-track {
+  background: var(--black-700);
+  border-radius: 4px;
+}
+
+.custom-select-options::-webkit-scrollbar-thumb {
+  background: var(--blue-500);
+  border-radius: 4px;
+  border: 2px solid var(--black-700);
+}
+
+.custom-select-options::-webkit-scrollbar-thumb:hover {
+  background: var(--blue-400);
+}
+
+.custom-select-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--silver-100);
+  transition: background-color 0.2s;
+}
+
+.custom-select-option:hover {
+  background-color: var(--black-600);
+}
+
+.custom-select-option.selected {
+  background-color: var(--blue-600);
+  color: var(--silver-100);
 }
