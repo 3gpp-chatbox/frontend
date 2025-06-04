@@ -338,6 +338,7 @@ function JsonViewer({
           selectedProcedure.id,
           selectedProcedure.entity,
         );
+        console.log("here")
         if (!procedureData) {
           throw new Error("No data received from server");
         }

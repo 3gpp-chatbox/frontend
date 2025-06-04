@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { fetchProcedures, fetchProcedure } from "../../API/api_calls";
+import { fetchProcedure } from "../../API/api_calls";
 import CustomSelect from '../../utils/CustomSelect';
 
 const initialFilters = {
@@ -11,11 +11,8 @@ const initialFilters = {
   document_version: "",
 };
 
-function AdvancedSearch({ isOpen, onClose, onSelect }) {
-  const [procedures, setProcedures] = useState([]);
+function AdvancedSearch({ isOpen, onClose, onSelect, procedures, loading, error }) {
   const [filtered, setFiltered] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [filters, setFilters] = useState(initialFilters);
   const [procedureNames, setProcedureNames] = useState([]);
   const [entities, setEntities] = useState([]);
@@ -30,39 +27,30 @@ function AdvancedSearch({ isOpen, onClose, onSelect }) {
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
-    setLoading(true);
-    setError(null);
-    fetchProcedures()
-      .then((data) => {
-        setProcedures(data);
-        setFiltered(flattenProcedures(data));
-        setProcedureNames(getUniqueProcedureNames(data));
-        setEntities(getUniqueEntities(data));
-        setDocumentSpecs(getUniqueSpecs(data));
-        setReleases(getUniqueReleases(data));
-        setDocument_versions(getUniqueVersions(data));
-      })
-      .catch((err) => setError("Failed to load procedures."))
-      .finally(() => setLoading(false));
-  }, [isOpen]);
+    if (!isOpen || !procedures.length) return;
+    setFiltered(flattenProcedures(procedures));
+    setProcedureNames(getUniqueProcedureNames(procedures));
+    setEntities(getUniqueEntities(procedures));
+    setDocumentSpecs(getUniqueSpecs(procedures));
+    setReleases(getUniqueReleases(procedures));
+    setDocument_versions(getUniqueVersions(procedures));
+  }, [isOpen, procedures]);
 
-function flattenProcedures(data) {
-  return data.flatMap((doc) =>
-    (Array.isArray(doc.document_procedures) ? doc.document_procedures : []).flatMap((proc) =>
-      (Array.isArray(proc.entity) ? proc.entity : []).map((entity) => ({
-        procedure_id: proc.procedure_id,
-        procedure_name: proc.procedure_name,
-        entity,
-        document_spec: doc.document_spec,
-        document_version: doc.document_version,
-        document_release: doc.document_release,
-        document_id: doc.document_id,
-      }))
-    )
-  );
-}
-
+  function flattenProcedures(data) {
+    return data.flatMap((doc) =>
+      (Array.isArray(doc.document_procedures) ? doc.document_procedures : []).flatMap((proc) =>
+        (Array.isArray(proc.entity) ? proc.entity : []).map((entity) => ({
+          procedure_id: proc.procedure_id,
+          procedure_name: proc.procedure_name,
+          entity,
+          document_spec: doc.document_spec,
+          document_version: doc.document_version,
+          document_release: doc.document_release,
+          document_id: doc.document_id,
+        }))
+      )
+    );
+  }
 
   function getUniqueProcedureNames(data) {
     return Array.from(
@@ -173,6 +161,7 @@ function flattenProcedures(data) {
                   ...procedureNames.map(name => ({ value: name, label: name }))
                 ]}
                 placeholder="Select Procedure"
+                disabled={loading}
               />
             </label>
             <label>
@@ -186,6 +175,7 @@ function flattenProcedures(data) {
                   ...entities.map(entity => ({ value: entity, label: entity }))
                 ]}
                 placeholder="Select Entity"
+                disabled={loading}
               />
             </label>
             <label>
@@ -199,6 +189,7 @@ function flattenProcedures(data) {
                   ...documentSpecs.map(spec => ({ value: spec, label: `TS ${spec}` }))
                 ]}
                 placeholder="Select Document"
+                disabled={loading}
               />
             </label>
             <label>
@@ -212,6 +203,7 @@ function flattenProcedures(data) {
                   ...releases.map(release => ({ value: release, label: release }))
                 ]}
                 placeholder="Select Release"
+                disabled={loading}
               />
             </label>
             <label>
@@ -225,6 +217,7 @@ function flattenProcedures(data) {
                   ...document_versions.map(version => ({ value: version, label: version }))
                 ]}
                 placeholder="Select Spec version"
+                disabled={loading}
               />
             </label>
             <button className="advanced-search-reset-btn" type="button" onClick={handleReset}>Reset Filters</button>
@@ -233,6 +226,8 @@ function flattenProcedures(data) {
           <div className="advanced-search-list">
             {loading ? (
               <div className="advanced-search-loading">Loading...</div>
+            ) : error ? (
+              <div className="advanced-search-error">{error}</div>
             ) : filtered.length === 0 ? (
               <div className="advanced-search-no-results">No procedures found.</div>
             ) : (
@@ -264,6 +259,9 @@ AdvancedSearch.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSelect: PropTypes.func.isRequired,
+  procedures: PropTypes.array.isRequired,
+  loading: PropTypes.bool.isRequired,
+  error: PropTypes.string,
 };
 
 export default AdvancedSearch;

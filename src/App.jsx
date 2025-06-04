@@ -7,6 +7,7 @@ import Comparison from "./components/Comparison";
 import SearchProcedure from "./components/SearchProcedure";
 import AdvancedSearch from "./components/modals/AdvancedSearch";
 import { LuSettings2 } from "react-icons/lu";
+import { fetchProcedures } from "./API/api_calls";
 /**
  * Main application component for the 3GPP Flow Editor.
  * Manages the overall application state and layout, including:
@@ -28,6 +29,25 @@ function App() {
   const [showComparison, setShowComparison] = useState(false);
   const [highlightedSection, setHighlightedSection] = useState(null);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [procedures, setProcedures] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch procedures once on mount
+  useEffect(() => {
+    console.log("fetching procedures in App.jsx");
+    setLoading(true);
+    setError(null);
+    fetchProcedures()
+      .then((data) => {
+        setProcedures(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching procedures:", err);
+        setError("Failed to load procedures.");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   // Update markdown content when procedure data changes
   useEffect(() => {
@@ -221,6 +241,9 @@ function App() {
           onProcedureSelect={handleProcedureSelect} 
           selectedProcedure={selectedProcedure}
           disabled={showComparison}
+          procedures={procedures}
+          loading={loading}
+          error={error}
         />
         <button
           className="advanced-search-btn"
@@ -237,6 +260,9 @@ function App() {
             handleProcedureSelect(proc);
             setShowAdvancedSearch(false);
           }}
+          procedures={procedures}
+          loading={loading}
+          error={error}
         />
         </div>
       {/* grid layout */}

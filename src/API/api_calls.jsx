@@ -62,7 +62,7 @@ api.interceptors.response.use(
 // Fetch all procedures
 export const fetchProcedures = async () => {
   try {
-    const response = await api.get('/procedures');
+    const response = await api.get('procedures');
     return response.data;
   } catch (error) {
     console.error("Error fetching procedures:", error.message);
