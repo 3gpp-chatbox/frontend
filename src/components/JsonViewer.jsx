@@ -338,6 +338,7 @@ function JsonViewer({
           selectedProcedure.id,
           selectedProcedure.entity,
         );
+        console.log("here")
         if (!procedureData) {
           throw new Error("No data received from server");
         }
@@ -640,8 +641,6 @@ function JsonViewer({
 
       // Check if there are actual structural changes
       console.log('Checking for structural changes...');
-      console.log('New code:', newCode);
-      console.log('Original code:', originalMermaidGraph);
       
       const hasActualChanges = hasGraphStructureChanges(newCode, originalMermaidGraph);
       console.log('Has actual changes:', hasActualChanges);

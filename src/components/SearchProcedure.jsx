@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { fetchProcedures, fetchProcedure } from "../API/api_calls";
+import { fetchProcedure } from "../API/api_calls";
 import PropTypes from "prop-types";
 import { FiSearch } from "react-icons/fi";
 
@@ -8,21 +8,16 @@ import { FiSearch } from "react-icons/fi";
  *
  * @param {Object} props
  * @param {function} props.onProcedureSelect - Callback when a procedure is selected
+ * @param {Array} props.procedures - Array of procedures from parent
+ * @param {boolean} props.loading - Loading state from parent
+ * @param {string} props.error - Error state from parent
  */
-function SearchProcedure({ onProcedureSelect }) {
+function SearchProcedure({ onProcedureSelect, procedures, loading, error }) {
   const [query, setQuery] = useState("");
-  const [procedures, setProcedures] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [highlightedIdx, setHighlightedIdx] = useState(-1);
   const inputRef = useRef(null);
-
-  useEffect(() => {
-    // Fetch all procedures on mount
-    fetchProcedures()
-      .then(setProcedures)
-      .catch(() => setProcedures([]));
-  }, []);
 
   useEffect(() => {
     if (!query) {
@@ -42,7 +37,6 @@ function SearchProcedure({ onProcedureSelect }) {
           )
         )
       );
-      // Don't close dropdown here
       return;
     }
     // Filter by procedure name or document spec (case-insensitive)
@@ -69,7 +63,6 @@ function SearchProcedure({ onProcedureSelect }) {
       });
     });
     setFiltered(results);
-    // Don't close dropdown here
     setHighlightedIdx(-1);
   }, [query, procedures]);
 
@@ -160,29 +153,35 @@ function SearchProcedure({ onProcedureSelect }) {
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           aria-label="Search procedures"
+          disabled={loading}
         />
       </div>
       {showDropdown && (
         <div className="search-procedure-dropdown">
-          {filtered.map((item, idx) => (
-            <div
-              key={`${item.procedure_id}-${item.entity}`}
-              className={`search-procedure-item${idx === highlightedIdx ? " highlighted" : ""}`}
-              onMouseDown={() => handleSelect(item)}
-              onMouseEnter={() => setHighlightedIdx(idx)}
-            >
-              <div className="search-procedure-row">
-                <span className="search-procedure-name">{item.procedure_name}</span>
-              </div>
-              <div className="search-procedure-row">
-                <span className="search-procedure-entity">{item.entity}</span>
-                <span className="search-procedure-spec">TS {item.document_spec}</span>
-                <span className="search-procedure-version">V{item.document_version}</span>
-              </div>
-            </div>
-          ))}
-          {filtered.length === 0 && (
+          {loading ? (
+            <div className="search-procedure-loading">Loading...</div>
+          ) : error ? (
+            <div className="search-procedure-error">{error}</div>
+          ) : filtered.length === 0 ? (
             <div className="search-procedure-no-results">No results found</div>
+          ) : (
+            filtered.map((item, idx) => (
+              <div
+                key={`${item.procedure_id}-${item.entity}`}
+                className={`search-procedure-item${idx === highlightedIdx ? " highlighted" : ""}`}
+                onMouseDown={() => handleSelect(item)}
+                onMouseEnter={() => setHighlightedIdx(idx)}
+              >
+                <div className="search-procedure-row">
+                  <span className="search-procedure-name">{item.procedure_name}</span>
+                </div>
+                <div className="search-procedure-row">
+                  <span className="search-procedure-entity">{item.entity}</span>
+                  <span className="search-procedure-spec">TS {item.document_spec}</span>
+                  <span className="search-procedure-version">V{item.document_version}</span>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}
@@ -192,6 +191,9 @@ function SearchProcedure({ onProcedureSelect }) {
 
 SearchProcedure.propTypes = {
   onProcedureSelect: PropTypes.func,
+  procedures: PropTypes.array.isRequired,
+  loading: PropTypes.bool.isRequired,
+  error: PropTypes.string,
 };
 
 export default SearchProcedure;
