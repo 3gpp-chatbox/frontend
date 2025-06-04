@@ -76,7 +76,7 @@ function ConfirmationDialog({
                 <button 
                   className="action-button" 
                   onClick={handleConfirm}
-                  disabled={!title.trim()}
+                  disabled={!title.trim() || !message.trim()}
                 >
                   Confirm Changes
                 </button>
