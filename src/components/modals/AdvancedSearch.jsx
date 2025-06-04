@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { fetchProcedures, fetchProcedure } from "../../API/api_calls";
+import CustomSelect from '../../utils/CustomSelect';
 
 const initialFilters = {
   procedureName: "",
@@ -163,48 +164,68 @@ function flattenProcedures(data) {
           <div className="advanced-search-filters">
             <label>
               Procedure Name
-              <select name="procedureName" value={filters.procedureName} onChange={handleFilterChange}>
-                <option value="">Select Procedure</option>
-                {procedureNames.map((name) => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
+              <CustomSelect
+                name="procedureName"
+                value={filters.procedureName}
+                onChange={handleFilterChange}
+                options={[
+                  { value: '', label: 'Select Procedure' },
+                  ...procedureNames.map(name => ({ value: name, label: name }))
+                ]}
+                placeholder="Select Procedure"
+              />
             </label>
             <label>
               Entity
-              <select name="entity" value={filters.entity} onChange={handleFilterChange}>
-                <option value="">Select Entity</option>
-                {entities.map((entity) => (
-                  <option key={entity} value={entity}>{entity}</option>
-                ))}
-              </select>
+              <CustomSelect
+                name="entity"
+                value={filters.entity}
+                onChange={handleFilterChange}
+                options={[
+                  { value: '', label: 'Select Entity' },
+                  ...entities.map(entity => ({ value: entity, label: entity }))
+                ]}
+                placeholder="Select Entity"
+              />
             </label>
             <label>
               Document Specification
-              <select name="documentSpec" value={filters.documentSpec} onChange={handleFilterChange}>
-                <option value="">Select Document</option>
-                {documentSpecs.map((spec) => (
-                  <option key={spec} value={spec}>TS {spec}</option>
-                ))}
-              </select>
+              <CustomSelect
+                name="documentSpec"
+                value={filters.documentSpec}
+                onChange={handleFilterChange}
+                options={[
+                  { value: '', label: 'Select Document' },
+                  ...documentSpecs.map(spec => ({ value: spec, label: `TS ${spec}` }))
+                ]}
+                placeholder="Select Document"
+              />
             </label>
             <label>
               Release
-              <select name="release" value={filters.release} onChange={handleFilterChange}>
-                <option value="">Select Release</option>
-                {releases.map((release) => (
-                  <option key={release} value={release}>{release}</option>
-                ))}
-              </select>
+              <CustomSelect
+                name="release"
+                value={filters.release}
+                onChange={handleFilterChange}
+                options={[
+                  { value: '', label: 'Select Release' },
+                  ...releases.map(release => ({ value: release, label: release }))
+                ]}
+                placeholder="Select Release"
+              />
             </label>
             <label>
               Version
-              <select name="document_version" value={filters.document_version} onChange={handleFilterChange}>
-                <option value="">Select Spec version</option>
-                {document_versions.map((document_version) => (
-                  <option key={document_version} value={document_version}>{document_version}</option>
-                ))}
-              </select>
+              <CustomSelect
+                name="document_version"
+                value={filters.document_version}
+                onChange={handleFilterChange}
+                options={[
+                  { value: '', label: 'Select Spec version' },
+                  ...document_versions.map(version => ({ value: version, label: version }))
+                ]}
+                placeholder="Select Spec version"
+              />
             </label>
             <button className="advanced-search-reset-btn" type="button" onClick={handleReset}>Reset Filters</button>
             {error && <div className="advanced-search-error">{error}</div>}
